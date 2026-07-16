@@ -677,6 +677,107 @@ export const CreateAmendmentResponse = zod.object({
 
 
 /**
+ * @summary List file attachments for a contract
+ */
+export const ListContractAttachmentsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ListContractAttachmentsResponseItem = zod.object({
+  "id": zod.string(),
+  "contractId": zod.string(),
+  "fileName": zod.string(),
+  "objectPath": zod.string(),
+  "contentType": zod.string().nullish(),
+  "size": zod.number().nullish(),
+  "uploadedByName": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListContractAttachmentsResponse = zod.array(ListContractAttachmentsResponseItem)
+
+
+/**
+ * @summary Attach an uploaded file to a contract
+ */
+export const CreateContractAttachmentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+
+export const CreateContractAttachmentBody = zod.object({
+  "fileName": zod.string().min(1),
+  "objectPath": zod.string().min(1),
+  "contentType": zod.string().optional(),
+  "size": zod.number().optional()
+})
+
+export const CreateContractAttachmentResponse = zod.object({
+  "id": zod.string(),
+  "contractId": zod.string(),
+  "fileName": zod.string(),
+  "objectPath": zod.string(),
+  "contentType": zod.string().nullish(),
+  "size": zod.number().nullish(),
+  "uploadedByName": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove an attachment from a contract
+ */
+export const DeleteContractAttachmentParams = zod.object({
+  "id": zod.coerce.string(),
+  "attachmentId": zod.coerce.string()
+})
+
+export const DeleteContractAttachmentResponse = zod.void()
+
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+
+
+
+
+
+export const RequestUploadUrlBody = zod.object({
+  "name": zod.string().min(1).describe('Original file name.'),
+  "size": zod.number().min(1).describe('File size in bytes.'),
+  "contentType": zod.string().min(1).describe('MIME type of the file (e.g. `application\/pdf`).')
+})
+
+
+
+
+
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadURL": zod.string().describe('Presigned GCS URL for PUT upload.'),
+  "objectPath": zod.string().describe('Normalized object path (e.g. `\/objects\/uploads\/uuid`).'),
+  "metadata": zod.object({
+  "name": zod.string().min(1).describe('Original file name.'),
+  "size": zod.number().min(1).describe('File size in bytes.'),
+  "contentType": zod.string().min(1).describe('MIME type of the file (e.g. `application\/pdf`).')
+}).optional()
+})
+
+
+/**
+ * @summary Serve an uploaded object
+ */
+export const GetStorageObjectParams = zod.object({
+  "objectPath": zod.coerce.string()
+})
+
+export const GetStorageObjectResponse = zod.unknown()
+
+
+/**
  * @summary List revenue reports for a contract
  */
 export const ListContractRevenueReportsParams = zod.object({

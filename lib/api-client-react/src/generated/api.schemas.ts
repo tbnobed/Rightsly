@@ -18,6 +18,52 @@ export interface Error {
   errors?: ErrorErrorsItem[];
 }
 
+export interface UploadUrlRequest {
+  /**
+     * Original file name.
+     * @minLength 1
+     */
+  name: string;
+  /**
+     * File size in bytes.
+     * @minimum 1
+     */
+  size: number;
+  /**
+     * MIME type of the file (e.g. `application/pdf`).
+     * @minLength 1
+     */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  /** Presigned GCS URL for PUT upload. */
+  uploadURL: string;
+  /** Normalized object path (e.g. `/objects/uploads/uuid`). */
+  objectPath: string;
+  metadata?: UploadUrlRequest;
+}
+
+export interface ContractAttachment {
+  id: string;
+  contractId: string;
+  fileName: string;
+  objectPath: string;
+  contentType?: string | null;
+  size?: number | null;
+  uploadedByName?: string | null;
+  createdAt: string;
+}
+
+export interface CreateContractAttachmentRequest {
+  /** @minLength 1 */
+  fileName: string;
+  /** @minLength 1 */
+  objectPath: string;
+  contentType?: string;
+  size?: number;
+}
+
 export interface LoginInput {
   email: string;
   password: string;

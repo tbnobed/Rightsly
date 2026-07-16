@@ -7,6 +7,7 @@ import {
   json,
   boolean,
   numeric,
+  integer,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -90,6 +91,19 @@ export const amendmentsTable = pgTable("amendments", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const contractAttachmentsTable = pgTable("contract_attachments", {
+  id: text("id").primaryKey(),
+  contractId: text("contract_id")
+    .notNull()
+    .references(() => contractsTable.id, { onDelete: "cascade" }),
+  fileName: text("file_name").notNull(),
+  objectPath: text("object_path").notNull(),
+  contentType: text("content_type"),
+  size: integer("size"),
+  uploadedBy: text("uploaded_by").references(() => usersTable.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertContractSchema = createInsertSchema(contractsTable).omit({
   id: true,
   createdAt: true,
@@ -104,3 +118,4 @@ export type InsertContract = z.infer<typeof insertContractSchema>;
 export type Contract = typeof contractsTable.$inferSelect;
 export type Amendment = typeof amendmentsTable.$inferSelect;
 export type ContractContent = typeof contractContentTable.$inferSelect;
+export type ContractAttachment = typeof contractAttachmentsTable.$inferSelect;

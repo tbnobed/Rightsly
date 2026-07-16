@@ -10,6 +10,7 @@ import { StatusBadge } from "@/pages/contracts/index";
 import { format, parseISO } from "date-fns";
 import { ChevronLeft, Edit, FileText, Globe, Link as LinkIcon, Download, AlertCircle, Plus } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ContractAttachments } from "@/components/contract-attachments";
 
 export default function ContractDetail() {
   const { id } = useParams<{ id: string }>();
@@ -73,9 +74,10 @@ export default function ContractDetail() {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-4 bg-slate-200/50 p-1">
+        <TabsList className="grid w-full max-w-xl grid-cols-5 bg-slate-200/50 p-1">
           <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
           <TabsTrigger value="content" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Content</TabsTrigger>
+          <TabsTrigger value="documents" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Documents</TabsTrigger>
           <TabsTrigger value="amendments" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Amendments</TabsTrigger>
           <TabsTrigger value="financials" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Financials</TabsTrigger>
         </TabsList>
@@ -230,6 +232,13 @@ export default function ContractDetail() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="documents" className="mt-6">
+          <ContractAttachments
+            contractId={contract.id}
+            canEdit={user?.role === 'admin' || user?.role === 'legal'}
+          />
         </TabsContent>
 
         <TabsContent value="amendments" className="mt-6">

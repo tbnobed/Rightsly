@@ -6,6 +6,7 @@ import {
   partnersTable,
   contentItemsTable,
   amendmentsTable,
+  contractAttachmentsTable,
   usersTable,
 } from "@workspace/db";
 import { eq, and, ilike, inArray, sql, count, lte, gte, asc, desc } from "drizzle-orm";
@@ -313,6 +314,90 @@ router.post("/:id/amendments", requireRole("admin", "legal"), async (req, res) =
 
   await logAudit({ user: req.user, action: "create", entityType: "amendment", entityId: id, after: { contractId: req.params.id, date } });
   res.status(201).json({ ...amendment, createdByName: req.user!.name });
+});
+
+// GET /api/contracts/:id/attachments
+router.get("/:id/attachments", async (req, res) => {
+  const attachments = await db
+    .select({
+      id: contractAttachmentsTable.id,
+      contractId: contractAttachmentsTable.contractId,
+      fileName: contractAttachmentsTable.fileName,
+      objectPath: contractAttachmentsTable.objectPath,
+      contentType: contractAttachmentsTable.contentType,
+      size: contractAttachmentsTable.size,
+      createdAt: contractAttachmentsTable.createdAt,
+      uploadedByName: usersTable.name,
+    })
+    .from(contractAttachmentsTable)
+    .leftJoin(usersTable, eq(contractAttachmentsTable.uploadedBy, usersTable.id))
+    .where(eq(contractAttachmentsTable.contractId, req.params.id))
+    .orderBy(desc(contractAttachmentsTable.createdAt));
+
+  res.json(attachments);
+});
+
+// POST /api/contracts/:id/attachments
+router.post("/:id/attachments", requireRole("admin", "legal"), async (req, res) => {
+  const { fileName, objectPath, contentType, size } = req.body;
+
+  if (!fileName || !objectPath) {
+    res.status(400).json({ message: "fileName and objectPath are required" });
+    return;
+  }
+
+  // Only allow paths minted by our presigned upload flow
+  if (!/^\/objects\/uploads\/[A-Za-z0-9-]+$/.test(objectPath)) {
+    res.status(400).json({ message: "Invalid objectPath" });
+    return;
+  }
+
+  const [contract] = await db
+    .select({ id: contractsTable.id })
+    .from(contractsTable)
+    .where(eq(contractsTable.id, req.params.id));
+  if (!contract) {
+    res.status(404).json({ message: "Contract not found" });
+    return;
+  }
+
+  const id = crypto.randomUUID();
+  const [attachment] = await db
+    .insert(contractAttachmentsTable)
+    .values({
+      id,
+      contractId: req.params.id,
+      fileName,
+      objectPath,
+      contentType: contentType || null,
+      size: size ?? null,
+      uploadedBy: req.user!.id,
+    })
+    .returning();
+
+  await logAudit({ user: req.user, action: "create", entityType: "contract_attachment", entityId: id, after: { contractId: req.params.id, fileName } });
+  res.status(201).json({ ...attachment, uploadedByName: req.user!.name });
+});
+
+// DELETE /api/contracts/:id/attachments/:attachmentId
+router.delete("/:id/attachments/:attachmentId", requireRole("admin", "legal"), async (req, res) => {
+  const [deleted] = await db
+    .delete(contractAttachmentsTable)
+    .where(
+      and(
+        eq(contractAttachmentsTable.id, req.params.attachmentId),
+        eq(contractAttachmentsTable.contractId, req.params.id)
+      )
+    )
+    .returning();
+
+  if (!deleted) {
+    res.status(404).json({ message: "Attachment not found" });
+    return;
+  }
+
+  await logAudit({ user: req.user, action: "delete", entityType: "contract_attachment", entityId: deleted.id, before: { fileName: deleted.fileName } });
+  res.status(204).end();
 });
 
 // Helper: get full contract by ID

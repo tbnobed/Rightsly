@@ -12,6 +12,7 @@ import dashboardRouter from "./dashboard";
 import auditLogsRouter from "./audit-logs";
 import importRouter from "./import";
 import reportsRouter from "./reports";
+import storageRouter from "./storage";
 
 const router = Router();
 
@@ -29,5 +30,6 @@ router.use("/dashboard", dashboardRouter);
 router.use("/audit-logs", auditLogsRouter);
 router.use("/import", importRouter);
 router.use("/reports", reportsRouter);
+router.use("/", storageRouter);
 
 export default router;
