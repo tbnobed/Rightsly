@@ -1,0 +1,1 @@
+- [TBN Rights MVP architecture](tbn-rights-architecture.md) — full-stack media licensing app; key decisions, auth flow, route structure, seed credentials

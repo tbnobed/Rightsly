@@ -1,0 +1,130 @@
+# Replit Build Prompt — TBN Rights Management MVP ("Rightsline replacement")
+
+Copy everything below the line into Replit as your build prompt.
+
+---
+
+## Project
+
+Build a self-hostable web application for managing media licensing contracts — **Rights In** (content TBN acquires) and **Rights Out** (content TBN distributes to partners like Tubi, Prime, Roku). This is an MVP to replace Rightsline for TBN's Licensing & Distribution team. The core mental model: **a contract can contain multiple pieces of content** — do NOT build it as one-contract-per-title. A contract belongs to a Partner, and content is linked to the contract.
+
+## Tech stack (must be self-hostable via Docker on my own server)
+
+- **Frontend:** React + Vite + TypeScript, TailwindCSS, shadcn/ui components
+- **Backend:** Node.js + Express (TypeScript) REST API
+- **Database:** PostgreSQL, accessed via Prisma ORM (migrations included)
+- **Auth:** email/password with JWT + bcrypt, role-based access control. Structure the auth layer so an OIDC/SSO provider (Authentik) can be swapped in later — put the identity logic behind an interface, don't hardcode local auth everywhere.
+- **File storage:** local disk volume for uploaded contract PDFs (configurable path via env var), abstract behind a storage interface so S3 can replace it later
+- **Deliverable:** a single `docker-compose.yml` bringing up app + Postgres, a `.env.example`, and a `README.md` with setup, migration, and seed instructions. Everything configured through environment variables — no hardcoded secrets, ports, or paths.
+
+## Roles & permissions (RBAC)
+
+- **Admin** — full access to everything, including user management and audit log.
+- **Legal** — create/draft/edit contracts, check rights availability. No royalty/finance actions.
+- **Finance** — calculate/approve royalties, view revenue, view contracts **read-only (cannot edit a contract)**.
+- **Sales** — check rights availability, view active contracts only. Read-only.
+
+Enforce permissions on the **backend** (middleware on every route), not just by hiding UI. UI should also hide/disable actions the role can't perform.
+
+## Data model
+
+### Partner
+- name, type (Licensor / Licensee / Both), website URL, notes
+- A partner has many contracts.
+
+### Contract (shared base)
+- `direction`: **Rights In** or **Rights Out** (this is the "Acquisition vs Distribution" toggle on an "Add Contract" screen)
+- partner (FK), licensor (text), licensee (text)
+- `status`: **Active, Expired, In Perpetuity, Terminated** (also allow a Draft/pending state for records being entered)
+- start date
+- **end date OR "in perpetuity" OR "auto renew"** — this is a single choice: either a concrete end date, or a perpetuity flag, or an auto-renew flag. Model as an `end_type` enum (`date` | `perpetuity` | `auto_renew`) plus a nullable `end_date`.
+- **territories: multi-select** — Global, US, Canada, UK, plus a free-text box for "other territories" (store as an array + free-text field)
+- **distribution types: multi-select** — FAST, VOD, TVOD, SVOD, AVOD, Linear
+- **platform:** free-text box, **not required**
+- royalty type: **Revenue Share** (with percentage split field, e.g. 50/50, 70/30, 80/20) **or Flat/License Fee** (with amount text field) **or Other** (text)
+- payment terms: Net 30 / Net 60 / Net 90
+- notes (free text)
+- contract document upload (PDF)
+- link to website (text)
+- created/updated timestamps + created_by
+
+### Rights In — additional fields
+- Platform choices (checkboxes + text where noted): **TBN Broadcast, TBN+, YouTube** (text box for channel), **Socials** (if "all socials" select Socials; if specific, separate out **Facebook / Instagram / TikTok / Other** with a text box for the social account handle), **Yippee**
+- Grant of Rights (text)
+- **Exclusivity:** exclusivity start date, exclusivity end date, and a "same as contract duration" checkbox
+- Marketing Rights (text box)
+
+### Rights Out — additional fields
+- **Auto Renew** checkbox
+- **Amendment** checkbox
+- Exclusivity: Non-Exclusive / Exclusive
+- Revenue reporting frequency: **Monthly / Quarterly / Annually**
+- Minimum Payment Threshold (amount)
+- Linked Content (see Content below)
+
+### Amendment
+- An amendment is a **sub-record of an existing contract** (not a standalone contract). Structure: Partner → Contract → Amendment(s) associated with that contract. Store amendment date, description, and optional document upload.
+
+### Content / Catalog
+- A catalog of assets: **Films, TV Series (with associated Seasons), TBN FAST, TBN Linear, WoF FAST**. Model `ContentItem` with a `type` and, for series, related `Season` records.
+- **Many-to-many between Contract and ContentItem.** Requirements:
+  - Attach/link one or more content items to a contract when creating/editing it (searchable picker pulling from the catalog).
+  - From a contract, **view all content associated with it.**
+  - From a content item, **open it and see all contracts tied to it** (reverse lookup).
+- Seed the catalog with a handful of example films/series/seasons so the linking UI is demonstrable. Provide a simple admin CRUD for catalog items.
+
+### RevenueReport (Rights Out)
+- Linked to a contract. Fields: period (month/quarter), expected date, received date, amount, status (expected / received). Drives the dashboard calendar's "revenue report expected" markers.
+
+### AuditLog
+- Log create/update/delete/status-change/login events with: user, action, entity type, entity id, before/after summary, timestamp. **Do NOT store IP address** (explicitly excluded). Admin-only viewable screen, filterable by user/entity/date. Make retention configurable (env var for days), since the retention policy is TBD.
+
+## Dashboard (landing screen)
+
+- **Calendar view** as the centerpiece:
+  - Shows **contract expiration dates**.
+  - Shows **expected revenue report dates** (most are quarterly or monthly).
+  - Default to **current month**, with the ability to page to the **next month**.
+- **Time-period toggle: This Month / This Quarter / This Year** — different users prefer different windows, so make it a user-selectable toggle (persist the last choice per user).
+- **"Expiring Soon" panel:** contracts expiring within **60 days**, highlighted.
+- Summary tiles: active contracts count, expiring-soon count, upcoming revenue reports.
+- (In-app notification area on the dashboard is a nice-to-have, not required.)
+
+## Contract lifecycle & workflow
+
+- Add Contract flow starts by choosing **Rights In or Rights Out**, then shows the appropriate form.
+- Statuses: Active, Expired, In Perpetuity, Terminated (+ a Draft state for entry). Approval happens **externally over email** for now — no in-app approval gate required, but keep a status field that Admin/Legal can set. (Leave a clean seam for a future DocuSign integration; don't build it.)
+- **Bulk import:** provide a CSV import for contracts (and ideally content) to migrate off Rightsline at launch. Include a downloadable CSV template and validation with a per-row error report.
+
+## Royalties
+
+- Two structures: **Revenue Share** (percentage split) and **Flat/License Fee**. Different partners use different terms and frequencies (Net 30/60/90; monthly/quarterly/annually) — these live on the contract.
+- Provide a simple **royalty calc view** for Finance: given a contract's revenue reports and its share %, compute the amount owed per period. Finance can mark a calculation **reviewed/approved** (approval is Finance + Admin). Do not build advances/recoupment or auto-generated rights-holder statements — accounting handles those out of band.
+
+## Rights availability check
+
+- A lookup screen: given a **content item + territory + distribution type + date**, show which contracts (if any) already grant those rights and whether anything conflicts. Conflicts are rare (few exclusive deals) — only flag a conflict when an **exclusive Rights-Out** deal overlaps. Non-exclusive overlaps are allowed and should display side by side, not as errors. Optionally suggest alternative territories/platforms only when exclusivity would block availability.
+
+## Notifications
+
+- Email notifications (SMTP, configured via env vars) triggered by: **contract expiring** (respect the 60-day window), **revenue report expected/overdue**, **approval needed**, and **contract signed by legal**. Build a small notification service with these as event types; make SMTP optional so the app runs without it configured.
+
+## Reports & exports
+
+- Standard reports: **Contract Summaries, Royalty Statements, Expiring-Soon Contracts.**
+- Export to **Excel (.xlsx) and PDF** from those report views.
+
+## Build quality expectations
+
+- Clean REST API with input validation (zod), consistent error handling, and RBAC middleware on every protected route.
+- Prisma schema with migrations; a `seed` script creating: the 4 roles, one admin user (credentials from env), sample partners, sample catalog content (films + a series with seasons + a FAST channel), and a couple of sample Rights In and Rights Out contracts with linked content and revenue reports — so the dashboard and linking features are populated on first run.
+- Responsive UI, sensible empty states, form validation with helpful messages.
+- README covering: local dev, `docker-compose up`, running migrations + seed, env var reference, and how to swap in Authentik SSO and S3 storage later.
+
+## Explicitly OUT of scope for this MVP (leave clean seams, don't build)
+
+- DocuSign / e-signature
+- External/partner login access
+- Advances & recoupment tracking, auto-generated rights-holder statements
+- SSO/OIDC and S3 (abstract behind interfaces only)
+- DPO (data privacy office) module — note as future expansion

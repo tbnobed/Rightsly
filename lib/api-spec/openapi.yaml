@@ -1,22 +1,1029 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    LoginData:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      required: [id, email, name, role, createdAt]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, legal, finance, sales]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        lastLogin:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateUserRequest:
+      type: object
+      required: [email, name, role, password]
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, legal, finance, sales]
+        password:
+          type: string
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, legal, finance, sales]
+        isActive:
+          type: boolean
+        password:
+          type: string
+
+    Partner:
+      type: object
+      required: [id, name, type, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: [Licensor, Licensee, Both]
+        website:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        contractCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreatePartnerRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [Licensor, Licensee, Both]
+        website:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    UpdatePartnerRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [Licensor, Licensee, Both]
+        website:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    ContentItem:
+      type: object
+      required: [id, type, title, createdAt]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [Film, TVSeries, TBN_FAST, TBN_Linear, WoF_FAST]
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        year:
+          type: integer
+          nullable: true
+        seasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/Season'
+        contractCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Season:
+      type: object
+      required: [id, contentItemId, seasonNumber]
+      properties:
+        id:
+          type: string
+        contentItemId:
+          type: string
+        seasonNumber:
+          type: integer
+        title:
+          type: string
+          nullable: true
+        year:
+          type: integer
+          nullable: true
+        episodeCount:
+          type: integer
+          nullable: true
+
+    CreateContentItemRequest:
+      type: object
+      required: [type, title]
+      properties:
+        type:
+          type: string
+          enum: [Film, TVSeries, TBN_FAST, TBN_Linear, WoF_FAST]
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        year:
+          type: integer
+          nullable: true
+        seasons:
+          type: array
+          items:
+            type: object
+            required: [seasonNumber]
+            properties:
+              seasonNumber:
+                type: integer
+              title:
+                type: string
+                nullable: true
+              year:
+                type: integer
+                nullable: true
+              episodeCount:
+                type: integer
+                nullable: true
+
+    UpdateContentItemRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [Film, TVSeries, TBN_FAST, TBN_Linear, WoF_FAST]
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        year:
+          type: integer
+          nullable: true
+        seasons:
+          type: array
+          items:
+            type: object
+            required: [seasonNumber]
+            properties:
+              seasonNumber:
+                type: integer
+              title:
+                type: string
+                nullable: true
+              year:
+                type: integer
+                nullable: true
+              episodeCount:
+                type: integer
+                nullable: true
+
+    Contract:
+      type: object
+      required: [id, direction, partnerId, status, endType, createdAt]
+      properties:
+        id:
+          type: string
+        direction:
+          type: string
+          enum: [rights_in, rights_out]
+        partnerId:
+          type: string
+        partnerName:
+          type: string
+        licensor:
+          type: string
+          nullable: true
+        licensee:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [draft, active, expired, in_perpetuity, terminated]
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endType:
+          type: string
+          enum: [date, perpetuity, auto_renew]
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        territories:
+          type: array
+          items:
+            type: string
+        otherTerritories:
+          type: string
+          nullable: true
+        distributionTypes:
+          type: array
+          items:
+            type: string
+        platform:
+          type: string
+          nullable: true
+        royaltyType:
+          type: string
+          enum: [revenue_share, flat_fee, other]
+          nullable: true
+        royaltyDetails:
+          type: string
+          nullable: true
+        paymentTerms:
+          type: string
+          enum: [net_30, net_60, net_90]
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        documentUrl:
+          type: string
+          nullable: true
+        websiteLink:
+          type: string
+          nullable: true
+        rightsInDetails:
+          $ref: '#/components/schemas/RightsInDetails'
+          nullable: true
+        rightsOutDetails:
+          $ref: '#/components/schemas/RightsOutDetails'
+          nullable: true
+        contentItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentItem'
+        amendments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Amendment'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdByName:
+          type: string
+          nullable: true
+
+    RightsInDetails:
+      type: object
+      properties:
+        platforms:
+          type: array
+          items:
+            type: string
+        youtubeChannel:
+          type: string
+          nullable: true
+        socialPlatforms:
+          type: array
+          items:
+            type: string
+        socialHandle:
+          type: string
+          nullable: true
+        grantOfRights:
+          type: string
+          nullable: true
+        exclusivityStartDate:
+          type: string
+          format: date
+          nullable: true
+        exclusivityEndDate:
+          type: string
+          format: date
+          nullable: true
+        exclusivitySameAsDuration:
+          type: boolean
+        marketingRights:
+          type: string
+          nullable: true
+
+    RightsOutDetails:
+      type: object
+      properties:
+        autoRenew:
+          type: boolean
+        hasAmendment:
+          type: boolean
+        exclusivity:
+          type: string
+          enum: [exclusive, non_exclusive]
+          nullable: true
+        reportingFrequency:
+          type: string
+          enum: [monthly, quarterly, annually]
+          nullable: true
+        minPaymentThreshold:
+          type: number
+          nullable: true
+
+    CreateContractRequest:
+      type: object
+      required: [direction, partnerId, endType]
+      properties:
+        direction:
+          type: string
+          enum: [rights_in, rights_out]
+        partnerId:
+          type: string
+        licensor:
+          type: string
+          nullable: true
+        licensee:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [draft, active, expired, in_perpetuity, terminated]
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endType:
+          type: string
+          enum: [date, perpetuity, auto_renew]
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        territories:
+          type: array
+          items:
+            type: string
+        otherTerritories:
+          type: string
+          nullable: true
+        distributionTypes:
+          type: array
+          items:
+            type: string
+        platform:
+          type: string
+          nullable: true
+        royaltyType:
+          type: string
+          enum: [revenue_share, flat_fee, other]
+          nullable: true
+        royaltyDetails:
+          type: string
+          nullable: true
+        paymentTerms:
+          type: string
+          enum: [net_30, net_60, net_90]
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        websiteLink:
+          type: string
+          nullable: true
+        rightsInDetails:
+          $ref: '#/components/schemas/RightsInDetails'
+          nullable: true
+        rightsOutDetails:
+          $ref: '#/components/schemas/RightsOutDetails'
+          nullable: true
+        contentItemIds:
+          type: array
+          items:
+            type: string
+
+    UpdateContractRequest:
+      type: object
+      properties:
+        partnerId:
+          type: string
+        licensor:
+          type: string
+          nullable: true
+        licensee:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [draft, active, expired, in_perpetuity, terminated]
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endType:
+          type: string
+          enum: [date, perpetuity, auto_renew]
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        territories:
+          type: array
+          items:
+            type: string
+        otherTerritories:
+          type: string
+          nullable: true
+        distributionTypes:
+          type: array
+          items:
+            type: string
+        platform:
+          type: string
+          nullable: true
+        royaltyType:
+          type: string
+          enum: [revenue_share, flat_fee, other]
+          nullable: true
+        royaltyDetails:
+          type: string
+          nullable: true
+        paymentTerms:
+          type: string
+          enum: [net_30, net_60, net_90]
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        websiteLink:
+          type: string
+          nullable: true
+        rightsInDetails:
+          $ref: '#/components/schemas/RightsInDetails'
+          nullable: true
+        rightsOutDetails:
+          $ref: '#/components/schemas/RightsOutDetails'
+          nullable: true
+        contentItemIds:
+          type: array
+          items:
+            type: string
+
+    ContractListItem:
+      type: object
+      required: [id, direction, status, endType, createdAt]
+      properties:
+        id:
+          type: string
+        direction:
+          type: string
+          enum: [rights_in, rights_out]
+        partnerId:
+          type: string
+        partnerName:
+          type: string
+        licensor:
+          type: string
+          nullable: true
+        licensee:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [draft, active, expired, in_perpetuity, terminated]
+        startDate:
+          type: string
+          format: date
+          nullable: true
+        endType:
+          type: string
+          enum: [date, perpetuity, auto_renew]
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        territories:
+          type: array
+          items:
+            type: string
+        distributionTypes:
+          type: array
+          items:
+            type: string
+        royaltyType:
+          type: string
+          nullable: true
+        contentCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    Amendment:
+      type: object
+      required: [id, contractId, date, description, createdAt]
+      properties:
+        id:
+          type: string
+        contractId:
+          type: string
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        documentUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        createdByName:
+          type: string
+          nullable: true
+
+    CreateAmendmentRequest:
+      type: object
+      required: [date, description]
+      properties:
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        documentUrl:
+          type: string
+          nullable: true
+
+    RevenueReport:
+      type: object
+      required: [id, contractId, period, status, createdAt]
+      properties:
+        id:
+          type: string
+        contractId:
+          type: string
+        partnerName:
+          type: string
+          nullable: true
+        period:
+          type: string
+        expectedDate:
+          type: string
+          format: date
+          nullable: true
+        receivedDate:
+          type: string
+          format: date
+          nullable: true
+        amount:
+          type: number
+          nullable: true
+        status:
+          type: string
+          enum: [expected, received, overdue]
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateRevenueReportRequest:
+      type: object
+      required: [period, status]
+      properties:
+        period:
+          type: string
+        expectedDate:
+          type: string
+          format: date
+          nullable: true
+        receivedDate:
+          type: string
+          format: date
+          nullable: true
+        amount:
+          type: number
+          nullable: true
+        status:
+          type: string
+          enum: [expected, received, overdue]
+
+    UpdateRevenueReportRequest:
+      type: object
+      properties:
+        period:
+          type: string
+        expectedDate:
+          type: string
+          format: date
+          nullable: true
+        receivedDate:
+          type: string
+          format: date
+          nullable: true
+        amount:
+          type: number
+          nullable: true
+        status:
+          type: string
+          enum: [expected, received, overdue]
+
+    RoyaltyCalcResult:
+      type: object
+      required: [contractId, calculations]
+      properties:
+        contractId:
+          type: string
+        partnerName:
+          type: string
+        royaltyType:
+          type: string
+          nullable: true
+        royaltyDetails:
+          type: string
+          nullable: true
+        calculations:
+          type: array
+          items:
+            type: object
+            required: [reportId, period, revenueAmount, amountOwed, reviewStatus]
+            properties:
+              reportId:
+                type: string
+              period:
+                type: string
+              revenueAmount:
+                type: number
+                nullable: true
+              sharePercentage:
+                type: number
+                nullable: true
+              amountOwed:
+                type: number
+                nullable: true
+              reviewStatus:
+                type: string
+                enum: [pending, reviewed, approved]
+              reviewedBy:
+                type: string
+                nullable: true
+              reviewedAt:
+                type: string
+                format: date-time
+                nullable: true
+
+    UpdateRoyaltyStatusRequest:
+      type: object
+      required: [reportId, status]
+      properties:
+        reportId:
+          type: string
+        status:
+          type: string
+          enum: [pending, reviewed, approved]
+
+    RightsCheckResult:
+      type: object
+      required: [available, conflicts, grants]
+      properties:
+        available:
+          type: boolean
+        conflicts:
+          type: array
+          items:
+            type: object
+            required: [contractId, partnerName, reason]
+            properties:
+              contractId:
+                type: string
+              partnerName:
+                type: string
+              reason:
+                type: string
+              territory:
+                type: string
+                nullable: true
+              distributionType:
+                type: string
+                nullable: true
+        grants:
+          type: array
+          items:
+            type: object
+            required: [contractId, partnerName, direction]
+            properties:
+              contractId:
+                type: string
+              partnerName:
+                type: string
+              direction:
+                type: string
+              exclusivity:
+                type: string
+                nullable: true
+              territories:
+                type: array
+                items:
+                  type: string
+              distributionTypes:
+                type: array
+                items:
+                  type: string
+              startDate:
+                type: string
+                format: date
+                nullable: true
+              endDate:
+                type: string
+                format: date
+                nullable: true
+
+    DashboardSummary:
+      type: object
+      required: [activeContracts, expiringSoon, upcomingReports, draftContracts]
+      properties:
+        activeContracts:
+          type: integer
+        expiringSoon:
+          type: integer
+        upcomingReports:
+          type: integer
+        draftContracts:
+          type: integer
+        totalRightsIn:
+          type: integer
+        totalRightsOut:
+          type: integer
+        calendarEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalendarEvent'
+        expiringSoonContracts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContractListItem'
+
+    CalendarEvent:
+      type: object
+      required: [id, type, title, date]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [contract_expiry, revenue_report_expected, revenue_report_overdue]
+        title:
+          type: string
+        date:
+          type: string
+          format: date
+        contractId:
+          type: string
+          nullable: true
+        partnerName:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+
+    AuditLog:
+      type: object
+      required: [id, action, entityType, entityId, timestamp]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+          nullable: true
+        userEmail:
+          type: string
+          nullable: true
+        userName:
+          type: string
+          nullable: true
+        action:
+          type: string
+          enum: [create, update, delete, status_change, login, logout]
+        entityType:
+          type: string
+        entityId:
+          type: string
+          nullable: true
+        beforeSummary:
+          type: string
+          nullable: true
+        afterSummary:
+          type: string
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+
+    ContractImportInput:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+
+    ImportResult:
+      type: object
+      required: [imported, failed, errors]
+      properties:
+        imported:
+          type: integer
+        failed:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            required: [row, message]
+            properties:
+              row:
+                type: integer
+              message:
+                type: string
+
+    PaginatedContracts:
+      type: object
+      required: [data, total, page, pageSize]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContractListItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    PaginatedPartners:
+      type: object
+      required: [data, total, page, pageSize]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Partner'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    PaginatedContent:
+      type: object
+      required: [data, total, page, pageSize]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    PaginatedAuditLogs:
+      type: object
+      required: [data, total, page, pageSize]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+    PaginatedRevenueReports:
+      type: object
+      required: [data, total, page, pageSize]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RevenueReport'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+
+security:
+  - bearerAuth: []
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
+      security: []
       responses:
         "200":
           description: Healthy
@@ -24,13 +1031,1020 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
-components:
-  schemas:
-    HealthStatus:
-      type: object
-      properties:
-        status:
-          type: string
-      required:
-        - status
 
+  /auth/login:
+    post:
+      operationId: login
+      summary: Login with email and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginData'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: Logout current user
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /auth/me:
+    get:
+      operationId: getMe
+      summary: Get current user
+      responses:
+        '200':
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users:
+    get:
+      operationId: listUsers
+      summary: List all users (admin only)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total, page, pageSize]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  pageSize:
+                    type: integer
+    post:
+      operationId: createUser
+      summary: Create a new user (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      summary: Get user by ID (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: updateUser
+      summary: Update user (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    delete:
+      operationId: deleteUser
+      summary: Delete user (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /partners:
+    get:
+      operationId: listPartners
+      summary: List all partners
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [Licensor, Licensee, Both]
+      responses:
+        '200':
+          description: Paginated partner list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPartners'
+    post:
+      operationId: createPartner
+      summary: Create a new partner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePartnerRequest'
+      responses:
+        '201':
+          description: Created partner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /partners/{id}:
+    get:
+      operationId: getPartner
+      summary: Get partner by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Partner details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: updatePartner
+      summary: Update partner
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePartnerRequest'
+      responses:
+        '200':
+          description: Updated partner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+    delete:
+      operationId: deletePartner
+      summary: Delete partner
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /contracts:
+    get:
+      operationId: listContracts
+      summary: List contracts with filters
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [rights_in, rights_out]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, active, expired, in_perpetuity, terminated]
+        - name: partnerId
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: expiringWithinDays
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Paginated contract list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedContracts'
+    post:
+      operationId: createContract
+      summary: Create a new contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContractRequest'
+      responses:
+        '201':
+          description: Created contract
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /contracts/{id}:
+    get:
+      operationId: getContract
+      summary: Get contract by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contract details with content and amendments
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: updateContract
+      summary: Update contract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateContractRequest'
+      responses:
+        '200':
+          description: Updated contract
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+    delete:
+      operationId: deleteContract
+      summary: Delete contract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /contracts/{id}/amendments:
+    get:
+      operationId: listAmendments
+      summary: List amendments for a contract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of amendments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Amendment'
+    post:
+      operationId: createAmendment
+      summary: Add an amendment to a contract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAmendmentRequest'
+      responses:
+        '201':
+          description: Created amendment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Amendment'
+
+  /contracts/{id}/revenue-reports:
+    get:
+      operationId: listContractRevenueReports
+      summary: List revenue reports for a contract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Revenue reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RevenueReport'
+    post:
+      operationId: createRevenueReport
+      summary: Add a revenue report to a contract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRevenueReportRequest'
+      responses:
+        '201':
+          description: Created revenue report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueReport'
+
+  /revenue-reports:
+    get:
+      operationId: listRevenueReports
+      summary: List all revenue reports (Finance/Admin)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [expected, received, overdue]
+        - name: contractId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated revenue reports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRevenueReports'
+
+  /revenue-reports/{id}:
+    put:
+      operationId: updateRevenueReport
+      summary: Update a revenue report
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRevenueReportRequest'
+      responses:
+        '200':
+          description: Updated revenue report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueReport'
+    delete:
+      operationId: deleteRevenueReport
+      summary: Delete a revenue report
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /royalties/{contractId}:
+    get:
+      operationId: getRoyaltyCalc
+      summary: Get royalty calculations for a contract (Finance/Admin)
+      parameters:
+        - name: contractId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Royalty calculation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoyaltyCalcResult'
+
+  /royalties/{contractId}/approve:
+    post:
+      operationId: approveRoyalty
+      summary: Approve or review a royalty calculation (Finance/Admin)
+      parameters:
+        - name: contractId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoyaltyStatusRequest'
+      responses:
+        '200':
+          description: Updated status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoyaltyCalcResult'
+
+  /content:
+    get:
+      operationId: listContent
+      summary: List content catalog items
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [Film, TVSeries, TBN_FAST, TBN_Linear, WoF_FAST]
+      responses:
+        '200':
+          description: Paginated content list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedContent'
+    post:
+      operationId: createContent
+      summary: Create a content catalog item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContentItemRequest'
+      responses:
+        '201':
+          description: Created content item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentItem'
+
+  /content/{id}:
+    get:
+      operationId: getContent
+      summary: Get content item by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Content item details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentItem'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: updateContent
+      summary: Update content item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateContentItemRequest'
+      responses:
+        '200':
+          description: Updated content item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentItem'
+    delete:
+      operationId: deleteContent
+      summary: Delete content item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /content/{id}/contracts:
+    get:
+      operationId: getContentContracts
+      summary: Get all contracts linked to a content item (reverse lookup)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contracts linked to this content
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContractListItem'
+
+  /rights-check:
+    get:
+      operationId: rightsCheck
+      summary: Check rights availability for content
+      parameters:
+        - name: contentItemId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: territory
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: distributionType
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Rights check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RightsCheckResult'
+
+  /dashboard:
+    get:
+      operationId: getDashboard
+      summary: Get dashboard summary stats and calendar events
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [month, quarter, year]
+            default: month
+        - name: referenceDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummary'
+
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      summary: List audit logs (admin only)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: userId
+          in: query
+          schema:
+            type: string
+        - name: entityType
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Paginated audit log
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogs'
+
+  /import/contracts:
+    post:
+      operationId: importContracts
+      summary: Bulk import contracts from CSV
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContractImportInput'
+      responses:
+        '200':
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResult'
+
+  /import/template:
+    get:
+      operationId: getImportTemplate
+      summary: Download CSV import template
+      responses:
+        '200':
+          description: CSV template file
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /reports/contracts:
+    get:
+      operationId: getContractReport
+      summary: Get contracts report data
+      parameters:
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [rights_in, rights_out]
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, xlsx, pdf]
+            default: json
+      responses:
+        '200':
+          description: Contract report (JSON or file)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContractListItem'
+                  generatedAt:
+                    type: string
+                    format: date-time
+
+  /reports/expiring:
+    get:
+      operationId: getExpiringReport
+      summary: Get expiring contracts report
+      parameters:
+        - name: withinDays
+          in: query
+          schema:
+            type: integer
+            default: 60
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, xlsx, pdf]
+            default: json
+      responses:
+        '200':
+          description: Expiring contracts report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContractListItem'
+                  generatedAt:
+                    type: string
+                    format: date-time
+
+  /reports/royalties:
+    get:
+      operationId: getRoyaltyReport
+      summary: Get royalty statements report
+      parameters:
+        - name: contractId
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, xlsx, pdf]
+            default: json
+      responses:
+        '200':
+          description: Royalty report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RevenueReport'
+                  generatedAt:
+                    type: string
+                    format: date-time

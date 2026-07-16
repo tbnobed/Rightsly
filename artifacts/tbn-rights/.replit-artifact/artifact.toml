@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "TBN Rights Management"
+version = "1.0.0"
+id = "artifacts/tbn-rights"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19052
+
+[services.development]
+run = "pnpm --filter @workspace/tbn-rights run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tbn-rights", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/tbn-rights/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19052"
+BASE_PATH = "/"
