@@ -31,7 +31,7 @@ RUN pnpm --filter @workspace/api-server run build \
 
 # Pruned production node_modules for the API (covers esbuild externals such
 # as @google-cloud/storage that are not bundled into dist/index.mjs)
-RUN pnpm --filter @workspace/api-server --prod deploy /out/api
+RUN pnpm --filter @workspace/api-server --prod deploy --legacy /out/api
 
 # ---------------------------------------------------------------------------
 # Target: api — Express API server
