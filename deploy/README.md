@@ -42,8 +42,12 @@ seeds initial users if the database is empty (`seed`), then starts the API and
 web frontend. The `db-push` and `seed` containers run to completion and exit —
 seeing them as "Exited (0)" in `docker compose ps -a` is normal.
 
-To wipe and re-seed demo data later: set `SEED_FORCE=true` in `.env`, run
-`docker compose up -d` once, then remove it (it deletes all existing data).
+By default only user accounts are seeded — no sample partners, content, or
+contracts. Set `SEED_DEMO_DATA=true` in `.env` before the first `up` if you
+want demo data for evaluation.
+
+To wipe and re-seed later: set `SEED_FORCE=true` in `.env`, run
+`docker compose up -d` once, then remove it (it deletes ALL existing data).
 
 The app is now at `http://<server>:${WEB_PORT:-8081}`.
 

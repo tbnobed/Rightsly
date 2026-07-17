@@ -46,6 +46,14 @@ async function seed() {
   await db.insert(usersTable).values([adminUser, legalUser, financeUser, salesUser]);
   console.log("✓ Users seeded");
 
+  // Demo/mock data (partners, content, contracts, revenue) is only seeded
+  // when explicitly requested via SEED_DEMO_DATA=true.
+  if (process.env.SEED_DEMO_DATA !== "true") {
+    console.log("Skipping demo data (set SEED_DEMO_DATA=true to include sample partners/content/contracts).");
+    printLogins(adminUser.email);
+    return;
+  }
+
   // --- Partners ---
   const tubi = { id: crypto.randomUUID(), name: "Tubi TV", type: "Licensee" as const, website: "https://tubi.tv", notes: "Major FAST/AVOD partner" };
   const prime = { id: crypto.randomUUID(), name: "Amazon Prime Video", type: "Licensee" as const, website: "https://primevideo.com", notes: "SVOD partner" };
@@ -261,8 +269,12 @@ async function seed() {
   ]);
   console.log("✓ Revenue reports seeded");
 
+  printLogins(adminUser.email);
+}
+
+function printLogins(adminEmail: string) {
   console.log("\n✅ Database seeded successfully!");
-  console.log(`\nAdmin login: ${adminUser.email} / ${process.env.ADMIN_PASSWORD || "Admin1234!"}`);
+  console.log(`\nAdmin login: ${adminEmail} / ${process.env.ADMIN_PASSWORD || "Admin1234!"}`);
   console.log("Legal login: legal@tbn.org / Legal1234!");
   console.log("Finance login: finance@tbn.org / Finance1234!");
   console.log("Sales login: sales@tbn.org / Sales1234!");

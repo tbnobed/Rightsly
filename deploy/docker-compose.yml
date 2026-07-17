@@ -44,6 +44,7 @@ services:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsly}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsly}}
       SEED_FORCE: ${SEED_FORCE:-false}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     command: ["node", "dist/seed.mjs"]
