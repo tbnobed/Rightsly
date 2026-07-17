@@ -21,6 +21,8 @@ export const revenueReportsTable = pgTable("revenue_reports", {
   receivedDate: date("received_date"),
   amount: numeric("amount"),
   status: reportStatusEnum("status").notNull().default("expected"),
+  documentPath: text("document_path"),
+  documentName: text("document_name"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

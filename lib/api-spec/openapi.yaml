@@ -775,6 +775,12 @@ components:
         status:
           type: string
           enum: [expected, received, overdue]
+        documentPath:
+          type: string
+          nullable: true
+        documentName:
+          type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -819,6 +825,12 @@ components:
         status:
           type: string
           enum: [expected, received, overdue]
+        documentPath:
+          type: string
+          nullable: true
+        documentName:
+          type: string
+          nullable: true
 
     RoyaltyCalcResult:
       type: object
