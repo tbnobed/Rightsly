@@ -1,7 +1,7 @@
-# Rightsli — multi-stage Docker build
+# Rightsly — multi-stage Docker build
 # Build context must be the repository root:
-#   docker build -f deploy/Dockerfile --target api -t rightsli-api .
-#   docker build -f deploy/Dockerfile --target web -t rightsli-web .
+#   docker build -f deploy/Dockerfile --target api -t rightsly-api .
+#   docker build -f deploy/Dockerfile --target web -t rightsly-web .
 
 # ---------------------------------------------------------------------------
 # Stage 1: install workspace dependencies

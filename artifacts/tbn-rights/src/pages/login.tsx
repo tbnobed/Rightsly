@@ -115,7 +115,7 @@ export default function Login() {
               className="text-3xl font-medium text-[#F4F1E9] tracking-tight"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              Rightsli
+              Rightsly
             </CardTitle>
           </div>
           <CardDescription className="text-[#8fa098]">

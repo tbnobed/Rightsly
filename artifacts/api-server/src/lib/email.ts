@@ -41,7 +41,7 @@ function escapeHtml(value: string): string {
 }
 
 /**
- * Wraps inner HTML in the Rightsli branded template
+ * Wraps inner HTML in the Rightsly branded template
  * (ink #14201C, covenant green #1D9E75, brass #C9A24B, parchment #F4F1E9).
  */
 function brandedHtml(innerHtml: string): string {
@@ -56,7 +56,7 @@ function brandedHtml(innerHtml: string): string {
               <td style="background-color:#14201C;padding:20px 32px;">
                 <span style="display:inline-block;width:3px;height:18px;background-color:#C9A24B;vertical-align:middle;"></span>
                 <span style="display:inline-block;width:10px;"></span>
-                <span style="color:#F4F1E9;font-size:18px;font-weight:500;vertical-align:middle;">Rightsli</span>
+                <span style="color:#F4F1E9;font-size:18px;font-weight:500;vertical-align:middle;">Rightsly</span>
               </td>
             </tr>
             <tr>
@@ -66,7 +66,7 @@ function brandedHtml(innerHtml: string): string {
             </tr>
             <tr>
               <td style="background-color:#faf8f2;padding:16px 32px;font-size:12px;color:#5F6B64;border-top:1px solid #e4e0d4;">
-                Automated message from Rightsli. Every contract in its right place.
+                Automated message from Rightsly. Every contract in its right place.
               </td>
             </tr>
           </table>
@@ -119,13 +119,13 @@ export async function sendWelcomeEmail(user: {
     <h1 style="margin:0 0 16px;font-size:20px;color:#0f172a;">Welcome, ${escapeHtml(
       user.name,
     )}!</h1>
-    <p style="margin:0 0 16px;">Your account for <strong>Rightsli</strong> has been created via single sign-on.</p>
+    <p style="margin:0 0 16px;">Your account for <strong>Rightsly</strong> has been created via single sign-on.</p>
     <p style="margin:0 0 24px;">You can sign in any time using your organization's SSO login.</p>
-    <p style="margin:0 0 24px;">${brandButton(loginUrl, "Open Rightsli")}</p>
+    <p style="margin:0 0 24px;">${brandButton(loginUrl, "Open Rightsly")}</p>
   `;
   await sendEmail({
     to: user.email,
-    subject: "Welcome to Rightsli",
+    subject: "Welcome to Rightsly",
     html: brandedHtml(inner),
   });
 }

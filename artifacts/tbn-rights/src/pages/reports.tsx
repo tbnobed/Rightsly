@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useGetContractReport, getGetContractReportQueryKey, useGetExpiringReport, useGetRoyaltyReport, ContractListItem } from "@workspace/api-client-react";
-import { FileDown, FileText, CalendarClock, DollarSign, Download, Filter, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { FileDown, FileText, CalendarClock, DollarSign, Filter, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -84,22 +84,44 @@ export default function Reports() {
       : <ArrowDown className="w-3 h-3 inline ml-1 text-slate-700" />;
   };
 
-  const handleExport = async (type: string, format: string) => {
-    // In a real app, this would trigger the hook with the correct format 
-    // to download the file blob. For the UI, we simulate it.
+  const handleExport = async (type: "contracts" | "expiring" | "royalties") => {
     toast({
-      title: "Export Started",
-      description: `Generating ${type} report as ${format.toUpperCase()}...`,
+      title: "Export started",
+      description: "Generating Excel file...",
     });
-    
-    // Simulate delay
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(
+        `${import.meta.env.BASE_URL}api/reports/${type}?format=xlsx`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
+      );
+      if (!res.ok) {
+        throw new Error(
+          res.status === 403
+            ? "You don't have permission to export this report."
+            : `Export failed (HTTP ${res.status}).`,
+        );
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get("Content-Disposition") ?? "";
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      const filename = match?.[1]?.trim() || `${type}-report.xlsx`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Export complete", description: filename });
+    } catch (err) {
       toast({
-        title: "Export Complete",
-        description: "Your file is ready to download.",
-        variant: "default",
+        title: "Export failed",
+        description: err instanceof Error ? err.message : "Unexpected error.",
+        variant: "destructive",
       });
-    }, 1500);
+    }
   };
 
   return (
@@ -148,11 +170,8 @@ export default function Reports() {
             </div>
             
             <div className="pt-4 flex gap-3">
-              <Button className="flex-1 bg-slate-900 text-white hover:bg-slate-800" onClick={() => handleExport('contracts', 'xlsx')}>
+              <Button className="flex-1 bg-slate-900 text-white hover:bg-slate-800" onClick={() => handleExport('contracts')}>
                 <FileDown className="w-4 h-4 mr-2" /> Excel
-              </Button>
-              <Button variant="outline" className="flex-1 bg-white" onClick={() => handleExport('contracts', 'pdf')}>
-                <Download className="w-4 h-4 mr-2" /> PDF
               </Button>
             </div>
           </CardContent>
@@ -186,11 +205,8 @@ export default function Reports() {
             <div className="h-16"></div> {/* Spacer to align buttons */}
             
             <div className="pt-4 flex gap-3">
-              <Button className="flex-1 bg-slate-900 text-white hover:bg-slate-800" onClick={() => handleExport('expiring', 'xlsx')}>
+              <Button className="flex-1 bg-slate-900 text-white hover:bg-slate-800" onClick={() => handleExport('expiring')}>
                 <FileDown className="w-4 h-4 mr-2" /> Excel
-              </Button>
-              <Button variant="outline" className="flex-1 bg-white" onClick={() => handleExport('expiring', 'pdf')}>
-                <Download className="w-4 h-4 mr-2" /> PDF
               </Button>
             </div>
           </CardContent>
@@ -235,11 +251,8 @@ export default function Reports() {
             </div>
             
             <div className="pt-4 flex gap-3">
-              <Button className="flex-1 bg-slate-900 text-white hover:bg-slate-800" onClick={() => handleExport('royalties', 'xlsx')}>
+              <Button className="flex-1 bg-slate-900 text-white hover:bg-slate-800" onClick={() => handleExport('royalties')}>
                 <FileDown className="w-4 h-4 mr-2" /> Excel
-              </Button>
-              <Button variant="outline" className="flex-1 bg-white" onClick={() => handleExport('royalties', 'pdf')}>
-                <Download className="w-4 h-4 mr-2" /> PDF
               </Button>
             </div>
           </CardContent>
@@ -254,7 +267,7 @@ export default function Reports() {
               <CardTitle>Contract Results</CardTitle>
               <CardDescription>Filter and sort the contract report data.</CardDescription>
             </div>
-            <Button variant="outline" className="bg-white" onClick={() => handleExport('contracts', 'xlsx')} data-testid="button-export-results">
+            <Button variant="outline" className="bg-white" onClick={() => handleExport('contracts')} data-testid="button-export-results">
               <FileDown className="w-4 h-4 mr-2" /> Export
             </Button>
           </div>

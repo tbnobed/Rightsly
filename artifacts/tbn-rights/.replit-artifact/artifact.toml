@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Rightsli"
+title = "Rightsly"
 version = "1.0.0"
 id = "artifacts/tbn-rights"
 router = "path"

@@ -1,17 +1,17 @@
-name: rightsli
+name: rightsly
 
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-rightsli}
-      POSTGRES_USER: ${POSTGRES_USER:-rightsli}
+      POSTGRES_DB: ${POSTGRES_DB:-rightsly}
+      POSTGRES_USER: ${POSTGRES_USER:-rightsly}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rightsli} -d ${POSTGRES_DB:-rightsli}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rightsly} -d ${POSTGRES_DB:-rightsly}"]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -27,7 +27,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsli}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsli}}
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsly}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsly}}
 
   # Runs on every `docker compose up`: seeds initial users only if the
   # database is empty (idempotent), then exits. SEED_FORCE=true re-seeds.
@@ -42,7 +42,7 @@ services:
         condition: service_completed_successfully
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsli}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsli}}
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsly}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsly}}
       SEED_FORCE: ${SEED_FORCE:-false}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
@@ -60,7 +60,7 @@ services:
     environment:
       PORT: 8080
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsli}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsli}}
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsly}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsly}}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-12h}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8081}

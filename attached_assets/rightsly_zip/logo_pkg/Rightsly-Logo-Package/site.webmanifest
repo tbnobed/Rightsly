@@ -1,0 +1,15 @@
+{
+  "name": "Rightsly",
+  "short_name": "Rightsly",
+  "description": "Rights management, rightly ordered.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#14201C",
+  "theme_color": "#14201C",
+  "icons": [
+    { "src": "/rightsly-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/rightsly-icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/rightsly-icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/rightsly-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

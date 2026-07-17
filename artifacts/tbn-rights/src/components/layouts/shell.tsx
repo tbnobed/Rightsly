@@ -22,7 +22,7 @@ export function Shell({ children }: { children: ReactNode }) {
               className="text-lg font-medium tracking-tight text-sidebar-foreground"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              Rightsli
+              Rightsly
             </span>
             <div className="ml-auto">
               <NotificationsBell />

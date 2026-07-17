@@ -1,4 +1,4 @@
-# Rightsli — Docker deployment (Ubuntu Server 24.04)
+# Rightsly — Docker deployment (Ubuntu Server 24.04)
 
 Three containers:
 
@@ -83,13 +83,13 @@ Note: the PWA install prompt and the service worker only activate over HTTPS.
 docker compose logs -f api          # API logs
 docker compose ps                   # status
 docker compose restart api          # restart one service
-docker exec -it rightsli-db-1 psql -U rightsli rightsli   # SQL console
+docker exec -it rightsly-db-1 psql -U rightsly rightsly   # SQL console
 ```
 
-**Backups** — the database lives in the `rightsli_pgdata` volume:
+**Backups** — the database lives in the `rightsly_pgdata` volume:
 
 ```bash
-docker exec rightsli-db-1 pg_dump -U rightsli rightsli | gzip > backup-$(date +%F).sql.gz
+docker exec rightsly-db-1 pg_dump -U rightsly rightsly | gzip > backup-$(date +%F).sql.gz
 ```
 
 ## Notes
