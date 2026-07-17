@@ -705,6 +705,7 @@ export type CalendarEventType = typeof CalendarEventType[keyof typeof CalendarEv
 
 
 export const CalendarEventType = {
+  contract_start: 'contract_start',
   contract_expiry: 'contract_expiry',
   revenue_report_expected: 'revenue_report_expected',
   revenue_report_overdue: 'revenue_report_overdue',

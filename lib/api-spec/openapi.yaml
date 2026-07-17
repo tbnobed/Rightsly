@@ -963,7 +963,7 @@ components:
           type: string
         type:
           type: string
-          enum: [contract_expiry, revenue_report_expected, revenue_report_overdue]
+          enum: [contract_start, contract_expiry, revenue_report_expected, revenue_report_overdue]
         title:
           type: string
         date:

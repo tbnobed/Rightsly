@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarIcon, FileText, AlertCircle, TrendingUp, Clock, ChevronRight, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardCalendar } from "@/components/dashboard-calendar";
 
 export default function Dashboard() {
   const [period, setPeriod] = useState<GetDashboardPeriod>("month");
@@ -77,43 +78,10 @@ export default function Dashboard() {
                   <CalendarIcon className="w-5 h-5 text-amber-500" />
                   Calendar Events
                 </CardTitle>
-                <CardDescription>Key dates for the selected period</CardDescription>
+                <CardDescription>Contract starts, expirations, and report due dates</CardDescription>
               </CardHeader>
               <CardContent>
-                {dashboard.calendarEvents && dashboard.calendarEvents.length > 0 ? (
-                  <div className="space-y-4">
-                    {dashboard.calendarEvents.map((event) => (
-                      <div key={event.id} className="flex items-start gap-4 p-4 rounded-lg border border-slate-100 bg-slate-50/50">
-                        <div className="flex flex-col items-center justify-center min-w-16 bg-white border border-slate-200 rounded-md p-2 shadow-sm">
-                          <span className="text-xs font-semibold text-amber-600 uppercase">{format(parseISO(event.date), 'MMM')}</span>
-                          <span className="text-xl font-bold text-slate-900 leading-none">{format(parseISO(event.date), 'dd')}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant={event.type === 'contract_expiry' ? 'destructive' : event.type === 'revenue_report_overdue' ? 'destructive' : 'secondary'} className="text-xs">
-                              {event.type.replace(/_/g, ' ')}
-                            </Badge>
-                            {event.status && (
-                              <Badge variant="outline" className="text-xs text-slate-500">{event.status}</Badge>
-                            )}
-                          </div>
-                          <h4 className="font-semibold text-slate-900 truncate">{event.title}</h4>
-                          {event.partnerName && <p className="text-sm text-slate-500 truncate">{event.partnerName}</p>}
-                        </div>
-                        {event.contractId && (
-                          <Link href={`/contracts/${event.contractId}`} className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-full transition-colors self-center">
-                            <ChevronRight className="w-5 h-5" />
-                          </Link>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <CalendarIcon className="w-12 h-12 text-slate-200 mb-3" />
-                    <p className="text-slate-500 font-medium">No events for this period.</p>
-                  </div>
-                )}
+                <DashboardCalendar />
               </CardContent>
             </Card>
 

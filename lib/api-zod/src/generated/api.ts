@@ -1221,7 +1221,7 @@ export const GetDashboardResponse = zod.object({
   "totalRightsOut": zod.number().optional(),
   "calendarEvents": zod.array(zod.object({
   "id": zod.string(),
-  "type": zod.enum(['contract_expiry', 'revenue_report_expected', 'revenue_report_overdue']),
+  "type": zod.enum(['contract_start', 'contract_expiry', 'revenue_report_expected', 'revenue_report_overdue']),
   "title": zod.string(),
   "date": zod.coerce.date(),
   "contractId": zod.string().nullish(),

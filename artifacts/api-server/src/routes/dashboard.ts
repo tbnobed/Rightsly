@@ -10,24 +10,31 @@ router.use(authenticateToken);
 // GET /api/dashboard
 router.get("/", async (req, res) => {
   const period = (req.query.period as string) || "month";
-  const refDate = req.query.referenceDate
-    ? new Date(req.query.referenceDate as string)
-    : new Date();
 
-  // Calculate date range based on period
-  const start = new Date(refDate);
-  const end = new Date(refDate);
-
-  if (period === "month") {
-    start.setDate(1);
-    end.setMonth(end.getMonth() + 1, 0);
-  } else if (period === "quarter") {
-    const q = Math.floor(start.getMonth() / 3);
-    start.setMonth(q * 3, 1);
-    end.setMonth(q * 3 + 3, 0);
+  // Date-only, timezone-stable period boundaries (all math in UTC).
+  const refParam = req.query.referenceDate as string | undefined;
+  let refYear: number, refMonth: number; // refMonth is 0-based
+  const m = refParam?.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?/);
+  if (m) {
+    refYear = Number(m[1]);
+    refMonth = Number(m[2]) - 1;
   } else {
-    start.setMonth(0, 1);
-    end.setMonth(11, 31);
+    const now = new Date();
+    refYear = now.getUTCFullYear();
+    refMonth = now.getUTCMonth();
+  }
+
+  let start: Date, end: Date;
+  if (period === "month") {
+    start = new Date(Date.UTC(refYear, refMonth, 1));
+    end = new Date(Date.UTC(refYear, refMonth + 1, 0));
+  } else if (period === "quarter") {
+    const q = Math.floor(refMonth / 3);
+    start = new Date(Date.UTC(refYear, q * 3, 1));
+    end = new Date(Date.UTC(refYear, q * 3 + 3, 0));
+  } else {
+    start = new Date(Date.UTC(refYear, 0, 1));
+    end = new Date(Date.UTC(refYear, 11, 31));
   }
 
   const startStr = start.toISOString().split("T")[0];
@@ -61,7 +68,22 @@ router.get("/", async (req, res) => {
     ]);
 
   // Calendar events in the period
-  const [expiringContracts, periodReports] = await Promise.all([
+  const [startingContracts, expiringContracts, periodReports] = await Promise.all([
+    db
+      .select({
+        id: contractsTable.id,
+        partnerName: partnersTable.name,
+        status: contractsTable.status,
+        startDate: contractsTable.startDate,
+      })
+      .from(contractsTable)
+      .leftJoin(partnersTable, eq(contractsTable.partnerId, partnersTable.id))
+      .where(
+        and(
+          gte(contractsTable.startDate, startStr),
+          lte(contractsTable.startDate, endStr)
+        )
+      ),
     db
       .select({
         id: contractsTable.id,
@@ -133,6 +155,15 @@ router.get("/", async (req, res) => {
     );
 
   const calendarEvents = [
+    ...startingContracts.map((c) => ({
+      id: `start-${c.id}`,
+      type: "contract_start" as const,
+      title: `${c.partnerName ?? "Unknown"} starts`,
+      date: c.startDate!,
+      contractId: c.id,
+      partnerName: c.partnerName,
+      status: c.status,
+    })),
     ...expiringContracts.map((c) => ({
       id: `exp-${c.id}`,
       type: "contract_expiry" as const,
