@@ -102,19 +102,24 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[#14201C] p-4 relative overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-500/20 via-slate-900 to-slate-900"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#1D9E75]/15 via-[#14201C] to-[#14201C]"></div>
       </div>
       
-      <Card className="w-full max-w-md z-10 border-slate-800 bg-slate-950/80 backdrop-blur-xl shadow-2xl">
+      <Card className="w-full max-w-md z-10 border-[#2A3833] bg-[#101A16]/90 backdrop-blur-xl shadow-2xl">
         <CardHeader className="space-y-3 pb-6">
-          <div className="w-12 h-12 bg-amber-500 rounded-lg flex items-center justify-center mb-2 shadow-lg shadow-amber-500/20">
-            <span className="text-slate-950 font-bold text-xl tracking-tight">TBN</span>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-[3px] h-9 rounded-sm bg-[#C9A24B]" aria-hidden="true" />
+            <CardTitle
+              className="text-3xl font-medium text-[#F4F1E9] tracking-tight"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Rightsli
+            </CardTitle>
           </div>
-          <CardTitle className="text-2xl font-bold text-white tracking-tight">Rights Management</CardTitle>
-          <CardDescription className="text-slate-400">
-            Sign in to access the control room.
+          <CardDescription className="text-[#8fa098]">
+            Rights management, rightly ordered.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -131,12 +136,12 @@ export default function Login() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-slate-300">Email Address</FormLabel>
+                    <FormLabel className="text-[#c9d3ce]">Email address</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="name@tbn.tv" 
                         {...field} 
-                        className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-600 focus-visible:ring-amber-500"
+                        className="bg-[#0c1512]/60 border-[#2A3833] text-[#F4F1E9] placeholder:text-[#5F6B64] focus-visible:ring-[#1D9E75]"
                         data-testid="input-email"
                       />
                     </FormControl>
@@ -149,13 +154,13 @@ export default function Login() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-slate-300">Password</FormLabel>
+                    <FormLabel className="text-[#c9d3ce]">Password</FormLabel>
                     <FormControl>
                       <Input 
                         type="password" 
                         placeholder="••••••••" 
                         {...field} 
-                        className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-600 focus-visible:ring-amber-500"
+                        className="bg-[#0c1512]/60 border-[#2A3833] text-[#F4F1E9] placeholder:text-[#5F6B64] focus-visible:ring-[#1D9E75]"
                         data-testid="input-password"
                       />
                     </FormControl>
@@ -165,25 +170,25 @@ export default function Login() {
               />
               <Button 
                 type="submit" 
-                className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-lg shadow-amber-500/20 transition-all mt-4"
+                className="w-full bg-[#1D9E75] hover:bg-[#178a65] text-[#F4F1E9] font-medium shadow-lg shadow-[#1D9E75]/20 transition-all mt-4"
                 disabled={form.formState.isSubmitting}
                 data-testid="button-submit-login"
               >
-                {form.formState.isSubmitting ? "Authenticating..." : "Sign In"}
+                {form.formState.isSubmitting ? "Signing in..." : "Sign in"}
               </Button>
             </form>
           </Form>
           {ssoEnabled && (
             <div className="mt-6 space-y-4">
               <div className="relative flex items-center">
-                <div className="flex-grow border-t border-slate-700"></div>
-                <span className="mx-4 text-xs uppercase tracking-wider text-slate-500">or</span>
-                <div className="flex-grow border-t border-slate-700"></div>
+                <div className="flex-grow border-t border-[#2A3833]"></div>
+                <span className="mx-4 text-xs uppercase tracking-wider text-[#5F6B64]">or</span>
+                <div className="flex-grow border-t border-[#2A3833]"></div>
               </div>
               <Button
                 type="button"
                 onClick={handleSsoLogin}
-                className="w-full bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-medium flex items-center justify-center gap-2"
+                className="w-full bg-[#1c2a25] hover:bg-[#24352f] text-[#F4F1E9] border border-[#2A3833] font-medium flex items-center justify-center gap-2"
                 data-testid="button-sso-login"
               >
                 <img src={ssoIcon} alt="" className="h-5 w-5 rounded" />

@@ -16,11 +16,14 @@ export function Shell({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <div className="flex h-screen w-full bg-background overflow-hidden">
         <Sidebar className="border-r border-sidebar-border shadow-sm">
-          <SidebarHeader className="p-4 flex flex-row items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-accent text-accent-foreground font-bold">
-              TBN
-            </div>
-            <span className="font-semibold tracking-tight text-sidebar-foreground">Rights Management</span>
+          <SidebarHeader className="p-4 flex flex-row items-center gap-3">
+            <div className="w-[3px] h-7 rounded-sm bg-accent" aria-hidden="true" />
+            <span
+              className="text-lg font-medium tracking-tight text-sidebar-foreground"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Rightsli
+            </span>
             <div className="ml-auto">
               <NotificationsBell />
             </div>

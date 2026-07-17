@@ -41,32 +41,32 @@ function escapeHtml(value: string): string {
 }
 
 /**
- * Wraps inner HTML in a simple branded template (TBN Rights Management,
- * slate/amber palette).
+ * Wraps inner HTML in the Rightsli branded template
+ * (ink #14201C, covenant green #1D9E75, brass #C9A24B, parchment #F4F1E9).
  */
 function brandedHtml(innerHtml: string): string {
   return `<!DOCTYPE html>
 <html>
-  <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9;padding:24px 0;">
+  <body style="margin:0;padding:0;background-color:#F4F1E9;font-family:Arial,Helvetica,sans-serif;color:#14201C;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F4F1E9;padding:24px 0;">
       <tr>
         <td align="center">
-          <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;">
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e4e0d4;">
             <tr>
-              <td style="background-color:#0f172a;padding:20px 32px;">
-                <span style="color:#f8fafc;font-size:18px;font-weight:bold;">TBN Rights Management</span>
-                <span style="display:inline-block;width:8px;"></span>
-                <span style="color:#f59e0b;font-size:18px;font-weight:bold;">•</span>
+              <td style="background-color:#14201C;padding:20px 32px;">
+                <span style="display:inline-block;width:3px;height:18px;background-color:#C9A24B;vertical-align:middle;"></span>
+                <span style="display:inline-block;width:10px;"></span>
+                <span style="color:#F4F1E9;font-size:18px;font-weight:500;vertical-align:middle;">Rightsli</span>
               </td>
             </tr>
             <tr>
-              <td style="padding:32px;font-size:14px;line-height:1.6;color:#334155;">
+              <td style="padding:32px;font-size:14px;line-height:1.6;color:#3c463f;">
                 ${innerHtml}
               </td>
             </tr>
             <tr>
-              <td style="background-color:#f8fafc;padding:16px 32px;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;">
-                This is an automated message from TBN Rights Management.
+              <td style="background-color:#faf8f2;padding:16px 32px;font-size:12px;color:#5F6B64;border-top:1px solid #e4e0d4;">
+                Automated message from Rightsli. Every contract in its right place.
               </td>
             </tr>
           </table>
@@ -77,8 +77,8 @@ function brandedHtml(innerHtml: string): string {
 </html>`;
 }
 
-function amberButton(href: string, label: string): string {
-  return `<a href="${escapeHtml(href)}" style="display:inline-block;background-color:#f59e0b;color:#0f172a;text-decoration:none;font-weight:bold;padding:10px 20px;border-radius:6px;">${escapeHtml(
+function brandButton(href: string, label: string): string {
+  return `<a href="${escapeHtml(href)}" style="display:inline-block;background-color:#1D9E75;color:#F4F1E9;text-decoration:none;font-weight:500;padding:10px 20px;border-radius:8px;">${escapeHtml(
     label,
   )}</a>`;
 }
@@ -119,13 +119,13 @@ export async function sendWelcomeEmail(user: {
     <h1 style="margin:0 0 16px;font-size:20px;color:#0f172a;">Welcome, ${escapeHtml(
       user.name,
     )}!</h1>
-    <p style="margin:0 0 16px;">Your account for <strong>TBN Rights Management</strong> has been created via single sign-on.</p>
+    <p style="margin:0 0 16px;">Your account for <strong>Rightsli</strong> has been created via single sign-on.</p>
     <p style="margin:0 0 24px;">You can sign in any time using your organization's SSO login.</p>
-    <p style="margin:0 0 24px;">${amberButton(loginUrl, "Open TBN Rights Management")}</p>
+    <p style="margin:0 0 24px;">${brandButton(loginUrl, "Open Rightsli")}</p>
   `;
   await sendEmail({
     to: user.email,
-    subject: "Welcome to TBN Rights Management",
+    subject: "Welcome to Rightsli",
     html: brandedHtml(inner),
   });
 }
@@ -144,7 +144,7 @@ export async function sendNotificationEmail(
         ? `<p style="margin:0 0 24px;">${escapeHtml(notification.message)}</p>`
         : ""
     }
-    ${link ? `<p style="margin:0 0 24px;">${amberButton(link, "View details")}</p>` : ""}
+    ${link ? `<p style="margin:0 0 24px;">${brandButton(link, "View details")}</p>` : ""}
   `;
   await sendEmail({
     to: user.email,
