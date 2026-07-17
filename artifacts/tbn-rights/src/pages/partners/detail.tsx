@@ -18,10 +18,11 @@ export default function PartnerDetail() {
     }
   });
 
-  const { data: contractsData, isLoading: isLoadingContracts } = useListContracts({
+  const contractsParams = { partnerId: id! };
+  const { data: contractsData, isLoading: isLoadingContracts } = useListContracts(contractsParams, {
     query: {
       enabled: !!id,
-      queryKey: getListContractsQueryKey({ partnerId: id! }),
+      queryKey: getListContractsQueryKey(contractsParams),
     }
   });
 

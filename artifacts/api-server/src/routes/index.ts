@@ -13,6 +13,7 @@ import auditLogsRouter from "./audit-logs";
 import importRouter from "./import";
 import reportsRouter from "./reports";
 import storageRouter from "./storage";
+import notificationsRouter from "./notifications";
 
 const router = Router();
 
@@ -31,5 +32,6 @@ router.use("/audit-logs", auditLogsRouter);
 router.use("/import", importRouter);
 router.use("/reports", reportsRouter);
 router.use("/", storageRouter);
+router.use("/notifications", notificationsRouter);
 
 export default router;

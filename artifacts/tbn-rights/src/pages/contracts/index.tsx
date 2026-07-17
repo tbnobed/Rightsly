@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format, parseISO } from "date-fns";
 import { Search, Plus, FileText, Filter, ChevronRight, Download } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -13,16 +14,24 @@ import { useDebounce } from "@/hooks/use-debounce";
 export default function ContractsList() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
+  const [contentSearch, setContentSearch] = useState("");
+  const debouncedContentSearch = useDebounce(contentSearch, 300);
   const [direction, setDirection] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
+  const [departmentTag, setDepartmentTag] = useState<string>("all");
+  const [includeArchived, setIncludeArchived] = useState(false);
   
-  const { data: result, isLoading } = useListContracts({
+  const params = {
+    search: debouncedSearch || undefined,
+    contentSearch: debouncedContentSearch || undefined,
+    direction: direction !== "all" ? direction as ContractListItemDirection : undefined,
+    status: status !== "all" ? status as ContractListItemStatus : undefined,
+    departmentTag: departmentTag !== "all" ? departmentTag : undefined,
+    includeArchived: includeArchived || undefined,
+  };
+  const { data: result, isLoading } = useListContracts(params, {
     query: {
-      queryKey: getListContractsQueryKey({
-        search: debouncedSearch || undefined,
-        direction: direction !== "all" ? direction as ContractListItemDirection : undefined,
-        status: status !== "all" ? status as ContractListItemStatus : undefined,
-      }),
+      queryKey: getListContractsQueryKey(params),
     }
   });
 
@@ -44,21 +53,34 @@ export default function ContractsList() {
       </div>
 
       <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-4 bg-slate-50/50">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input 
-              placeholder="Search by partner, territories..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-white border-slate-200"
-            />
+        <div className="p-4 border-b border-slate-100 flex flex-col gap-4 bg-slate-50/50">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input 
+                placeholder="Search by partner, territories..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 bg-white border-slate-200"
+                data-testid="input-search-contracts"
+              />
+            </div>
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input 
+                placeholder="Search by content title..." 
+                value={contentSearch}
+                onChange={(e) => setContentSearch(e.target.value)}
+                className="pl-9 bg-white border-slate-200"
+                data-testid="input-search-content"
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-slate-400" />
               <Select value={direction} onValueChange={setDirection}>
-                <SelectTrigger className="w-[140px] bg-white border-slate-200">
+                <SelectTrigger className="w-[140px] bg-white border-slate-200" data-testid="select-direction">
                   <SelectValue placeholder="Direction" />
                 </SelectTrigger>
                 <SelectContent>
@@ -69,7 +91,7 @@ export default function ContractsList() {
               </Select>
             </div>
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-[140px] bg-white border-slate-200">
+              <SelectTrigger className="w-[140px] bg-white border-slate-200" data-testid="select-status">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -80,6 +102,24 @@ export default function ContractsList() {
                 <SelectItem value="in_perpetuity">In Perpetuity</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={departmentTag} onValueChange={setDepartmentTag}>
+              <SelectTrigger className="w-[160px] bg-white border-slate-200" data-testid="select-department-tag">
+                <SelectValue placeholder="Department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Departments</SelectItem>
+                <SelectItem value="Acquisition">Acquisition</SelectItem>
+                <SelectItem value="Distribution">Distribution</SelectItem>
+              </SelectContent>
+            </Select>
+            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none ml-auto">
+              <Checkbox
+                checked={includeArchived}
+                onCheckedChange={(v) => setIncludeArchived(v === true)}
+                data-testid="checkbox-show-archived"
+              />
+              Show archived
+            </label>
           </div>
         </div>
         
@@ -88,6 +128,7 @@ export default function ContractsList() {
             <thead className="text-xs text-slate-500 bg-slate-50 uppercase border-b border-slate-100">
               <tr>
                 <th className="px-6 py-4 font-medium">Partner / ID</th>
+                <th className="px-6 py-4 font-medium">Licensor</th>
                 <th className="px-6 py-4 font-medium">Direction</th>
                 <th className="px-6 py-4 font-medium">Status</th>
                 <th className="px-6 py-4 font-medium">Territories</th>
@@ -98,10 +139,10 @@ export default function ContractsList() {
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {isLoading ? (
-                <tr><td colSpan={7} className="px-6 py-8 text-center text-slate-500">Loading contracts...</td></tr>
+                <tr><td colSpan={8} className="px-6 py-8 text-center text-slate-500">Loading contracts...</td></tr>
               ) : !result?.data || result.data.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
+                  <td colSpan={8} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <FileText className="w-10 h-10 text-slate-300 mb-3" />
                       <p className="text-slate-500 font-medium">No contracts found</p>
@@ -113,8 +154,16 @@ export default function ContractsList() {
                 result.data.map((contract) => (
                   <tr key={contract.id} className="hover:bg-slate-50/80 transition-colors group">
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-900">{contract.partnerName || 'Unknown Partner'}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="font-semibold text-slate-900">{contract.partnerName || 'Unknown Partner'}</div>
+                        {(contract as { archived?: boolean }).archived && (
+                          <Badge variant="secondary" className="bg-slate-200 text-slate-600 hover:bg-slate-200 text-[10px] uppercase tracking-wider" data-testid={`badge-archived-${contract.id}`}>Archived</Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-slate-400 font-mono mt-0.5">{contract.id.slice(0,8)}...</div>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">
+                      {contract.licensor || <span className="text-slate-400 italic">—</span>}
                     </td>
                     <td className="px-6 py-4">
                       <Badge variant="outline" className={`capitalize font-medium ${contract.direction === 'rights_in' ? 'border-blue-200 text-blue-700 bg-blue-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50'}`}>

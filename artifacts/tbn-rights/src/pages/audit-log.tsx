@@ -11,9 +11,10 @@ export default function AuditLog() {
   const { user } = useAuth();
   const [action, setAction] = useState<string>("all");
   
-  const { data: result, isLoading } = useListAuditLogs({
+  const params = { action: action !== 'all' ? action : undefined };
+  const { data: result, isLoading } = useListAuditLogs(params, {
     query: {
-      queryKey: getListAuditLogsQueryKey({ action: action !== 'all' ? action : undefined }),
+      queryKey: getListAuditLogsQueryKey(params),
     }
   });
 

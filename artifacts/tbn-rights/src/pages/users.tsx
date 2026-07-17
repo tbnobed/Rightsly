@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 export default function Users() {
   const { user } = useAuth();
   
-  const { data: result, isLoading } = useListUsers({
+  const { data: result, isLoading } = useListUsers(undefined, {
     query: {
       queryKey: getListUsersQueryKey(),
     }

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, pgEnum, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -16,6 +16,8 @@ export const contentItemsTable = pgTable("content_items", {
   title: text("title").notNull(),
   description: text("description"),
   year: integer("year"),
+  hasCleans: boolean("has_cleans").notNull().default(false),
+  hasCaptions: boolean("has_captions").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

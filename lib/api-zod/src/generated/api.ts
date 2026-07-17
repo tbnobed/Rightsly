@@ -284,6 +284,9 @@ export const ListContractsQueryParams = zod.object({
   "status": zod.enum(['draft', 'active', 'expired', 'in_perpetuity', 'terminated']).optional(),
   "partnerId": zod.coerce.string().optional(),
   "search": zod.coerce.string().optional(),
+  "contentSearch": zod.coerce.string().optional().describe('Filter contracts by linked content title'),
+  "departmentTag": zod.coerce.string().optional(),
+  "includeArchived": zod.coerce.boolean().optional(),
   "expiringWithinDays": zod.coerce.number().optional()
 })
 
@@ -350,7 +353,8 @@ export const CreateContractBody = zod.object({
   "reportingFrequency": zod.enum(['monthly', 'quarterly', 'annually']).nullish(),
   "minPaymentThreshold": zod.number().nullish()
 }).nullish(),
-  "contentItemIds": zod.array(zod.string()).optional()
+  "contentItemIds": zod.array(zod.string()).optional(),
+  "departmentTags": zod.array(zod.string()).optional()
 })
 
 export const CreateContractResponse = zod.object({
@@ -374,6 +378,8 @@ export const CreateContractResponse = zod.object({
   "notes": zod.string().nullish(),
   "documentUrl": zod.string().nullish(),
   "websiteLink": zod.string().nullish(),
+  "departmentTags": zod.array(zod.string()).optional(),
+  "archived": zod.boolean().optional(),
   "rightsInDetails": zod.object({
   "platforms": zod.array(zod.string()).optional(),
   "youtubeChannel": zod.string().nullish(),
@@ -407,6 +413,8 @@ export const CreateContractResponse = zod.object({
   "episodeCount": zod.number().nullish()
 })).optional(),
   "contractCount": zod.number().optional(),
+  "hasCleans": zod.boolean().optional(),
+  "hasCaptions": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
 })).optional(),
@@ -453,6 +461,8 @@ export const GetContractResponse = zod.object({
   "notes": zod.string().nullish(),
   "documentUrl": zod.string().nullish(),
   "websiteLink": zod.string().nullish(),
+  "departmentTags": zod.array(zod.string()).optional(),
+  "archived": zod.boolean().optional(),
   "rightsInDetails": zod.object({
   "platforms": zod.array(zod.string()).optional(),
   "youtubeChannel": zod.string().nullish(),
@@ -486,6 +496,8 @@ export const GetContractResponse = zod.object({
   "episodeCount": zod.number().nullish()
 })).optional(),
   "contractCount": zod.number().optional(),
+  "hasCleans": zod.boolean().optional(),
+  "hasCaptions": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
 })).optional(),
@@ -546,7 +558,9 @@ export const UpdateContractBody = zod.object({
   "reportingFrequency": zod.enum(['monthly', 'quarterly', 'annually']).nullish(),
   "minPaymentThreshold": zod.number().nullish()
 }).nullish(),
-  "contentItemIds": zod.array(zod.string()).optional()
+  "contentItemIds": zod.array(zod.string()).optional(),
+  "departmentTags": zod.array(zod.string()).optional(),
+  "archived": zod.boolean().optional()
 })
 
 export const UpdateContractResponse = zod.object({
@@ -570,6 +584,8 @@ export const UpdateContractResponse = zod.object({
   "notes": zod.string().nullish(),
   "documentUrl": zod.string().nullish(),
   "websiteLink": zod.string().nullish(),
+  "departmentTags": zod.array(zod.string()).optional(),
+  "archived": zod.boolean().optional(),
   "rightsInDetails": zod.object({
   "platforms": zod.array(zod.string()).optional(),
   "youtubeChannel": zod.string().nullish(),
@@ -603,6 +619,8 @@ export const UpdateContractResponse = zod.object({
   "episodeCount": zod.number().nullish()
 })).optional(),
   "contractCount": zod.number().optional(),
+  "hasCleans": zod.boolean().optional(),
+  "hasCaptions": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
 })).optional(),
@@ -981,6 +999,8 @@ export const ListContentResponse = zod.object({
   "episodeCount": zod.number().nullish()
 })).optional(),
   "contractCount": zod.number().optional(),
+  "hasCleans": zod.boolean().optional(),
+  "hasCaptions": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
 })),
@@ -998,6 +1018,8 @@ export const CreateContentBody = zod.object({
   "title": zod.string(),
   "description": zod.string().nullish(),
   "year": zod.number().nullish(),
+  "hasCleans": zod.boolean().optional(),
+  "hasCaptions": zod.boolean().optional(),
   "seasons": zod.array(zod.object({
   "seasonNumber": zod.number(),
   "title": zod.string().nullish(),
@@ -1021,6 +1043,8 @@ export const CreateContentResponse = zod.object({
   "episodeCount": zod.number().nullish()
 })).optional(),
   "contractCount": zod.number().optional(),
+  "hasCleans": zod.boolean().optional(),
+  "hasCaptions": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
 })
@@ -1048,6 +1072,8 @@ export const GetContentResponse = zod.object({
   "episodeCount": zod.number().nullish()
 })).optional(),
   "contractCount": zod.number().optional(),
+  "hasCleans": zod.boolean().optional(),
+  "hasCaptions": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
 })
@@ -1065,6 +1091,8 @@ export const UpdateContentBody = zod.object({
   "title": zod.string().optional(),
   "description": zod.string().nullish(),
   "year": zod.number().nullish(),
+  "hasCleans": zod.boolean().optional(),
+  "hasCaptions": zod.boolean().optional(),
   "seasons": zod.array(zod.object({
   "seasonNumber": zod.number(),
   "title": zod.string().nullish(),
@@ -1088,6 +1116,8 @@ export const UpdateContentResponse = zod.object({
   "episodeCount": zod.number().nullish()
 })).optional(),
   "contractCount": zod.number().optional(),
+  "hasCleans": zod.boolean().optional(),
+  "hasCaptions": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
 })
@@ -1362,5 +1392,48 @@ export const GetRoyaltyReportResponse = zod.object({
 })).optional(),
   "generatedAt": zod.coerce.date().optional()
 })
+
+
+/**
+ * @summary List notifications for the current user
+ */
+export const ListNotificationsQueryParams = zod.object({
+  "unreadOnly": zod.coerce.boolean().optional()
+})
+
+export const ListNotificationsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['contract_expiring', 'report_expected', 'approval_needed', 'general']),
+  "title": zod.string(),
+  "message": zod.string().nullish(),
+  "link": zod.string().nullish(),
+  "read": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})),
+  "unreadCount": zod.number()
+})
+
+
+/**
+ * @summary Mark a notification as read
+ */
+export const MarkNotificationReadParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const MarkNotificationReadResponse = zod.void()
+
+
+/**
+ * @summary Mark all notifications as read
+ */
+export const MarkAllNotificationsReadResponse = zod.void()
+
+
+/**
+ * @summary Clear (delete) all notifications for the current user
+ */
+export const ClearNotificationsResponse = zod.void()
 
 

@@ -12,5 +12,7 @@ export interface UpdateContentItemRequest {
   title?: string;
   description?: string | null;
   year?: number | null;
+  hasCleans?: boolean;
+  hasCaptions?: boolean;
   seasons?: UpdateContentItemRequestSeasonsItem[];
 }

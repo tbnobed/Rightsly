@@ -6,20 +6,23 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Film, Tv, PlaySquare, MonitorPlay, ChevronRight } from "lucide-react";
+import { Search, Plus, Film, Tv, PlaySquare, MonitorPlay, ChevronRight, Sparkles, Captions } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { ContentFormDialog } from "@/components/content-form-dialog";
 
 export default function ContentList() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [type, setType] = useState<string>("all");
+  const [addOpen, setAddOpen] = useState(false);
 
-  const { data: result, isLoading } = useListContent({
+  const params = {
+    search: debouncedSearch || undefined,
+    type: type !== "all" ? type as ListContentType : undefined,
+  };
+  const { data: result, isLoading } = useListContent(params, {
     query: {
-      queryKey: getListContentQueryKey({ 
-        search: debouncedSearch || undefined,
-        type: type !== "all" ? type as ListContentType : undefined
-      }),
+      queryKey: getListContentQueryKey(params),
     }
   });
 
@@ -41,7 +44,7 @@ export default function ContentList() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Content Catalog</h1>
           <p className="text-slate-500 mt-1">Central repository of all licensable media assets.</p>
         </div>
-        <Button className="bg-slate-900 hover:bg-slate-800 text-white" data-testid="button-add-content">
+        <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => setAddOpen(true)} data-testid="button-add-content">
           <Plus className="w-4 h-4 mr-2" />
           Add Title
         </Button>
@@ -105,7 +108,19 @@ export default function ContentList() {
                           {getTypeIcon(item.type)}
                         </div>
                         <div>
-                          <div className="font-bold text-slate-900 text-base">{item.title}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 text-base">{item.title}</span>
+                            {item.hasCleans && (
+                              <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50 text-[10px] gap-1" data-testid={`badge-cleans-${item.id}`}>
+                                <Sparkles className="w-3 h-3" /> Cleans
+                              </Badge>
+                            )}
+                            {item.hasCaptions && (
+                              <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50 text-[10px] gap-1" data-testid={`badge-captions-${item.id}`}>
+                                <Captions className="w-3 h-3" /> Captions
+                              </Badge>
+                            )}
+                          </div>
                           {item.type === 'TVSeries' && item.seasons && (
                             <div className="text-xs text-slate-500 mt-0.5">{item.seasons.length} Seasons</div>
                           )}
@@ -139,6 +154,8 @@ export default function ContentList() {
           </table>
         </div>
       </Card>
+
+      <ContentFormDialog open={addOpen} onOpenChange={setAddOpen} />
     </div>
   );
 }

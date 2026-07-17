@@ -33,4 +33,5 @@ export interface CreateContractRequest {
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
   contentItemIds?: string[];
+  departmentTags?: string[];
 }

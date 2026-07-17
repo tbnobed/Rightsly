@@ -208,6 +208,8 @@ export interface ContentItem {
   year?: number | null;
   seasons?: Season[];
   contractCount?: number;
+  hasCleans?: boolean;
+  hasCaptions?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
@@ -235,6 +237,8 @@ export interface CreateContentItemRequest {
   title: string;
   description?: string | null;
   year?: number | null;
+  hasCleans?: boolean;
+  hasCaptions?: boolean;
   seasons?: CreateContentItemRequestSeasonsItem[];
 }
 
@@ -261,6 +265,8 @@ export interface UpdateContentItemRequest {
   title?: string;
   description?: string | null;
   year?: number | null;
+  hasCleans?: boolean;
+  hasCaptions?: boolean;
   seasons?: UpdateContentItemRequestSeasonsItem[];
 }
 
@@ -378,6 +384,8 @@ export interface Contract {
   notes?: string | null;
   documentUrl?: string | null;
   websiteLink?: string | null;
+  departmentTags?: string[];
+  archived?: boolean;
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
   contentItems?: ContentItem[];
@@ -454,6 +462,7 @@ export interface CreateContractRequest {
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
   contentItemIds?: string[];
+  departmentTags?: string[];
 }
 
 export type UpdateContractRequestStatus = typeof UpdateContractRequestStatus[keyof typeof UpdateContractRequestStatus];
@@ -514,6 +523,8 @@ export interface UpdateContractRequest {
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
   contentItemIds?: string[];
+  departmentTags?: string[];
+  archived?: boolean;
 }
 
 export type ContractListItemDirection = typeof ContractListItemDirection[keyof typeof ContractListItemDirection];
@@ -720,6 +731,26 @@ export interface DashboardSummary {
   expiringSoonContracts?: ContractListItem[];
 }
 
+export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
+
+
+export const NotificationType = {
+  contract_expiring: 'contract_expiring',
+  report_expected: 'report_expected',
+  approval_needed: 'approval_needed',
+  general: 'general',
+} as const;
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message?: string | null;
+  link?: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
 export type AuditLogAction = typeof AuditLogAction[keyof typeof AuditLogAction];
 
 
@@ -842,6 +873,12 @@ direction?: ListContractsDirection;
 status?: ListContractsStatus;
 partnerId?: string;
 search?: string;
+/**
+ * Filter contracts by linked content title
+ */
+contentSearch?: string;
+departmentTag?: string;
+includeArchived?: boolean;
 expiringWithinDays?: number;
 };
 
@@ -1009,5 +1046,14 @@ export const GetRoyaltyReportFormat = {
 export type GetRoyaltyReport200 = {
   data?: RevenueReport[];
   generatedAt?: string;
+};
+
+export type ListNotificationsParams = {
+unreadOnly?: boolean;
+};
+
+export type ListNotifications200 = {
+  data: Notification[];
+  unreadCount: number;
 };
 

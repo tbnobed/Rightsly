@@ -31,4 +31,6 @@ export interface UpdateContractRequest {
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
   contentItemIds?: string[];
+  departmentTags?: string[];
+  archived?: boolean;
 }

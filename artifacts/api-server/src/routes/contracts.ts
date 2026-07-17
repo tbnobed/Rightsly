@@ -32,6 +32,9 @@ router.get("/", contractReadGuard, async (req, res) => {
   const status = req.query.status as string | undefined;
   const partnerId = req.query.partnerId as string | undefined;
   const search = req.query.search as string | undefined;
+  const contentSearch = req.query.contentSearch as string | undefined;
+  const departmentTag = req.query.departmentTag as string | undefined;
+  const includeArchived = req.query.includeArchived === "true";
   const expiringWithinDays = req.query.expiringWithinDays
     ? parseInt(req.query.expiringWithinDays as string)
     : undefined;
@@ -41,6 +44,15 @@ router.get("/", contractReadGuard, async (req, res) => {
   if (status) conditions.push(eq(contractsTable.status, status as any));
   if (partnerId) conditions.push(eq(contractsTable.partnerId, partnerId));
   if (search) conditions.push(ilike(partnersTable.name, `%${search}%`));
+  if (contentSearch) {
+    conditions.push(
+      sql`exists (select 1 from contract_content cc join content_items ci on ci.id = cc.content_item_id where cc.contract_id = ${contractsTable.id} and ci.title ilike ${`%${contentSearch}%`})`
+    );
+  }
+  if (departmentTag) {
+    conditions.push(sql`${contractsTable.departmentTags}::jsonb ? ${departmentTag}`);
+  }
+  if (!includeArchived) conditions.push(eq(contractsTable.archived, false));
   if (req.salesFilter) conditions.push(eq(contractsTable.status, "active"));
   if (expiringWithinDays) {
     const cutoff = new Date();
@@ -72,6 +84,8 @@ router.get("/", contractReadGuard, async (req, res) => {
         territories: contractsTable.territories,
         distributionTypes: contractsTable.distributionTypes,
         royaltyType: contractsTable.royaltyType,
+        departmentTags: contractsTable.departmentTags,
+        archived: contractsTable.archived,
         contentCount: sql<number>`(select count(*) from contract_content where contract_content.contract_id = ${contractsTable.id})`.mapWith(Number),
         createdAt: contractsTable.createdAt,
       })
@@ -114,6 +128,7 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
     rightsInDetails,
     rightsOutDetails,
     contentItemIds,
+    departmentTags,
   } = req.body;
 
   if (!direction || !partnerId || !endType) {
@@ -146,6 +161,7 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
       paymentTerms: paymentTerms || null,
       notes: notes || null,
       websiteLink: websiteLink || null,
+      departmentTags: departmentTags || [],
       // Rights In
       rightsInPlatforms: ri.platforms || null,
       rightsInYoutubeChannel: ri.youtubeChannel || null,
@@ -209,6 +225,8 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
     rightsInDetails,
     rightsOutDetails,
     contentItemIds,
+    departmentTags,
+    archived,
   } = req.body;
 
   const ri = rightsInDetails || {};
@@ -231,6 +249,8 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   if (paymentTerms !== undefined) updates.paymentTerms = paymentTerms;
   if (notes !== undefined) updates.notes = notes;
   if (websiteLink !== undefined) updates.websiteLink = websiteLink;
+  if (departmentTags !== undefined) updates.departmentTags = departmentTags;
+  if (archived !== undefined) updates.archived = archived;
 
   if (rightsInDetails) {
     if (ri.platforms !== undefined) updates.rightsInPlatforms = ri.platforms;
@@ -449,6 +469,8 @@ async function getContractById(id: string) {
     notes: c.notes,
     documentUrl: c.documentUrl,
     websiteLink: c.websiteLink,
+    departmentTags: c.departmentTags,
+    archived: c.archived,
     rightsInDetails: c.direction === "rights_in" ? {
       platforms: c.rightsInPlatforms,
       youtubeChannel: c.rightsInYoutubeChannel,

@@ -22,7 +22,7 @@ const checkSchema = z.object({
 export default function RightsCheck() {
   const [hasChecked, setHasChecked] = useState(false);
   
-  const { data: contentData } = useListContent({
+  const { data: contentData } = useListContent(undefined, {
     query: { queryKey: getListContentQueryKey() }
   });
   
@@ -118,7 +118,7 @@ export default function RightsCheck() {
                   name="distributionType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Distribution Right</FormLabel>
+                      <FormLabel>Distribution Type</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger className="bg-white">

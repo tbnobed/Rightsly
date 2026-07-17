@@ -11,9 +11,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function Dashboard() {
   const [period, setPeriod] = useState<GetDashboardPeriod>("month");
   
-  const { data: dashboard, isLoading } = useGetDashboard({
+  const params = { period };
+  const { data: dashboard, isLoading } = useGetDashboard(params, {
     query: {
-      queryKey: getGetDashboardQueryKey({ period }),
+      queryKey: getGetDashboardQueryKey(params),
     }
   });
 

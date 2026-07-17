@@ -48,6 +48,8 @@ export const contractsTable = pgTable("contracts", {
   notes: text("notes"),
   documentUrl: text("document_url"),
   websiteLink: text("website_link"),
+  departmentTags: json("department_tags").$type<string[]>().notNull().default([]),
+  archived: boolean("archived").notNull().default(false),
 
   // Rights In specific
   rightsInPlatforms: json("rights_in_platforms").$type<string[]>(),

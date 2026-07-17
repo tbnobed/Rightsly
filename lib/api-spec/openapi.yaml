@@ -260,6 +260,10 @@ components:
             $ref: '#/components/schemas/Season'
         contractCount:
           type: integer
+        hasCleans:
+          type: boolean
+        hasCaptions:
+          type: boolean
         createdAt:
           type: string
           format: date-time
@@ -302,6 +306,10 @@ components:
         year:
           type: integer
           nullable: true
+        hasCleans:
+          type: boolean
+        hasCaptions:
+          type: boolean
         seasons:
           type: array
           items:
@@ -334,6 +342,10 @@ components:
         year:
           type: integer
           nullable: true
+        hasCleans:
+          type: boolean
+        hasCaptions:
+          type: boolean
         seasons:
           type: array
           items:
@@ -419,6 +431,12 @@ components:
         websiteLink:
           type: string
           nullable: true
+        departmentTags:
+          type: array
+          items:
+            type: string
+        archived:
+          type: boolean
         rightsInDetails:
           $ref: '#/components/schemas/RightsInDetails'
           nullable: true
@@ -566,6 +584,10 @@ components:
           type: array
           items:
             type: string
+        departmentTags:
+          type: array
+          items:
+            type: string
 
     UpdateContractRequest:
       type: object
@@ -633,6 +655,12 @@ components:
           type: array
           items:
             type: string
+        departmentTags:
+          type: array
+          items:
+            type: string
+        archived:
+          type: boolean
 
     ContractListItem:
       type: object
@@ -950,6 +978,29 @@ components:
         status:
           type: string
           nullable: true
+
+    Notification:
+      type: object
+      required: [id, type, title, read, createdAt]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [contract_expiring, report_expected, approval_needed, general]
+        title:
+          type: string
+        message:
+          type: string
+          nullable: true
+        link:
+          type: string
+          nullable: true
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
 
     AuditLog:
       type: object
@@ -1436,6 +1487,19 @@ paths:
           in: query
           schema:
             type: string
+        - name: contentSearch
+          in: query
+          description: Filter contracts by linked content title
+          schema:
+            type: string
+        - name: departmentTag
+          in: query
+          schema:
+            type: string
+        - name: includeArchived
+          in: query
+          schema:
+            type: boolean
         - name: expiringWithinDays
           in: query
           schema:
@@ -2238,3 +2302,62 @@ paths:
                   generatedAt:
                     type: string
                     format: date-time
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      summary: List notifications for the current user
+      tags: [notifications]
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Notification list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, unreadCount]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  unreadCount:
+                    type: integer
+
+  /notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      summary: Mark a notification as read
+      tags: [notifications]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Marked read
+
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      summary: Mark all notifications as read
+      tags: [notifications]
+      responses:
+        '204':
+          description: All marked read
+
+  /notifications/clear:
+    post:
+      operationId: clearNotifications
+      summary: Clear (delete) all notifications for the current user
+      tags: [notifications]
+      responses:
+        '204':
+          description: Cleared

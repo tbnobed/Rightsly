@@ -35,6 +35,8 @@ export interface Contract {
   notes?: string | null;
   documentUrl?: string | null;
   websiteLink?: string | null;
+  departmentTags?: string[];
+  archived?: boolean;
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
   contentItems?: ContentItem[];

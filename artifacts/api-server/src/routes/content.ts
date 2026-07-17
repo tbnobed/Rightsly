@@ -28,6 +28,8 @@ router.get("/", async (req, res) => {
         title: contentItemsTable.title,
         description: contentItemsTable.description,
         year: contentItemsTable.year,
+        hasCleans: contentItemsTable.hasCleans,
+        hasCaptions: contentItemsTable.hasCaptions,
         createdAt: contentItemsTable.createdAt,
         updatedAt: contentItemsTable.updatedAt,
         contractCount: sql<number>`(select count(*) from contract_content where contract_content.content_item_id = ${contentItemsTable.id})`.mapWith(Number),
@@ -64,7 +66,7 @@ router.get("/", async (req, res) => {
 
 // POST /api/content
 router.post("/", requireRole("admin", "legal"), async (req, res) => {
-  const { type, title, description, year, seasons } = req.body;
+  const { type, title, description, year, seasons, hasCleans, hasCaptions } = req.body;
 
   if (!type || !title) {
     res.status(400).json({ message: "type and title are required" });
@@ -74,7 +76,7 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
   const id = crypto.randomUUID();
   const [item] = await db
     .insert(contentItemsTable)
-    .values({ id, type, title, description: description || null, year: year || null })
+    .values({ id, type, title, description: description || null, year: year || null, hasCleans: !!hasCleans, hasCaptions: !!hasCaptions })
     .returning();
 
   let createdSeasons: any[] = [];
@@ -120,11 +122,19 @@ router.get("/:id", async (req, res) => {
 
 // PUT /api/content/:id
 router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
-  const { type, title, description, year, seasons } = req.body;
+  const { type, title, description, year, seasons, hasCleans, hasCaptions } = req.body;
 
   const [item] = await db
     .update(contentItemsTable)
-    .set({ type, title, description: description || null, year: year || null, updatedAt: new Date() })
+    .set({
+      type,
+      title,
+      description: description || null,
+      year: year || null,
+      ...(hasCleans !== undefined ? { hasCleans: !!hasCleans } : {}),
+      ...(hasCaptions !== undefined ? { hasCaptions: !!hasCaptions } : {}),
+      updatedAt: new Date(),
+    })
     .where(eq(contentItemsTable.id, req.params.id))
     .returning();
 

@@ -14,5 +14,11 @@ direction?: ListContractsDirection;
 status?: ListContractsStatus;
 partnerId?: string;
 search?: string;
+/**
+ * Filter contracts by linked content title
+ */
+contentSearch?: string;
+departmentTag?: string;
+includeArchived?: boolean;
 expiringWithinDays?: number;
 };

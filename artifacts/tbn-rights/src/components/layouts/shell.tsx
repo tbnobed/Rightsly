@@ -4,6 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarFooter } from "@/components/ui/sidebar";
 import { LayoutDashboard, FileText, Users, Film, CheckCircle, Calculator, BarChart3, Upload, History, UserCog, LogOut, Briefcase } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 export function Shell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
@@ -20,6 +21,9 @@ export function Shell({ children }: { children: ReactNode }) {
               TBN
             </div>
             <span className="font-semibold tracking-tight text-sidebar-foreground">Rights Management</span>
+            <div className="ml-auto">
+              <NotificationsBell />
+            </div>
           </SidebarHeader>
           <SidebarContent className="px-2">
             <SidebarMenu>

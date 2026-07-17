@@ -15,6 +15,8 @@ export interface ContentItem {
   year?: number | null;
   seasons?: Season[];
   contractCount?: number;
+  hasCleans?: boolean;
+  hasCaptions?: boolean;
   createdAt: Date;
   updatedAt?: Date;
 }

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useGetContent, getGetContentQueryKey, useGetContentContracts, getGetContentContractsQueryKey } from "@workspace/api-client-react";
 import { Link, useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/pages/contracts/index";
+import { ContentFormDialog } from "@/components/content-form-dialog";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, Edit, Film, FileText, ChevronRight, Layers, LayoutList, Globe } from "lucide-react";
+import { ChevronLeft, Edit, Film, FileText, ChevronRight, Layers, LayoutList, Globe, Sparkles, Captions } from "lucide-react";
 
 export default function ContentDetail() {
   const { id } = useParams<{ id: string }>();
+  const [editOpen, setEditOpen] = useState(false);
 
   const { data: content, isLoading } = useGetContent(id!, {
     query: {
@@ -44,14 +47,24 @@ export default function ContentDetail() {
             </div>
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">{content.title}</h1>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <Badge variant="outline" className="bg-white">{content.type.replace(/_/g, ' ')}</Badge>
                 {content.year && <span className="text-sm font-medium text-slate-500">{content.year}</span>}
+                {content.hasCleans && (
+                  <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50 text-[10px] gap-1" data-testid="badge-cleans">
+                    <Sparkles className="w-3 h-3" /> Cleans
+                  </Badge>
+                )}
+                {content.hasCaptions && (
+                  <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50 text-[10px] gap-1" data-testid="badge-captions">
+                    <Captions className="w-3 h-3" /> Captions
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
         </div>
-        <Button className="bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 shadow-sm" data-testid="button-edit-content">
+        <Button className="bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 shadow-sm" onClick={() => setEditOpen(true)} data-testid="button-edit-content">
           <Edit className="w-4 h-4 mr-2" /> Edit Metadata
         </Button>
       </div>
@@ -148,6 +161,8 @@ export default function ContentDetail() {
           </CardContent>
         </Card>
       </div>
+
+      <ContentFormDialog open={editOpen} onOpenChange={setEditOpen} content={content} />
     </div>
   );
 }

@@ -19,9 +19,10 @@ export default function Royalties() {
   const [selectedContractId, setSelectedContractId] = useState<string | undefined>(initialContractId);
   const { toast } = useToast();
 
-  const { data: contractsData } = useListContracts({
+  const contractsParams = { pageSize: 100 }; // Get many for dropdown
+  const { data: contractsData } = useListContracts(contractsParams, {
     query: {
-      queryKey: getListContractsQueryKey({ pageSize: 100 }), // Get many for dropdown
+      queryKey: getListContractsQueryKey(contractsParams),
     }
   });
   
@@ -38,10 +39,11 @@ export default function Royalties() {
   const approveMutation = useApproveRoyalty();
 
   const handleApprove = async (reportId: string) => {
+    if (!selectedContractId) return;
     try {
       await approveMutation.mutateAsync({ 
-        id: reportId, 
-        data: { status: 'approved' } 
+        contractId: selectedContractId, 
+        data: { reportId, status: 'approved' } 
       });
       toast({ title: "Royalty Approved", description: "The calculation has been marked as approved." });
       refetch();

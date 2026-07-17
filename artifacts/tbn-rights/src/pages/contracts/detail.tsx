@@ -1,20 +1,24 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/auth";
 import { Link, useLocation, useParams } from "wouter";
-import { useGetContract, getGetContractQueryKey, useGetContentContracts, getGetContentContractsQueryKey } from "@workspace/api-client-react";
+import { useGetContract, getGetContractQueryKey, useGetContentContracts, getGetContentContractsQueryKey, useUpdateContract, getListContractsQueryKey } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/pages/contracts/index";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, Edit, FileText, Globe, Link as LinkIcon, Download, AlertCircle, Plus } from "lucide-react";
+import { ChevronLeft, Edit, FileText, Globe, Link as LinkIcon, Download, AlertCircle, Plus, Archive, ArchiveRestore } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContractAttachments } from "@/components/contract-attachments";
 
 export default function ContractDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const { data: contract, isLoading } = useGetContract(id!, {
     query: {
@@ -22,6 +26,30 @@ export default function ContractDetail() {
       queryKey: getGetContractQueryKey(id!),
     }
   });
+
+  const updateContract = useUpdateContract();
+
+  const handleToggleArchive = async () => {
+    if (!contract) return;
+    const nextArchived = !contract.archived;
+    try {
+      await updateContract.mutateAsync({ id: contract.id, data: { archived: nextArchived } });
+      queryClient.invalidateQueries({ queryKey: getGetContractQueryKey(contract.id) });
+      queryClient.invalidateQueries({ queryKey: getListContractsQueryKey() });
+      toast({
+        title: nextArchived ? "Contract archived" : "Contract unarchived",
+        description: nextArchived
+          ? "This contract has been archived."
+          : "This contract has been restored.",
+      });
+    } catch (err) {
+      toast({
+        title: "Action failed",
+        description: "Could not update the contract. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return <div className="p-8 max-w-7xl mx-auto"><Skeleton className="h-12 w-1/3 mb-6" /><Skeleton className="h-64 w-full" /></div>;
@@ -54,6 +82,9 @@ export default function ContractDetail() {
             <Badge variant="outline" className={`capitalize font-medium ${contract.direction === 'rights_in' ? 'border-blue-200 text-blue-700 bg-blue-50' : 'border-emerald-200 text-emerald-700 bg-emerald-50'}`}>
               {contract.direction.replace('_', ' ')}
             </Badge>
+            {contract.archived && (
+              <Badge variant="secondary" className="bg-slate-200 text-slate-600 hover:bg-slate-200 uppercase tracking-wider text-[10px]" data-testid="badge-archived">Archived</Badge>
+            )}
           </div>
           <p className="text-slate-500 font-mono text-sm">ID: {contract.id}</p>
         </div>
@@ -66,9 +97,24 @@ export default function ContractDetail() {
             </Button>
           )}
           {(user?.role === 'admin' || user?.role === 'legal') && (
-            <Button className="bg-slate-900 text-white hover:bg-slate-800" data-testid="button-edit-contract">
-              <Edit className="w-4 h-4 mr-2" /> Edit Contract
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                className="bg-white"
+                onClick={handleToggleArchive}
+                disabled={updateContract.isPending}
+                data-testid="button-toggle-archive"
+              >
+                {contract.archived ? (
+                  <><ArchiveRestore className="w-4 h-4 mr-2" /> Unarchive</>
+                ) : (
+                  <><Archive className="w-4 h-4 mr-2" /> Archive</>
+                )}
+              </Button>
+              <Button className="bg-slate-900 text-white hover:bg-slate-800" data-testid="button-edit-contract">
+                <Edit className="w-4 h-4 mr-2" /> Edit Contract
+              </Button>
+            </>
           )}
         </div>
       </div>

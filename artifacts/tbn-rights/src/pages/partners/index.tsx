@@ -12,9 +12,10 @@ export default function PartnersList() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data: result, isLoading } = useListPartners({
+  const params = { search: debouncedSearch || undefined };
+  const { data: result, isLoading } = useListPartners(params, {
     query: {
-      queryKey: getListPartnersQueryKey({ search: debouncedSearch || undefined }),
+      queryKey: getListPartnersQueryKey(params),
     }
   });
 
