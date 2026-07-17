@@ -7,9 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
 import { AlertCircle, UserPlus, Users as UsersIcon, Settings, Edit, Shield } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserFormDialog } from "@/components/user-form-dialog";
+import type { User } from "@workspace/api-client-react";
 
 export default function Users() {
   const { user } = useAuth();
+  const [addOpen, setAddOpen] = useState(false);
+  const [editUser, setEditUser] = useState<User | undefined>(undefined);
   
   const { data: result, isLoading } = useListUsers(undefined, {
     query: {
@@ -44,7 +48,7 @@ export default function Users() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Users</h1>
           <p className="text-slate-500 mt-1">Manage platform access and roles.</p>
         </div>
-        <Button className="bg-slate-900 hover:bg-slate-800 text-white" data-testid="button-add-user">
+        <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => setAddOpen(true)} data-testid="button-add-user">
           <UserPlus className="w-4 h-4 mr-2" />
           Add User
         </Button>
@@ -108,7 +112,7 @@ export default function Users() {
                       {u.lastLogin ? format(parseISO(u.lastLogin), 'MMM d, yyyy HH:mm') : 'Never'}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-900">
+                      <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-900" onClick={() => setEditUser(u)} data-testid={`button-edit-user-${u.id}`}>
                         <Edit className="w-4 h-4" />
                       </Button>
                     </td>
@@ -119,6 +123,13 @@ export default function Users() {
           </table>
         </div>
       </Card>
+
+      <UserFormDialog open={addOpen} onOpenChange={setAddOpen} />
+      <UserFormDialog
+        open={!!editUser}
+        onOpenChange={(open) => !open && setEditUser(undefined)}
+        user={editUser}
+      />
     </div>
   );
 }

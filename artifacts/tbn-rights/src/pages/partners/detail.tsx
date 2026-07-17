@@ -7,9 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/pages/contracts/index";
 import { format, parseISO } from "date-fns";
 import { ChevronLeft, Edit, Globe, FileText, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { PartnerFormDialog } from "@/components/partner-form-dialog";
 
 export default function PartnerDetail() {
   const { id } = useParams<{ id: string }>();
+  const [editOpen, setEditOpen] = useState(false);
 
   const { data: partner, isLoading } = useGetPartner(id!, {
     query: {
@@ -51,9 +54,10 @@ export default function PartnerDetail() {
             </div>
           </div>
         </div>
-        <Button className="bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 shadow-sm" data-testid="button-edit-partner">
+        <Button className="bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 shadow-sm" onClick={() => setEditOpen(true)} data-testid="button-edit-partner">
           <Edit className="w-4 h-4 mr-2" /> Edit Details
         </Button>
+        <PartnerFormDialog open={editOpen} onOpenChange={setEditOpen} partner={partner} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

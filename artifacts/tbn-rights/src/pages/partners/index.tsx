@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Briefcase, ChevronRight, Globe } from "lucide-react";
 import { useState } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { PartnerFormDialog } from "@/components/partner-form-dialog";
 
 export default function PartnersList() {
   const [search, setSearch] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
   const debouncedSearch = useDebounce(search, 300);
 
   const params = { search: debouncedSearch || undefined };
@@ -26,7 +28,7 @@ export default function PartnersList() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Partners</h1>
           <p className="text-slate-500 mt-1">Manage licensors and licensees.</p>
         </div>
-        <Button className="bg-slate-900 hover:bg-slate-800 text-white" data-testid="button-add-partner">
+        <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => setAddOpen(true)} data-testid="button-add-partner">
           <Plus className="w-4 h-4 mr-2" />
           Add Partner
         </Button>
@@ -93,6 +95,8 @@ export default function PartnersList() {
           )}
         </div>
       </Card>
+
+      <PartnerFormDialog open={addOpen} onOpenChange={setAddOpen} />
     </div>
   );
 }
