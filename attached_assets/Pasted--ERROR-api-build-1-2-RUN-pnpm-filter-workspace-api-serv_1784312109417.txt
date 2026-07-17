@@ -1,0 +1,72 @@
+ => ERROR [api build 1/2] RUN pnpm --filter @workspace/api-server run build  && pnpm --filter @workspace/tbn-rights run bui  2.6s
+ => [db-push] exporting to image                                                                                             5.6s
+ => => exporting layers                                                                                                      5.6s
+------
+ > [api build 1/2] RUN pnpm --filter @workspace/api-server run build  && pnpm --filter @workspace/tbn-rights run build:
+0.853
+0.853 > @workspace/api-server@0.0.0 build /app/artifacts/api-server
+0.853 > node ./build.mjs
+0.853
+0.932 ▲ [WARNING] Cannot find base config file "../../tsconfig.base.json" [tsconfig.json]
+0.932
+0.932     tsconfig.json:2:13:
+0.932       2 │   "extends": "../../tsconfig.base.json",
+0.932         ╵              ~~~~~~~~~~~~~~~~~~~~~~~~~~
+0.932
+0.955 ▲ [WARNING] Cannot find base config file "../../tsconfig.base.json" [tsconfig.json]
+0.955
+0.955     ../../lib/db/tsconfig.json:2:13:
+0.955       2 │   "extends": "../../tsconfig.base.json",
+0.955         ╵              ~~~~~~~~~~~~~~~~~~~~~~~~~~
+0.955
+1.063 ▲ [WARNING] Cannot find base config file "../../tsconfig.base.json" [tsconfig.json]
+1.063
+1.063     ../../lib/api-zod/tsconfig.json:2:13:
+1.063       2 │   "extends": "../../tsconfig.base.json",
+1.063         ╵              ~~~~~~~~~~~~~~~~~~~~~~~~~~
+1.063
+1.424 3 warnings
+1.424
+1.424   dist/index.mjs                       5.2mb ⚠️
+1.424   dist/seed.mjs                      847.8kb
+1.424   dist/pino-worker.mjs               153.4kb
+1.424   dist/pino-file.mjs                 142.0kb
+1.424   dist/pino-pretty.mjs               114.4kb
+1.424   dist/thread-stream-worker.mjs        7.3kb
+1.424   dist/index.mjs.map                   9.0mb
+1.424   dist/seed.mjs.map                    1.6mb
+1.424   dist/pino-worker.mjs.map           256.9kb
+1.424   dist/pino-file.mjs.map             229.0kb
+1.424   dist/pino-pretty.mjs.map           203.6kb
+1.424   dist/thread-stream-worker.mjs.map   12.0kb
+1.424
+1.424 ⚡ Done in 498ms
+1.939
+1.939 > @workspace/tbn-rights@0.0.0 build /app/artifacts/tbn-rights
+1.939 > vite build --config vite.config.ts
+1.939
+2.176 ▲ [WARNING] Cannot find base config file "../../tsconfig.base.json" [tsconfig.json]
+2.176
+2.176     tsconfig.json:2:13:
+2.176       2 │   "extends": "../../tsconfig.base.json",
+2.176         ╵              ~~~~~~~~~~~~~~~~~~~~~~~~~~
+2.176
+2.336 vite v7.3.6 building client environment for production...
+2.424 ✓ 0 modules transformed.
+2.428 ✗ Build failed in 57ms
+2.428 error during build:
+2.428 [vite:build-html] failed to resolve "extends":"../../tsconfig.base.json" in /app/artifacts/tbn-rights/tsconfig.json
+2.428 file: /app/artifacts/tbn-rights/index.html
+2.428     at resolveExtends (file:///app/node_modules/.pnpm/vite@7.3.6_@types+node@25.9.5_jiti@2.7.0_lightningcss@1.32.0_tsx@4.23.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:5809:8)
+2.428     at parseExtends (file:///app/node_modules/.pnpm/vite@7.3.6_@types+node@25.9.5_jiti@2.7.0_lightningcss@1.32.0_tsx@4.23.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:5775:71)
+2.428     at parse$13 (file:///app/node_modules/.pnpm/vite@7.3.6_@types+node@25.9.5_jiti@2.7.0_lightningcss@1.32.0_tsx@4.23.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:5677:23)
+2.428     at async loadTsconfigJsonForFile (file:///app/node_modules/.pnpm/vite@7.3.6_@types+node@25.9.5_jiti@2.7.0_lightningcss@1.32.0_tsx@4.23.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:6302:37)
+2.428     at async transformWithEsbuild (file:///app/node_modules/.pnpm/vite@7.3.6_@types+node@25.9.5_jiti@2.7.0_lightningcss@1.32.0_tsx@4.23.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:6086:55)
+2.428     at async Object.transform (file:///app/node_modules/.pnpm/vite@7.3.6_@types+node@25.9.5_jiti@2.7.0_lightningcss@1.32.0_tsx@4.23.0_yaml@2.9.0/node_modules/vite/dist/node/chunks/config.js:6172:20)
+2.428     at async transform (file:///app/node_modules/.pnpm/rollup@4.62.2/node_modules/rollup/dist/es/shared/node-entry.js:21726:16)
+2.428     at async ModuleLoader.addModuleSource (file:///app/node_modules/.pnpm/rollup@4.62.2/node_modules/rollup/dist/es/shared/node-entry.js:21946:36)
+2.471 /app/artifacts/tbn-rights:
+2.471  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/tbn-rights@0.0.0 build: `vite build --config vite.config.ts`
+2.471 Exit status 1
+------
+target api: failed to solve: process "/bin/sh -c pnpm --filter @workspace/api-server run build  && pnpm --filter @workspace/tbn-rights run build" did not complete successfully: exit code: 1

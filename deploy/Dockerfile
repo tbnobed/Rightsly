@@ -10,7 +10,7 @@ FROM node:24-bookworm-slim AS deps
 RUN corepack enable
 WORKDIR /app
 
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc ./
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json .npmrc tsconfig.base.json tsconfig.json ./
 COPY artifacts ./artifacts
 COPY lib ./lib
 COPY scripts ./scripts
