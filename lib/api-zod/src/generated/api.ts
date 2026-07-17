@@ -38,6 +38,14 @@ export const LoginResponse = zod.object({
 
 
 /**
+ * @summary Get SSO configuration status
+ */
+export const GetSsoConfigResponse = zod.object({
+  "enabled": zod.boolean()
+})
+
+
+/**
  * @summary Logout current user
  */
 export const LogoutResponse = zod.object({

@@ -46,6 +46,7 @@ import type {
   GetExpiringReportParams,
   GetRoyaltyReport200,
   GetRoyaltyReportParams,
+  GetSsoConfig200,
   HealthStatus,
   ImportResult,
   ListAuditLogsParams,
@@ -255,6 +256,83 @@ export const useLogin = <TError = ErrorType<Error>,
       > => {
       return useMutation(getLoginMutationOptions(options));
     }
+
+export const getGetSsoConfigUrl = () => {
+
+
+
+
+  return `/api/auth/sso/config`
+}
+
+/**
+ * @summary Get SSO configuration status
+ */
+export const getSsoConfig = async ( options?: RequestInit): Promise<GetSsoConfig200> => {
+
+  return customFetch<GetSsoConfig200>(getGetSsoConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSsoConfigQueryKey = () => {
+    return [
+    `/api/auth/sso/config`
+    ] as const;
+    }
+
+
+export const getGetSsoConfigQueryOptions = <TData = Awaited<ReturnType<typeof getSsoConfig>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSsoConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSsoConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSsoConfig>>> = ({ signal }) => getSsoConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSsoConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSsoConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getSsoConfig>>>
+export type GetSsoConfigQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get SSO configuration status
+ */
+
+export function useGetSsoConfig<TData = Awaited<ReturnType<typeof getSsoConfig>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSsoConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSsoConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getLogoutUrl = () => {
 

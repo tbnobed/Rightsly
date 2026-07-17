@@ -1180,6 +1180,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /auth/sso/config:
+    get:
+      operationId: getSsoConfig
+      summary: Get SSO configuration status
+      security: []
+      responses:
+        '200':
+          description: SSO configuration status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [enabled]
+                properties:
+                  enabled:
+                    type: boolean
+
   /auth/logout:
     post:
       operationId: logout

@@ -61,6 +61,7 @@ export * from './getExpiringReportParams';
 export * from './getRoyaltyReport200';
 export * from './getRoyaltyReportFormat';
 export * from './getRoyaltyReportParams';
+export * from './getSsoConfig200';
 export * from './healthStatus';
 export * from './importResult';
 export * from './importResultErrorsItem';

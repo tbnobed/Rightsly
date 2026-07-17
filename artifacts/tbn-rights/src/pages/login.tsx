@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ShieldAlert } from "lucide-react";
+import ssoIcon from "@/assets/sso-icon.png";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -17,6 +18,49 @@ const loginSchema = z.object({
 export default function Login() {
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [ssoEnabled, setSsoEnabled] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ssoToken = params.get("sso_token");
+    const ssoError = params.get("sso_error");
+
+    if (ssoToken) {
+      localStorage.setItem("auth_token", ssoToken);
+      window.location.replace("/");
+      return;
+    }
+
+    if (ssoError) {
+      setError(
+        ssoError === "account_disabled"
+          ? "Your account is disabled. Contact an administrator."
+          : "SSO sign-in failed. Please try again or use email/password."
+      );
+      const url = new URL(window.location.href);
+      url.search = "";
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${import.meta.env.BASE_URL}api/auth/sso/config`)
+      .then((r) => r.json())
+      .then((data: { enabled?: boolean }) => {
+        if (!cancelled) setSsoEnabled(!!data?.enabled);
+      })
+      .catch(() => {
+        if (!cancelled) setSsoEnabled(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSsoLogin = () => {
+    window.location.href = `${import.meta.env.BASE_URL}api/auth/sso/login`;
+  };
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -107,6 +151,24 @@ export default function Login() {
               </Button>
             </form>
           </Form>
+          {ssoEnabled && (
+            <div className="mt-6 space-y-4">
+              <div className="relative flex items-center">
+                <div className="flex-grow border-t border-slate-700"></div>
+                <span className="mx-4 text-xs uppercase tracking-wider text-slate-500">or</span>
+                <div className="flex-grow border-t border-slate-700"></div>
+              </div>
+              <Button
+                type="button"
+                onClick={handleSsoLogin}
+                className="w-full bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 font-medium flex items-center justify-center gap-2"
+                data-testid="button-sso-login"
+              >
+                <img src={ssoIcon} alt="" className="h-5 w-5 rounded" />
+                Sign in with SSO
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { notificationsTable, contractsTable, partnersTable } from "@workspace/db";
+import { usersTable } from "@workspace/db";
 import { eq, and, desc, count, lte, gte, lt, isNotNull } from "drizzle-orm";
 import { authenticateToken } from "../lib/auth";
+import { sendNotificationEmail } from "../lib/email";
+import { logger } from "../lib/logger";
 
 const router = Router();
 router.use(authenticateToken);
@@ -116,7 +119,33 @@ async function generateForUser(userId: string) {
   if (toInsert.length) {
     // Unique index on (user_id, dedupe_key) + onConflictDoNothing makes
     // generation safe under concurrent requests
-    await db.insert(notificationsTable).values(toInsert).onConflictDoNothing();
+    const inserted = await db
+      .insert(notificationsTable)
+      .values(toInsert)
+      .onConflictDoNothing()
+      .returning();
+
+    if (inserted.length) {
+      // Fire-and-forget notification emails for newly inserted rows. Never let
+      // email failures affect the request; catch and log.
+      void (async () => {
+        try {
+          const [user] = await db
+            .select({ email: usersTable.email, name: usersTable.name })
+            .from(usersTable)
+            .where(eq(usersTable.id, userId));
+          if (!user?.email) return;
+          for (const n of inserted) {
+            await sendNotificationEmail(
+              { email: user.email, name: user.name },
+              { title: n.title, message: n.message, link: n.link },
+            );
+          }
+        } catch (err) {
+          logger.error({ err, userId }, "Failed to send notification emails");
+        }
+      })();
+    }
   }
 }
 

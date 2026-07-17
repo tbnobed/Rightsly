@@ -826,6 +826,10 @@ export interface PaginatedRevenueReports {
   pageSize: number;
 }
 
+export type GetSsoConfig200 = {
+  enabled: boolean;
+};
+
 export type Logout200 = {
   message?: string;
 };
