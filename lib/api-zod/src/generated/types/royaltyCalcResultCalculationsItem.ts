@@ -15,4 +15,6 @@ export type RoyaltyCalcResultCalculationsItem = {
   reviewStatus: RoyaltyCalcResultCalculationsItemReviewStatus;
   reviewedBy?: string | null;
   reviewedAt?: Date | null;
+  documentPath?: string | null;
+  documentName?: string | null;
 };

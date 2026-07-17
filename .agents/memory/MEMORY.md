@@ -2,3 +2,4 @@
 - [Orval list-hook call convention](orval-hook-params.md) — params must be the first arg AND in the queryKey; single-arg `{query}` silently drops all server-side filters.
 - [Notifications generation design](notifications-design.md) — on-demand generation with dedupe keys; clear must soft-dismiss, unique (user_id,dedupe_key) index required.
 - [SSO + email design](sso-email-design.md) — env-driven Authentik OIDC + SendGrid; JWT never in URLs (one-time code exchange), auto-provisioning fails closed.
+- [api-server bundling quirks](api-server-bundling.md) — pdfkit must stay externalized in esbuild (reads .afm via __dirname); build success doesn't prove runtime works, curl-verify.

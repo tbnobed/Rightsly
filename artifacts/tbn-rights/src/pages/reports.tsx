@@ -84,15 +84,15 @@ export default function Reports() {
       : <ArrowDown className="w-3 h-3 inline ml-1 text-slate-700" />;
   };
 
-  const handleExport = async (type: "contracts" | "expiring" | "royalties") => {
+  const handleExport = async (type: "contracts" | "expiring" | "royalties", fmt: "xlsx" | "pdf" = "xlsx") => {
     toast({
       title: "Export started",
-      description: "Generating Excel file...",
+      description: fmt === "pdf" ? "Generating PDF file..." : "Generating Excel file...",
     });
     try {
       const token = localStorage.getItem("auth_token");
       const res = await fetch(
-        `${import.meta.env.BASE_URL}api/reports/${type}?format=xlsx`,
+        `${import.meta.env.BASE_URL}api/reports/${type}?format=${fmt}`,
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
       );
       if (!res.ok) {
@@ -105,7 +105,7 @@ export default function Reports() {
       const blob = await res.blob();
       const disposition = res.headers.get("Content-Disposition") ?? "";
       const match = disposition.match(/filename="?([^";]+)"?/);
-      const filename = match?.[1]?.trim() || `${type}-report.xlsx`;
+      const filename = match?.[1]?.trim() || `${type}-report.${fmt}`;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -173,6 +173,9 @@ export default function Reports() {
               <Button className="flex-1 bg-slate-900 text-white hover:bg-slate-800" onClick={() => handleExport('contracts')}>
                 <FileDown className="w-4 h-4 mr-2" /> Excel
               </Button>
+              <Button variant="outline" className="flex-1" onClick={() => handleExport('contracts', 'pdf')} data-testid="button-pdf-contracts">
+                <FileDown className="w-4 h-4 mr-2" /> PDF
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -207,6 +210,9 @@ export default function Reports() {
             <div className="pt-4 flex gap-3">
               <Button className="flex-1 bg-slate-900 text-white hover:bg-slate-800" onClick={() => handleExport('expiring')}>
                 <FileDown className="w-4 h-4 mr-2" /> Excel
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => handleExport('expiring', 'pdf')} data-testid="button-pdf-expiring">
+                <FileDown className="w-4 h-4 mr-2" /> PDF
               </Button>
             </div>
           </CardContent>
@@ -253,6 +259,9 @@ export default function Reports() {
             <div className="pt-4 flex gap-3">
               <Button className="flex-1 bg-slate-900 text-white hover:bg-slate-800" onClick={() => handleExport('royalties')}>
                 <FileDown className="w-4 h-4 mr-2" /> Excel
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => handleExport('royalties', 'pdf')} data-testid="button-pdf-royalties">
+                <FileDown className="w-4 h-4 mr-2" /> PDF
               </Button>
             </div>
           </CardContent>

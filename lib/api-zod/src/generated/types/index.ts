@@ -98,6 +98,7 @@ export * from './rightsCheckResult';
 export * from './rightsCheckResultConflictsItem';
 export * from './rightsCheckResultGrantsItem';
 export * from './rightsInDetails';
+export * from './rightsInSpan';
 export * from './rightsOutDetails';
 export * from './rightsOutDetailsExclusivity';
 export * from './rightsOutDetailsReportingFrequency';

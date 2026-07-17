@@ -875,6 +875,12 @@ components:
                 type: string
                 format: date-time
                 nullable: true
+              documentPath:
+                type: string
+                nullable: true
+              documentName:
+                type: string
+                nullable: true
 
     UpdateRoyaltyStatusRequest:
       type: object
@@ -966,6 +972,34 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ContractListItem'
+        rightsInSpans:
+          type: array
+          items:
+            $ref: '#/components/schemas/RightsInSpan'
+
+    RightsInSpan:
+      type: object
+      required: [contractId, platforms, startDate]
+      properties:
+        contractId:
+          type: string
+        partnerName:
+          type: string
+          nullable: true
+        platforms:
+          type: array
+          items:
+            type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+          nullable: true
+        endType:
+          type: string
+          nullable: true
 
     CalendarEvent:
       type: object

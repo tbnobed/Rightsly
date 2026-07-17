@@ -69,6 +69,8 @@ router.get("/:contractId", async (req, res) => {
       reviewStatus: approval?.status ?? "pending",
       reviewedBy: approval?.reviewedBy ? reviewerRow?.name ?? null : null,
       reviewedAt: approval?.reviewedAt ?? null,
+      documentPath: report.documentPath ?? null,
+      documentName: report.documentName ?? null,
     };
   });
 

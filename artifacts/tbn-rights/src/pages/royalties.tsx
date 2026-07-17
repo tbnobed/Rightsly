@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAuth } from "@/contexts/auth";
-import { useListContracts, getListContractsQueryKey, useGetRoyaltyCalc, getGetRoyaltyCalcQueryKey, useApproveRoyalty } from "@workspace/api-client-react";
+import { useListContracts, getListContractsQueryKey, useGetRoyaltyCalc, getGetRoyaltyCalcQueryKey, useApproveRoyalty, useRequestUploadUrl, useUpdateRevenueReport } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
-import { Calculator, DollarSign, CheckCircle, FileText, AlertCircle } from "lucide-react";
+import { Calculator, DollarSign, CheckCircle, FileText, AlertCircle, Paperclip, Upload, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
@@ -37,6 +37,71 @@ export default function Royalties() {
   });
 
   const approveMutation = useApproveRoyalty();
+  const requestUploadUrl = useRequestUploadUrl();
+  const updateReport = useUpdateRevenueReport();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingReportId, setUploadingReportId] = useState<string | null>(null);
+  const [pendingReportId, setPendingReportId] = useState<string | null>(null);
+
+  const handleAttachClick = (reportId: string) => {
+    setPendingReportId(reportId);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = async (file: File) => {
+    const reportId = pendingReportId;
+    if (!reportId) return;
+    setUploadingReportId(reportId);
+    try {
+      const contentType = file.type || "application/pdf";
+      const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
+        data: { name: file.name, size: file.size, contentType },
+      });
+      const putRes = await fetch(uploadURL, {
+        method: "PUT",
+        headers: { "Content-Type": contentType },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error("Upload to storage failed");
+      await updateReport.mutateAsync({
+        id: reportId,
+        data: { documentPath: objectPath, documentName: file.name },
+      });
+      toast({ title: "Report attached", description: file.name });
+      refetch();
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setUploadingReportId(null);
+      setPendingReportId(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const openDocument = async (documentPath: string, documentName?: string | null) => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch(`${import.meta.env.BASE_URL}api/storage${documentPath}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) throw new Error("Failed to download file");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = documentName || "report-document";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      toast({ variant: "destructive", title: "Failed to open document" });
+    }
+  };
 
   const handleApprove = async (reportId: string) => {
     if (!selectedContractId) return;
@@ -64,6 +129,14 @@ export default function Royalties() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+        className="hidden"
+        onChange={(e) => e.target.files?.[0] && handleFileSelected(e.target.files[0])}
+        data-testid="input-report-doc-file"
+      />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Royalty Calculator</h1>
@@ -133,6 +206,7 @@ export default function Royalties() {
                       <th className="px-6 py-4 font-medium text-right">Share %</th>
                       <th className="px-6 py-4 font-medium text-right text-amber-700">Amount Owed</th>
                       <th className="px-6 py-4 font-medium">Status</th>
+                      <th className="px-6 py-4 font-medium">Report File</th>
                       <th className="px-6 py-4"></th>
                     </tr>
                   </thead>
@@ -155,6 +229,41 @@ export default function Royalties() {
                             {calc.reviewStatus}
                           </Badge>
                         </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-1">
+                            {calc.documentPath ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-slate-600 hover:text-amber-700 px-2"
+                                onClick={() => openDocument(calc.documentPath!, calc.documentName)}
+                                data-testid={`button-view-report-doc-${calc.reportId}`}
+                              >
+                                <FileText className="w-4 h-4 mr-1.5 text-red-500" />
+                                <span className="max-w-32 truncate">{calc.documentName || 'View file'}</span>
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-slate-400">None</span>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="px-2 text-slate-400 hover:text-slate-700"
+                              disabled={uploadingReportId === calc.reportId}
+                              onClick={() => handleAttachClick(calc.reportId)}
+                              title={calc.documentPath ? "Replace file" : "Attach file"}
+                              data-testid={`button-attach-report-doc-${calc.reportId}`}
+                            >
+                              {uploadingReportId === calc.reportId ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : calc.documentPath ? (
+                                <Upload className="w-4 h-4" />
+                              ) : (
+                                <Paperclip className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </td>
                         <td className="px-6 py-4 text-right">
                           {calc.reviewStatus === 'pending' && (
                             <Button size="sm" className="bg-slate-900 text-white" onClick={() => handleApprove(calc.reportId)}>
@@ -171,7 +280,7 @@ export default function Royalties() {
                     ))}
                     {calcResult.calculations.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                        <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
                           No revenue reports found for this contract to calculate.
                         </td>
                       </tr>

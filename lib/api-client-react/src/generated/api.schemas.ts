@@ -597,6 +597,8 @@ export interface RevenueReport {
   receivedDate?: string | null;
   amount?: number | null;
   status: RevenueReportStatus;
+  documentPath?: string | null;
+  documentName?: string | null;
   createdAt: string;
 }
 
@@ -632,6 +634,8 @@ export interface UpdateRevenueReportRequest {
   receivedDate?: string | null;
   amount?: number | null;
   status?: UpdateRevenueReportRequestStatus;
+  documentPath?: string | null;
+  documentName?: string | null;
 }
 
 export type RoyaltyCalcResultCalculationsItemReviewStatus = typeof RoyaltyCalcResultCalculationsItemReviewStatus[keyof typeof RoyaltyCalcResultCalculationsItemReviewStatus];
@@ -652,6 +656,8 @@ export type RoyaltyCalcResultCalculationsItem = {
   reviewStatus: RoyaltyCalcResultCalculationsItemReviewStatus;
   reviewedBy?: string | null;
   reviewedAt?: string | null;
+  documentPath?: string | null;
+  documentName?: string | null;
 };
 
 export interface RoyaltyCalcResult {
@@ -721,6 +727,15 @@ export interface CalendarEvent {
   status?: string | null;
 }
 
+export interface RightsInSpan {
+  contractId: string;
+  partnerName?: string | null;
+  platforms: string[];
+  startDate: string;
+  endDate?: string | null;
+  endType?: string | null;
+}
+
 export interface DashboardSummary {
   activeContracts: number;
   expiringSoon: number;
@@ -730,6 +745,7 @@ export interface DashboardSummary {
   totalRightsOut?: number;
   calendarEvents?: CalendarEvent[];
   expiringSoonContracts?: ContractListItem[];
+  rightsInSpans?: RightsInSpan[];
 }
 
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];

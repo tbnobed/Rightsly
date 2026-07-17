@@ -103,17 +103,21 @@ router.get("/revenue-reports", requireRole("admin", "finance"), async (req, res)
 
 // PUT /api/revenue-reports/:id
 router.put("/revenue-reports/:id", requireRole("admin", "finance"), async (req, res) => {
-  const { period, expectedDate, receivedDate, amount, status } = req.body;
+  const { period, expectedDate, receivedDate, amount, status, documentPath, documentName } = req.body;
+
+  const updates: Record<string, unknown> = {
+    period,
+    expectedDate: expectedDate || null,
+    receivedDate: receivedDate || null,
+    amount: amount?.toString() || null,
+    status,
+  };
+  if (documentPath !== undefined) updates.documentPath = documentPath || null;
+  if (documentName !== undefined) updates.documentName = documentName || null;
 
   const [report] = await db
     .update(revenueReportsTable)
-    .set({
-      period,
-      expectedDate: expectedDate || null,
-      receivedDate: receivedDate || null,
-      amount: amount?.toString() || null,
-      status,
-    })
+    .set(updates)
     .where(eq(revenueReportsTable.id, req.params.id))
     .returning();
 

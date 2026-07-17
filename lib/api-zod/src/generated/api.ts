@@ -819,6 +819,8 @@ export const ListContractRevenueReportsResponseItem = zod.object({
   "receivedDate": zod.coerce.date().nullish(),
   "amount": zod.number().nullish(),
   "status": zod.enum(['expected', 'received', 'overdue']),
+  "documentPath": zod.string().nullish(),
+  "documentName": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 export const ListContractRevenueReportsResponse = zod.array(ListContractRevenueReportsResponseItem)
@@ -848,6 +850,8 @@ export const CreateRevenueReportResponse = zod.object({
   "receivedDate": zod.coerce.date().nullish(),
   "amount": zod.number().nullish(),
   "status": zod.enum(['expected', 'received', 'overdue']),
+  "documentPath": zod.string().nullish(),
+  "documentName": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -875,6 +879,8 @@ export const ListRevenueReportsResponse = zod.object({
   "receivedDate": zod.coerce.date().nullish(),
   "amount": zod.number().nullish(),
   "status": zod.enum(['expected', 'received', 'overdue']),
+  "documentPath": zod.string().nullish(),
+  "documentName": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })),
   "total": zod.number(),
@@ -895,7 +901,9 @@ export const UpdateRevenueReportBody = zod.object({
   "expectedDate": zod.coerce.date().nullish(),
   "receivedDate": zod.coerce.date().nullish(),
   "amount": zod.number().nullish(),
-  "status": zod.enum(['expected', 'received', 'overdue']).optional()
+  "status": zod.enum(['expected', 'received', 'overdue']).optional(),
+  "documentPath": zod.string().nullish(),
+  "documentName": zod.string().nullish()
 })
 
 export const UpdateRevenueReportResponse = zod.object({
@@ -907,6 +915,8 @@ export const UpdateRevenueReportResponse = zod.object({
   "receivedDate": zod.coerce.date().nullish(),
   "amount": zod.number().nullish(),
   "status": zod.enum(['expected', 'received', 'overdue']),
+  "documentPath": zod.string().nullish(),
+  "documentName": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -943,7 +953,9 @@ export const GetRoyaltyCalcResponse = zod.object({
   "amountOwed": zod.number().nullable(),
   "reviewStatus": zod.enum(['pending', 'reviewed', 'approved']),
   "reviewedBy": zod.string().nullish(),
-  "reviewedAt": zod.coerce.date().nullish()
+  "reviewedAt": zod.coerce.date().nullish(),
+  "documentPath": zod.string().nullish(),
+  "documentName": zod.string().nullish()
 }))
 })
 
@@ -973,7 +985,9 @@ export const ApproveRoyaltyResponse = zod.object({
   "amountOwed": zod.number().nullable(),
   "reviewStatus": zod.enum(['pending', 'reviewed', 'approved']),
   "reviewedBy": zod.string().nullish(),
-  "reviewedAt": zod.coerce.date().nullish()
+  "reviewedAt": zod.coerce.date().nullish(),
+  "documentPath": zod.string().nullish(),
+  "documentName": zod.string().nullish()
 }))
 })
 
@@ -1244,6 +1258,14 @@ export const GetDashboardResponse = zod.object({
   "royaltyType": zod.string().nullish(),
   "contentCount": zod.number().optional(),
   "createdAt": zod.coerce.date()
+})).optional(),
+  "rightsInSpans": zod.array(zod.object({
+  "contractId": zod.string(),
+  "partnerName": zod.string().nullish(),
+  "platforms": zod.array(zod.string()),
+  "startDate": zod.coerce.date(),
+  "endDate": zod.coerce.date().nullish(),
+  "endType": zod.string().nullish()
 })).optional()
 })
 
@@ -1396,6 +1418,8 @@ export const GetRoyaltyReportResponse = zod.object({
   "receivedDate": zod.coerce.date().nullish(),
   "amount": zod.number().nullish(),
   "status": zod.enum(['expected', 'received', 'overdue']),
+  "documentPath": zod.string().nullish(),
+  "documentName": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })).optional(),
   "generatedAt": zod.coerce.date().optional()

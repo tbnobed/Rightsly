@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGetDashboard, getGetDashboardQueryKey, GetDashboardPeriod } from "@workspace/api-client-react";
 import { format, parseISO } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,9 +8,26 @@ import { Calendar as CalendarIcon, FileText, AlertCircle, TrendingUp, Clock, Che
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardCalendar } from "@/components/dashboard-calendar";
+import { useAuth } from "@/contexts/auth";
 
 export default function Dashboard() {
-  const [period, setPeriod] = useState<GetDashboardPeriod>("month");
+  const { user } = useAuth();
+  const periodKey = `dashboard_period_${user?.id ?? "anon"}`;
+  const [period, setPeriodState] = useState<GetDashboardPeriod>(() => {
+    const saved = localStorage.getItem(periodKey);
+    return saved === "month" || saved === "quarter" || saved === "year" ? saved : "month";
+  });
+  const setPeriod = (p: GetDashboardPeriod) => {
+    setPeriodState(p);
+    localStorage.setItem(periodKey, p);
+  };
+  // Re-hydrate when the authenticated user's key becomes available
+  useEffect(() => {
+    const saved = localStorage.getItem(periodKey);
+    if (saved === "month" || saved === "quarter" || saved === "year") {
+      setPeriodState(saved);
+    }
+  }, [periodKey]);
   
   const params = { period };
   const { data: dashboard, isLoading } = useGetDashboard(params, {

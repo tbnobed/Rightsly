@@ -15,5 +15,7 @@ export interface RevenueReport {
   receivedDate?: Date | null;
   amount?: number | null;
   status: RevenueReportStatus;
+  documentPath?: string | null;
+  documentName?: string | null;
   createdAt: Date;
 }

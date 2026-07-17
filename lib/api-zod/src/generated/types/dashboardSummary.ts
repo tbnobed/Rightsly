@@ -6,6 +6,7 @@
  */
 import type { CalendarEvent } from './calendarEvent';
 import type { ContractListItem } from './contractListItem';
+import type { RightsInSpan } from './rightsInSpan';
 
 export interface DashboardSummary {
   activeContracts: number;
@@ -16,4 +17,5 @@ export interface DashboardSummary {
   totalRightsOut?: number;
   calendarEvents?: CalendarEvent[];
   expiringSoonContracts?: ContractListItem[];
+  rightsInSpans?: RightsInSpan[];
 }

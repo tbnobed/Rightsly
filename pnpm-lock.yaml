@@ -176,6 +176,9 @@ importers:
       '@sendgrid/mail':
         specifier: ^8.1.6
         version: 8.1.6
+      '@swc/helpers':
+        specifier: ^0.5.23
+        version: 0.5.23
       '@types/bcryptjs':
         specifier: ^3.0.0
         version: 3.0.0

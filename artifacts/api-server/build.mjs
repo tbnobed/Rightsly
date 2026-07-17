@@ -33,6 +33,9 @@ async function buildAll() {
     external: [
       "*.node",
       "sharp",
+      // pdfkit reads .afm font metric files relative to its own __dirname,
+      // so it must stay unbundled.
+      "pdfkit",
       "better-sqlite3",
       "sqlite3",
       "canvas",

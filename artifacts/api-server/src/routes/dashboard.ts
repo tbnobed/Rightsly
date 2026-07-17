@@ -124,6 +124,28 @@ router.get("/", async (req, res) => {
       ),
   ]);
 
+  // Rights In contracts overlapping the period (for platform-coded calendar)
+  const rightsInSpans = await db
+    .select({
+      contractId: contractsTable.id,
+      partnerName: partnersTable.name,
+      platforms: contractsTable.rightsInPlatforms,
+      startDate: contractsTable.startDate,
+      endDate: contractsTable.endDate,
+      endType: contractsTable.endType,
+    })
+    .from(contractsTable)
+    .leftJoin(partnersTable, eq(contractsTable.partnerId, partnersTable.id))
+    .where(
+      and(
+        eq(contractsTable.direction, "rights_in"),
+        eq(contractsTable.status, "active"),
+        eq(contractsTable.archived, false),
+        lte(contractsTable.startDate, endStr),
+        sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${startStr})`
+      )
+    );
+
   // Expiring soon (within 60 days)
   const expiringSoonContracts = await db
     .select({
@@ -193,6 +215,10 @@ router.get("/", async (req, res) => {
     totalRightsOut: Number(rightsOut),
     calendarEvents,
     expiringSoonContracts,
+    rightsInSpans: rightsInSpans.map((s) => ({
+      ...s,
+      platforms: (s.platforms as string[] | null) ?? [],
+    })),
   });
 });
 

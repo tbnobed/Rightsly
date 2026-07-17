@@ -12,4 +12,6 @@ export interface UpdateRevenueReportRequest {
   receivedDate?: Date | null;
   amount?: number | null;
   status?: UpdateRevenueReportRequestStatus;
+  documentPath?: string | null;
+  documentName?: string | null;
 }

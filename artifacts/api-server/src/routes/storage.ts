@@ -6,7 +6,7 @@ import {
 import { Router, type IRouter, type Request, type Response } from 'express';
 
 import { db } from '@workspace/db';
-import { contractAttachmentsTable } from '@workspace/db';
+import { contractAttachmentsTable, revenueReportsTable } from '@workspace/db';
 import { eq } from 'drizzle-orm';
 
 import { authenticateToken, requireRole } from '../lib/auth';
@@ -30,13 +30,16 @@ const ALLOWED_CONTENT_TYPES = new Set([
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/csv',
 ]);
 const MAX_UPLOAD_SIZE = 50 * 1024 * 1024; // 50 MB
 
 router.post(
   '/storage/uploads/request-url',
   authenticateToken,
-  requireRole('admin', 'legal'),
+  requireRole('admin', 'legal', 'finance'),
   async (req: Request, res: Response) => {
     const parsed = RequestUploadUrlBody.safeParse(req.body);
     if (!parsed.success) {
@@ -126,16 +129,29 @@ router.get('/storage/objects/*path', authenticateToken, async (req: Request, res
     const wildcardPath = Array.isArray(raw) ? raw.join('/') : raw;
     const objectPath = `/objects/${wildcardPath}`;
 
-    // Only serve objects that are registered as contract attachments.
-    // All authenticated roles can read contracts, so existence is the gate.
+    // Only serve objects registered as contract attachments or revenue report
+    // documents. All authenticated roles can read contracts, so existence is
+    // the gate for contract attachments; revenue docs are finance/admin only.
     const [attachment] = await db
       .select({ id: contractAttachmentsTable.id })
       .from(contractAttachmentsTable)
       .where(eq(contractAttachmentsTable.objectPath, objectPath))
       .limit(1);
     if (!attachment) {
-      res.status(404).json({ error: 'Object not found' });
-      return;
+      const [revenueDoc] = await db
+        .select({ id: revenueReportsTable.id })
+        .from(revenueReportsTable)
+        .where(eq(revenueReportsTable.documentPath, objectPath))
+        .limit(1);
+      if (!revenueDoc) {
+        res.status(404).json({ error: 'Object not found' });
+        return;
+      }
+      const role = req.user?.role;
+      if (role !== 'admin' && role !== 'finance') {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+      }
     }
 
     const objectFile =

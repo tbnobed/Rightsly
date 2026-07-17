@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { contractsTable, revenueReportsTable, partnersTable } from "@workspace/db";
 import { eq, and, lte, gte, desc } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
+import { sendPdfReport } from "../lib/pdfReport";
 
 const router = Router();
 router.use(authenticateToken);
@@ -71,6 +72,25 @@ router.get("/contracts", async (req, res) => {
     return;
   }
 
+  if (format === "pdf") {
+    await sendPdfReport(res, {
+      filename: `contracts-${new Date().toISOString().split("T")[0]}.pdf`,
+      title: "Contract Summaries",
+      columns: [
+        { header: "Partner", key: "partnerName", width: 3 },
+        { header: "Direction", key: "direction", width: 2 },
+        { header: "Status", key: "status", width: 2 },
+        { header: "Start Date", key: "startDate", width: 2 },
+        { header: "End Date", key: "endDate", width: 2 },
+        { header: "Territories", key: "territories", width: 3 },
+        { header: "Distribution Types", key: "distributionTypes", width: 3 },
+        { header: "Royalty Type", key: "royaltyType", width: 2 },
+      ],
+      rows: data,
+    });
+    return;
+  }
+
   res.json({ data: data.map(d => ({ ...d, contentCount: 0 })), generatedAt: new Date().toISOString() });
 });
 
@@ -128,6 +148,23 @@ router.get("/expiring", async (req, res) => {
     return;
   }
 
+  if (format === "pdf") {
+    await sendPdfReport(res, {
+      filename: `expiring-contracts-${new Date().toISOString().split("T")[0]}.pdf`,
+      title: "Expiring Soon Contracts",
+      subtitle: `Contracts expiring within ${withinDays} days — generated ${new Date().toISOString().split("T")[0]}`,
+      columns: [
+        { header: "Partner", key: "partnerName", width: 3 },
+        { header: "Direction", key: "direction", width: 2 },
+        { header: "Status", key: "status", width: 2 },
+        { header: "End Date", key: "endDate", width: 2 },
+        { header: "Territories", key: "territories", width: 3 },
+      ],
+      rows: data,
+    });
+    return;
+  }
+
   res.json({ data: data.map(d => ({ ...d, contentCount: 0 })), generatedAt: new Date().toISOString() });
 });
 
@@ -175,6 +212,23 @@ router.get("/royalties", requireRole("admin", "finance"), async (req, res) => {
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename=royalty-statements-${new Date().toISOString().split("T")[0]}.xlsx`);
     await wb.xlsx.write(res);
+    return;
+  }
+
+  if (format === "pdf") {
+    await sendPdfReport(res, {
+      filename: `royalty-statements-${new Date().toISOString().split("T")[0]}.pdf`,
+      title: "Royalty Statements",
+      columns: [
+        { header: "Partner", key: "partnerName", width: 3 },
+        { header: "Period", key: "period", width: 2 },
+        { header: "Expected Date", key: "expectedDate", width: 2 },
+        { header: "Received Date", key: "receivedDate", width: 2 },
+        { header: "Amount", key: "amount", width: 2 },
+        { header: "Status", key: "status", width: 2 },
+      ],
+      rows: data.map(r => ({ ...r, amount: r.amount ? `${Number(r.amount).toLocaleString()}` : "" })),
+    });
     return;
   }
 
