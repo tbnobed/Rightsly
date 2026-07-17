@@ -13,6 +13,16 @@ import {
 async function seed() {
   console.log("Seeding database...");
 
+  // Idempotency guard: skip if data already exists (unless SEED_FORCE=true).
+  // This makes it safe to run the seed on every `docker compose up`.
+  if (process.env.SEED_FORCE !== "true") {
+    const existing = await db.select({ id: usersTable.id }).from(usersTable).limit(1);
+    if (existing.length > 0) {
+      console.log("Database already seeded — skipping. (Set SEED_FORCE=true to re-seed.)");
+      return;
+    }
+  }
+
   // Clear in reverse dependency order
   await db.delete(revenueReportsTable);
   await db.delete(contractContentTable);

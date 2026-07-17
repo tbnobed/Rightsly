@@ -16,6 +16,38 @@ services:
       timeout: 5s
       retries: 12
 
+  # Runs on every `docker compose up`: creates/updates the schema, then exits.
+  db-push:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: db-tools
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsli}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsli}}
+
+  # Runs on every `docker compose up`: seeds initial users only if the
+  # database is empty (idempotent), then exits. SEED_FORCE=true re-seeds.
+  seed:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: api
+    restart: "no"
+    depends_on:
+      db-push:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsli}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsli}}
+      SEED_FORCE: ${SEED_FORCE:-false}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    command: ["node", "dist/seed.mjs"]
+
   api:
     build:
       context: ..
@@ -23,8 +55,8 @@ services:
       target: api
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
     environment:
       PORT: 8080
       NODE_ENV: production
@@ -53,36 +85,6 @@ services:
       - api
     ports:
       - "${WEB_PORT:-8081}:80"
-
-  # One-shot: push the Drizzle schema to the database.
-  #   docker compose --profile setup run --rm db-push
-  db-push:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-      target: db-tools
-    profiles: ["setup"]
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsli}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsli}}
-
-  # One-shot: seed initial users/data.
-  #   docker compose --profile setup run --rm seed
-  seed:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile
-      target: api
-    profiles: ["setup"]
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsli}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsli}}
-    command: ["node", "dist/seed.mjs"]
 
 volumes:
   pgdata:

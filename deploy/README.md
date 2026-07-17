@@ -34,12 +34,16 @@ nano .env    # set POSTGRES_PASSWORD, JWT_SECRET (openssl rand -hex 32), APP_BAS
 
 ```bash
 cd <repo>/deploy
-docker compose build
-docker compose up -d db
-docker compose --profile setup run --rm db-push   # create/update the schema
-docker compose --profile setup run --rm seed      # seed initial users (first install only)
-docker compose up -d
+docker compose up -d --build
 ```
+
+That single command starts Postgres, creates/updates the schema (`db-push`),
+seeds initial users if the database is empty (`seed`), then starts the API and
+web frontend. The `db-push` and `seed` containers run to completion and exit —
+seeing them as "Exited (0)" in `docker compose ps -a` is normal.
+
+To wipe and re-seed demo data later: set `SEED_FORCE=true` in `.env`, run
+`docker compose up -d` once, then remove it (it deletes all existing data).
 
 The app is now at `http://<server>:${WEB_PORT:-8081}`.
 
@@ -51,9 +55,7 @@ Default seeded logins: `admin@tbn.org / Admin1234!` (also `legal@`, `finance@`,
 ```bash
 cd <repo> && git pull
 cd deploy
-docker compose build
-docker compose --profile setup run --rm db-push   # apply any schema changes
-docker compose up -d
+docker compose up -d --build   # rebuilds, applies schema changes, restarts
 ```
 
 ## 5. HTTPS / production domain
