@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
@@ -19,6 +20,55 @@ const router = Router();
 
 const PKCE_COOKIE = "sso_pkce_verifier";
 const STATE_COOKIE = "sso_state";
+
+// One-time login codes: the SSO callback never puts the JWT in a URL.
+// Instead it issues a short-lived random code the frontend exchanges via POST.
+const SSO_CODE_TTL_MS = 60_000;
+const ssoLoginCodes = new Map<string, { token: string; expiresAt: number }>();
+
+function issueSsoLoginCode(token: string): string {
+  // Opportunistic cleanup of expired codes
+  const now = Date.now();
+  for (const [k, v] of ssoLoginCodes) {
+    if (v.expiresAt <= now) ssoLoginCodes.delete(k);
+  }
+  const code = crypto.randomBytes(32).toString("base64url");
+  ssoLoginCodes.set(code, { token, expiresAt: now + SSO_CODE_TTL_MS });
+  return code;
+}
+
+function redeemSsoLoginCode(code: string): string | null {
+  const entry = ssoLoginCodes.get(code);
+  if (!entry) return null;
+  ssoLoginCodes.delete(code);
+  if (entry.expiresAt <= Date.now()) return null;
+  return entry.token;
+}
+
+// Auto-provisioning policy (fail closed):
+// - SSO_AUTO_PROVISION=true must be set for unknown users to be created.
+// - SSO_ALLOWED_DOMAINS (comma-separated) optionally restricts which email
+//   domains may auto-provision. Empty/unset with auto-provision on = any domain.
+function autoProvisionAllowed(email: string): boolean {
+  if ((process.env.SSO_AUTO_PROVISION || "").toLowerCase() !== "true") {
+    return false;
+  }
+  const domains = (process.env.SSO_ALLOWED_DOMAINS || "")
+    .split(",")
+    .map((d) => d.trim().toLowerCase())
+    .filter(Boolean);
+  if (domains.length === 0) return true;
+  const domain = email.split("@")[1] || "";
+  return domains.includes(domain);
+}
+
+// Defense-in-depth headers for auth redirect surfaces
+function setNoStoreHeaders(res: {
+  setHeader: (name: string, value: string) => void;
+}) {
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Cache-Control", "no-store");
+}
 const SSO_COOKIE_MAX_AGE = 10 * 60 * 1000; // 10 minutes
 
 function ssoCookieOptions() {
@@ -92,6 +142,7 @@ router.get("/sso/config", (_req, res) => {
 
 // GET /api/auth/sso/login
 router.get("/sso/login", async (req, res) => {
+  setNoStoreHeaders(res);
   if (!ssoEnabled()) {
     res.status(404).json({ message: "SSO is not configured" });
     return;
@@ -124,6 +175,7 @@ router.get("/sso/login", async (req, res) => {
 
 // GET /api/auth/sso/callback
 router.get("/sso/callback", async (req, res) => {
+  setNoStoreHeaders(res);
   if (!ssoEnabled()) {
     res.status(404).json({ message: "SSO is not configured" });
     return;
@@ -187,6 +239,14 @@ router.get("/sso/callback", async (req, res) => {
         .set({ lastLogin: new Date() })
         .where(eq(usersTable.id, user.id));
     } else {
+      if (!autoProvisionAllowed(email)) {
+        logger.warn(
+          { email },
+          "SSO login rejected: user not provisioned and auto-provisioning not allowed"
+        );
+        res.redirect(`${appBaseUrl()}/login?sso_error=not_provisioned`);
+        return;
+      }
       // Auto-provision a new user. They cannot password-login: their password
       // hash is a bcrypt of a random UUID.
       const randomPassword = crypto.randomUUID();
@@ -238,11 +298,24 @@ router.get("/sso/callback", async (req, res) => {
       entityId: user.id,
     });
 
-    res.redirect(`${appBaseUrl()}/login?sso_token=${encodeURIComponent(token)}`);
+    const code = issueSsoLoginCode(token);
+    res.redirect(`${appBaseUrl()}/login?sso_code=${encodeURIComponent(code)}`);
   } catch (err) {
     logger.error({ err }, "SSO callback failed");
     res.redirect(`${appBaseUrl()}/login?sso_error=sso_failed`);
   }
+});
+
+// POST /api/auth/sso/exchange — redeem a one-time login code for a JWT.
+router.post("/sso/exchange", (req, res) => {
+  setNoStoreHeaders(res);
+  const code = typeof req.body?.code === "string" ? req.body.code : "";
+  const token = code ? redeemSsoLoginCode(code) : null;
+  if (!token) {
+    res.status(400).json({ message: "Invalid or expired login code" });
+    return;
+  }
+  res.json({ token });
 });
 
 // POST /api/auth/logout

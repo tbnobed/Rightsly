@@ -66,6 +66,14 @@ missing):
 - `AUTHENTIK_CLIENT_ID`
 - `AUTHENTIK_CLIENT_SECRET`
 
+SSO provisioning policy (fail closed):
+
+- `SSO_AUTO_PROVISION` — set to `true` to allow unknown SSO users to be
+  auto-created (role `sales`). If unset/false, users must already exist in the
+  app or they get a "not provisioned" error on SSO login.
+- `SSO_ALLOWED_DOMAINS` — optional comma-separated email domain allowlist for
+  auto-provisioning, e.g. `tbn.org`. Unset = any domain (when auto-provision on).
+
 SendGrid email (both required to enable email; emails are a no-op if missing):
 
 - `SENDGRID_API_KEY`
@@ -78,8 +86,11 @@ Register this redirect URI in the Authentik provider:
 - `${APP_BASE_URL}/api/auth/sso/callback`
   (e.g. `https://rights.example.com/api/auth/sso/callback`)
 
-Scopes requested: `openid profile email`. New SSO users are auto-provisioned
-with the `sales` role and cannot use password login.
+Scopes requested: `openid profile email`. When `SSO_AUTO_PROVISION=true`, new
+SSO users are auto-provisioned with the `sales` role and cannot use password
+login. On success, the callback redirects with a one-time short-lived code
+(`/login?sso_code=...`) which the frontend exchanges via
+`POST /api/auth/sso/exchange` — the JWT itself never appears in a URL.
 
 ### Notes
 

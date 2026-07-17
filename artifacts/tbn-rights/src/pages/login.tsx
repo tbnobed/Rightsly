@@ -22,12 +22,32 @@ export default function Login() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const ssoToken = params.get("sso_token");
+    const ssoCode = params.get("sso_code");
     const ssoError = params.get("sso_error");
 
-    if (ssoToken) {
-      localStorage.setItem("auth_token", ssoToken);
-      window.location.replace("/");
+    if (ssoCode) {
+      // Strip the one-time code from the URL immediately, then exchange it.
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.search = "";
+      window.history.replaceState({}, "", cleanUrl.toString());
+
+      fetch(`${import.meta.env.BASE_URL}api/auth/sso/exchange`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: ssoCode }),
+      })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("exchange failed"))))
+        .then((data: { token?: string }) => {
+          if (data?.token) {
+            localStorage.setItem("auth_token", data.token);
+            window.location.replace("/");
+          } else {
+            throw new Error("no token");
+          }
+        })
+        .catch(() => {
+          setError("SSO sign-in failed. Please try again or use email/password.");
+        });
       return;
     }
 
@@ -35,7 +55,9 @@ export default function Login() {
       setError(
         ssoError === "account_disabled"
           ? "Your account is disabled. Contact an administrator."
-          : "SSO sign-in failed. Please try again or use email/password."
+          : ssoError === "not_provisioned"
+            ? "Your account has not been set up in this system yet. Contact an administrator."
+            : "SSO sign-in failed. Please try again or use email/password."
       );
       const url = new URL(window.location.href);
       url.search = "";
