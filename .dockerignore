@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/.turbo
+.git
+.local
+.agents
+.cache
+.config
+.upm
+attached_assets/brand_zip
+*.log
+.env
+.env.*
+**/.env
+deploy/.env
+!deploy/.env.example

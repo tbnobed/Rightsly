@@ -1,0 +1,88 @@
+name: rightsli
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rightsli}
+      POSTGRES_USER: ${POSTGRES_USER:-rightsli}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rightsli} -d ${POSTGRES_DB:-rightsli}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsli}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsli}}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-12h}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8081}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Optional: Authentik SSO (leave unset to disable)
+      AUTHENTIK_ISSUER_URL: ${AUTHENTIK_ISSUER_URL:-}
+      AUTHENTIK_CLIENT_ID: ${AUTHENTIK_CLIENT_ID:-}
+      AUTHENTIK_CLIENT_SECRET: ${AUTHENTIK_CLIENT_SECRET:-}
+      SSO_AUTO_PROVISION: ${SSO_AUTO_PROVISION:-false}
+      SSO_ALLOWED_DOMAINS: ${SSO_ALLOWED_DOMAINS:-}
+      # Optional: SendGrid email (leave unset to disable)
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-}
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8081}:80"
+
+  # One-shot: push the Drizzle schema to the database.
+  #   docker compose --profile setup run --rm db-push
+  db-push:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: db-tools
+    profiles: ["setup"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsli}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsli}}
+
+  # One-shot: seed initial users/data.
+  #   docker compose --profile setup run --rm seed
+  seed:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: api
+    profiles: ["setup"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsli}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsli}}
+    command: ["node", "dist/seed.mjs"]
+
+volumes:
+  pgdata:
