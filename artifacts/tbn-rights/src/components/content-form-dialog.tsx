@@ -42,6 +42,118 @@ import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 
+const MEDIA_FORMATS = [
+  "SD",
+  "HD",
+  "SD & HD",
+  "Full HD (1080p)",
+  "4K / UHD",
+  "HDR",
+  "Digital Cinema Package (DCP)",
+];
+
+const CONTENT_RATINGS = [
+  "Not Rated",
+  "Not Officially Rated",
+  "G",
+  "PG",
+  "PG-13",
+  "R",
+  "NC-17",
+  "TV-Y",
+  "TV-Y7",
+  "TV-Y7-FV",
+  "TV-G",
+  "TV-PG",
+  "TV-14",
+  "TV-MA",
+];
+
+const INDUSTRY_GENRES = [
+  "Action & Adventure",
+  "Animation",
+  "Biography",
+  "Children & Family",
+  "Comedy",
+  "Crime",
+  "Documentary",
+  "Drama",
+  "Faith Based",
+  "Fantasy",
+  "Historical",
+  "Horror",
+  "Music",
+  "Musical",
+  "Mystery",
+  "News",
+  "Reality",
+  "Romance",
+  "Science Fiction",
+  "Sports",
+  "Talk Show",
+  "Thriller",
+  "War",
+  "Western",
+];
+
+function GenreMultiSelect({
+  value,
+  onChange,
+}: {
+  value?: string;
+  onChange: (value: string) => void;
+}) {
+  const selected = (value ?? "")
+    .split(/\s*(?:,|\||•)\s*/)
+    .map((genre) => genre.trim())
+    .filter(Boolean);
+  const options = Array.from(new Set([...INDUSTRY_GENRES, ...selected]));
+
+  const toggle = (genre: string) => {
+    const next = selected.includes(genre)
+      ? selected.filter((item) => item !== genre)
+      : [...selected, genre];
+    onChange(next.join(", "));
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          className="w-full justify-between bg-white px-3 font-normal"
+          data-testid="select-content-genres"
+        >
+          <span className="truncate text-left">
+            {selected.length ? selected.join(", ") : "Select one or more genres"}
+          </span>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="max-h-72 w-[var(--radix-popover-trigger-width)] overflow-y-auto p-1">
+        {options.map((genre) => {
+          const isSelected = selected.includes(genre);
+          return (
+            <button
+              key={genre}
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-slate-100"
+              onClick={() => toggle(genre)}
+            >
+              <span className="flex h-4 w-4 items-center justify-center rounded border border-slate-300 bg-white">
+                {isSelected && <Check className="h-3 w-3" />}
+              </span>
+              {genre}
+            </button>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 const seasonSchema = z.object({
   id: z.string().optional(),
   seasonNumber: z.string().refine(
@@ -591,7 +703,18 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Format</FormLabel>
-                      <FormControl><Input placeholder="e.g. HD, SD, or Both" {...field} data-testid="input-content-format" /></FormControl>
+                      <Select value={field.value || undefined} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-content-format">
+                            <SelectValue placeholder="Select a format" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {MEDIA_FORMATS.map((format) => (
+                            <SelectItem key={format} value={format}>{format}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -602,7 +725,9 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Genres</FormLabel>
-                      <FormControl><Input placeholder="e.g. Sports, Drama" {...field} data-testid="input-content-genres" /></FormControl>
+                      <FormControl>
+                        <GenreMultiSelect value={field.value} onChange={field.onChange} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -635,7 +760,18 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Rating</FormLabel>
-                      <FormControl><Input placeholder="e.g. PG-13 or TV-PG" {...field} data-testid="input-content-rating" /></FormControl>
+                      <Select value={field.value || undefined} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-content-rating">
+                            <SelectValue placeholder="Select a rating" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {CONTENT_RATINGS.map((rating) => (
+                            <SelectItem key={rating} value={rating}>{rating}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
