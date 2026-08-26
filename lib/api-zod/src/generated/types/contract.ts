@@ -5,7 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Amendment } from './amendment';
-import type { ContentItem } from './contentItem';
+import type { ContractContentItem } from './contractContentItem';
 import type { ContractDirection } from './contractDirection';
 import type { ContractEndType } from './contractEndType';
 import type { ContractPaymentTerms } from './contractPaymentTerms';
@@ -40,7 +40,7 @@ export interface Contract {
   archived?: boolean;
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
-  contentItems?: ContentItem[];
+  contentItems?: ContractContentItem[];
   selectedSeasons?: Season[];
   amendments?: Amendment[];
   createdAt: Date;

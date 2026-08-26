@@ -10,12 +10,27 @@ export const contentTypeEnum = pgEnum("content_type", [
   "WoF_FAST",
 ]);
 
+export const contentSourceEnum = pgEnum("content_source", ["tbn", "third_party"]);
+export const titleRightsTermEnum = pgEnum("title_rights_term", ["months", "years", "in_perpetuity"]);
+
 export const contentItemsTable = pgTable("content_items", {
   id: text("id").primaryKey(),
   type: contentTypeEnum("type").notNull(),
   title: text("title").notNull(),
   description: text("description"),
+  contentSource: contentSourceEnum("content_source"),
+  tbnMediaId: text("tbn_media_id"),
+  notes: text("notes"),
   year: integer("year"),
+  broadcastRightsDuration: integer("broadcast_rights_duration"),
+  broadcastRightsTerm: titleRightsTermEnum("broadcast_rights_term"),
+  digitalRightsDuration: integer("digital_rights_duration"),
+  digitalRightsTerm: titleRightsTermEnum("digital_rights_term"),
+  internationalRightsDuration: integer("international_rights_duration"),
+  internationalRightsTerm: titleRightsTermEnum("international_rights_term"),
+  internationalBroadcastAirAmount: integer("international_broadcast_air_amount"),
+  youtubeRightsDuration: integer("youtube_rights_duration"),
+  youtubeRightsTerm: titleRightsTermEnum("youtube_rights_term"),
   hasCleans: boolean("has_cleans").notNull().default(false),
   hasCaptions: boolean("has_captions").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),

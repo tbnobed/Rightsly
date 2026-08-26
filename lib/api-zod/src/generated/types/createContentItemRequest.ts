@@ -4,13 +4,62 @@
  * Api
  * OpenAPI spec version: 0.1.0
  */
+import type { CreateContentItemRequestBroadcastRightsTerm } from './createContentItemRequestBroadcastRightsTerm';
+import type { CreateContentItemRequestContentSource } from './createContentItemRequestContentSource';
+import type { CreateContentItemRequestDigitalRightsTerm } from './createContentItemRequestDigitalRightsTerm';
+import type { CreateContentItemRequestInternationalRightsTerm } from './createContentItemRequestInternationalRightsTerm';
 import type { CreateContentItemRequestSeasonsItem } from './createContentItemRequestSeasonsItem';
 import type { CreateContentItemRequestType } from './createContentItemRequestType';
+import type { CreateContentItemRequestYoutubeRightsTerm } from './createContentItemRequestYoutubeRightsTerm';
 
 export interface CreateContentItemRequest {
   type: CreateContentItemRequestType;
   title: string;
   description?: string | null;
+  contentSource: CreateContentItemRequestContentSource;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  tbnMediaId?: string | null;
+  /**
+     * @maxLength 5000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  broadcastRightsDuration?: number | null;
+  /** @nullable */
+  broadcastRightsTerm?: CreateContentItemRequestBroadcastRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  digitalRightsDuration?: number | null;
+  /** @nullable */
+  digitalRightsTerm?: CreateContentItemRequestDigitalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalRightsDuration?: number | null;
+  /** @nullable */
+  internationalRightsTerm?: CreateContentItemRequestInternationalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalBroadcastAirAmount?: number | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  youtubeRightsDuration?: number | null;
+  /** @nullable */
+  youtubeRightsTerm?: CreateContentItemRequestYoutubeRightsTerm;
   year?: number | null;
   hasCleans?: boolean;
   hasCaptions?: boolean;

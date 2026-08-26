@@ -4,13 +4,62 @@
  * Api
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateContentItemRequestBroadcastRightsTerm } from './updateContentItemRequestBroadcastRightsTerm';
+import type { UpdateContentItemRequestContentSource } from './updateContentItemRequestContentSource';
+import type { UpdateContentItemRequestDigitalRightsTerm } from './updateContentItemRequestDigitalRightsTerm';
+import type { UpdateContentItemRequestInternationalRightsTerm } from './updateContentItemRequestInternationalRightsTerm';
 import type { UpdateContentItemRequestSeasonsItem } from './updateContentItemRequestSeasonsItem';
 import type { UpdateContentItemRequestType } from './updateContentItemRequestType';
+import type { UpdateContentItemRequestYoutubeRightsTerm } from './updateContentItemRequestYoutubeRightsTerm';
 
 export interface UpdateContentItemRequest {
   type?: UpdateContentItemRequestType;
   title?: string;
   description?: string | null;
+  contentSource?: UpdateContentItemRequestContentSource;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  tbnMediaId?: string | null;
+  /**
+     * @maxLength 5000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  broadcastRightsDuration?: number | null;
+  /** @nullable */
+  broadcastRightsTerm?: UpdateContentItemRequestBroadcastRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  digitalRightsDuration?: number | null;
+  /** @nullable */
+  digitalRightsTerm?: UpdateContentItemRequestDigitalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalRightsDuration?: number | null;
+  /** @nullable */
+  internationalRightsTerm?: UpdateContentItemRequestInternationalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalBroadcastAirAmount?: number | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  youtubeRightsDuration?: number | null;
+  /** @nullable */
+  youtubeRightsTerm?: UpdateContentItemRequestYoutubeRightsTerm;
   year?: number | null;
   hasCleans?: boolean;
   hasCaptions?: boolean;

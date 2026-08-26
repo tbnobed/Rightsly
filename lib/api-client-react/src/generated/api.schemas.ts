@@ -322,6 +322,65 @@ export const ContentItemType = {
   WoF_FAST: 'WoF_FAST',
 } as const;
 
+/**
+ * @nullable
+ */
+export type ContentItemContentSource = typeof ContentItemContentSource[keyof typeof ContentItemContentSource] | null;
+
+
+export const ContentItemContentSource = {
+  tbn: 'tbn',
+  third_party: 'third_party',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ContentItemBroadcastRightsTerm = typeof ContentItemBroadcastRightsTerm[keyof typeof ContentItemBroadcastRightsTerm] | null;
+
+
+export const ContentItemBroadcastRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ContentItemDigitalRightsTerm = typeof ContentItemDigitalRightsTerm[keyof typeof ContentItemDigitalRightsTerm] | null;
+
+
+export const ContentItemDigitalRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ContentItemInternationalRightsTerm = typeof ContentItemInternationalRightsTerm[keyof typeof ContentItemInternationalRightsTerm] | null;
+
+
+export const ContentItemInternationalRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ContentItemYoutubeRightsTerm = typeof ContentItemYoutubeRightsTerm[keyof typeof ContentItemYoutubeRightsTerm] | null;
+
+
+export const ContentItemYoutubeRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
+} as const;
+
 export interface Season {
   id: string;
   contentItemId: string;
@@ -336,6 +395,45 @@ export interface ContentItem {
   type: ContentItemType;
   title: string;
   description?: string | null;
+  /** @nullable */
+  contentSource: ContentItemContentSource;
+  /** @nullable */
+  tbnMediaId: string | null;
+  /** @nullable */
+  notes: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  broadcastRightsDuration: number | null;
+  /** @nullable */
+  broadcastRightsTerm: ContentItemBroadcastRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  digitalRightsDuration: number | null;
+  /** @nullable */
+  digitalRightsTerm: ContentItemDigitalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalRightsDuration: number | null;
+  /** @nullable */
+  internationalRightsTerm: ContentItemInternationalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalBroadcastAirAmount: number | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  youtubeRightsDuration: number | null;
+  /** @nullable */
+  youtubeRightsTerm: ContentItemYoutubeRightsTerm;
   year?: number | null;
   seasons?: Season[];
   contractCount?: number;
@@ -343,6 +441,25 @@ export interface ContentItem {
   hasCaptions?: boolean;
   createdAt: string;
   updatedAt?: string;
+}
+
+export type ContractContentItemType = typeof ContractContentItemType[keyof typeof ContractContentItemType];
+
+
+export const ContractContentItemType = {
+  Film: 'Film',
+  TVSeries: 'TVSeries',
+  TBN_FAST: 'TBN_FAST',
+  TBN_Linear: 'TBN_Linear',
+  WoF_FAST: 'WoF_FAST',
+} as const;
+
+export interface ContractContentItem {
+  id: string;
+  type: ContractContentItemType;
+  title: string;
+  /** @nullable */
+  year: number | null;
 }
 
 export type CreateContentItemRequestType = typeof CreateContentItemRequestType[keyof typeof CreateContentItemRequestType];
@@ -354,6 +471,62 @@ export const CreateContentItemRequestType = {
   TBN_FAST: 'TBN_FAST',
   TBN_Linear: 'TBN_Linear',
   WoF_FAST: 'WoF_FAST',
+} as const;
+
+export type CreateContentItemRequestContentSource = typeof CreateContentItemRequestContentSource[keyof typeof CreateContentItemRequestContentSource];
+
+
+export const CreateContentItemRequestContentSource = {
+  tbn: 'tbn',
+  third_party: 'third_party',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CreateContentItemRequestBroadcastRightsTerm = typeof CreateContentItemRequestBroadcastRightsTerm[keyof typeof CreateContentItemRequestBroadcastRightsTerm] | null;
+
+
+export const CreateContentItemRequestBroadcastRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CreateContentItemRequestDigitalRightsTerm = typeof CreateContentItemRequestDigitalRightsTerm[keyof typeof CreateContentItemRequestDigitalRightsTerm] | null;
+
+
+export const CreateContentItemRequestDigitalRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CreateContentItemRequestInternationalRightsTerm = typeof CreateContentItemRequestInternationalRightsTerm[keyof typeof CreateContentItemRequestInternationalRightsTerm] | null;
+
+
+export const CreateContentItemRequestInternationalRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
+} as const;
+
+/**
+ * @nullable
+ */
+export type CreateContentItemRequestYoutubeRightsTerm = typeof CreateContentItemRequestYoutubeRightsTerm[keyof typeof CreateContentItemRequestYoutubeRightsTerm] | null;
+
+
+export const CreateContentItemRequestYoutubeRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
 } as const;
 
 export type CreateContentItemRequestSeasonsItem = {
@@ -368,6 +541,50 @@ export interface CreateContentItemRequest {
   type: CreateContentItemRequestType;
   title: string;
   description?: string | null;
+  contentSource: CreateContentItemRequestContentSource;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  tbnMediaId?: string | null;
+  /**
+     * @maxLength 5000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  broadcastRightsDuration?: number | null;
+  /** @nullable */
+  broadcastRightsTerm?: CreateContentItemRequestBroadcastRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  digitalRightsDuration?: number | null;
+  /** @nullable */
+  digitalRightsTerm?: CreateContentItemRequestDigitalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalRightsDuration?: number | null;
+  /** @nullable */
+  internationalRightsTerm?: CreateContentItemRequestInternationalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalBroadcastAirAmount?: number | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  youtubeRightsDuration?: number | null;
+  /** @nullable */
+  youtubeRightsTerm?: CreateContentItemRequestYoutubeRightsTerm;
   year?: number | null;
   hasCleans?: boolean;
   hasCaptions?: boolean;
@@ -385,6 +602,62 @@ export const UpdateContentItemRequestType = {
   WoF_FAST: 'WoF_FAST',
 } as const;
 
+export type UpdateContentItemRequestContentSource = typeof UpdateContentItemRequestContentSource[keyof typeof UpdateContentItemRequestContentSource];
+
+
+export const UpdateContentItemRequestContentSource = {
+  tbn: 'tbn',
+  third_party: 'third_party',
+} as const;
+
+/**
+ * @nullable
+ */
+export type UpdateContentItemRequestBroadcastRightsTerm = typeof UpdateContentItemRequestBroadcastRightsTerm[keyof typeof UpdateContentItemRequestBroadcastRightsTerm] | null;
+
+
+export const UpdateContentItemRequestBroadcastRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
+} as const;
+
+/**
+ * @nullable
+ */
+export type UpdateContentItemRequestDigitalRightsTerm = typeof UpdateContentItemRequestDigitalRightsTerm[keyof typeof UpdateContentItemRequestDigitalRightsTerm] | null;
+
+
+export const UpdateContentItemRequestDigitalRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
+} as const;
+
+/**
+ * @nullable
+ */
+export type UpdateContentItemRequestInternationalRightsTerm = typeof UpdateContentItemRequestInternationalRightsTerm[keyof typeof UpdateContentItemRequestInternationalRightsTerm] | null;
+
+
+export const UpdateContentItemRequestInternationalRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
+} as const;
+
+/**
+ * @nullable
+ */
+export type UpdateContentItemRequestYoutubeRightsTerm = typeof UpdateContentItemRequestYoutubeRightsTerm[keyof typeof UpdateContentItemRequestYoutubeRightsTerm] | null;
+
+
+export const UpdateContentItemRequestYoutubeRightsTerm = {
+  months: 'months',
+  years: 'years',
+  in_perpetuity: 'in_perpetuity',
+} as const;
+
 export type UpdateContentItemRequestSeasonsItem = {
   id?: string;
   seasonNumber: number;
@@ -397,6 +670,50 @@ export interface UpdateContentItemRequest {
   type?: UpdateContentItemRequestType;
   title?: string;
   description?: string | null;
+  contentSource?: UpdateContentItemRequestContentSource;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  tbnMediaId?: string | null;
+  /**
+     * @maxLength 5000
+     * @nullable
+     */
+  notes?: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  broadcastRightsDuration?: number | null;
+  /** @nullable */
+  broadcastRightsTerm?: UpdateContentItemRequestBroadcastRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  digitalRightsDuration?: number | null;
+  /** @nullable */
+  digitalRightsTerm?: UpdateContentItemRequestDigitalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalRightsDuration?: number | null;
+  /** @nullable */
+  internationalRightsTerm?: UpdateContentItemRequestInternationalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalBroadcastAirAmount?: number | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  youtubeRightsDuration?: number | null;
+  /** @nullable */
+  youtubeRightsTerm?: UpdateContentItemRequestYoutubeRightsTerm;
   year?: number | null;
   hasCleans?: boolean;
   hasCaptions?: boolean;
@@ -524,7 +841,7 @@ export interface Contract {
   archived?: boolean;
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
-  contentItems?: ContentItem[];
+  contentItems?: ContractContentItem[];
   selectedSeasons?: Season[];
   amendments?: Amendment[];
   createdAt: string;

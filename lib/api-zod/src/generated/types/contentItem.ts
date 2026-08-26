@@ -4,7 +4,12 @@
  * Api
  * OpenAPI spec version: 0.1.0
  */
+import type { ContentItemBroadcastRightsTerm } from './contentItemBroadcastRightsTerm';
+import type { ContentItemContentSource } from './contentItemContentSource';
+import type { ContentItemDigitalRightsTerm } from './contentItemDigitalRightsTerm';
+import type { ContentItemInternationalRightsTerm } from './contentItemInternationalRightsTerm';
 import type { ContentItemType } from './contentItemType';
+import type { ContentItemYoutubeRightsTerm } from './contentItemYoutubeRightsTerm';
 import type { Season } from './season';
 
 export interface ContentItem {
@@ -12,6 +17,45 @@ export interface ContentItem {
   type: ContentItemType;
   title: string;
   description?: string | null;
+  /** @nullable */
+  contentSource: ContentItemContentSource;
+  /** @nullable */
+  tbnMediaId: string | null;
+  /** @nullable */
+  notes: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  broadcastRightsDuration: number | null;
+  /** @nullable */
+  broadcastRightsTerm: ContentItemBroadcastRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  digitalRightsDuration: number | null;
+  /** @nullable */
+  digitalRightsTerm: ContentItemDigitalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalRightsDuration: number | null;
+  /** @nullable */
+  internationalRightsTerm: ContentItemInternationalRightsTerm;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  internationalBroadcastAirAmount: number | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  youtubeRightsDuration: number | null;
+  /** @nullable */
+  youtubeRightsTerm: ContentItemYoutubeRightsTerm;
   year?: number | null;
   seasons?: Season[];
   contractCount?: number;

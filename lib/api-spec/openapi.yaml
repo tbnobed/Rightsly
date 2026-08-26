@@ -386,7 +386,7 @@ components:
 
     ContentItem:
       type: object
-      required: [id, type, title, createdAt]
+      required: [id, type, title, contentSource, tbnMediaId, notes, broadcastRightsDuration, broadcastRightsTerm, digitalRightsDuration, digitalRightsTerm, internationalRightsDuration, internationalRightsTerm, internationalBroadcastAirAmount, youtubeRightsDuration, youtubeRightsTerm, createdAt]
       properties:
         id:
           type: string
@@ -398,6 +398,22 @@ components:
         description:
           type: string
           nullable: true
+        contentSource:
+          type: [string, "null"]
+          enum: [tbn, third_party, null]
+        tbnMediaId:
+          type: [string, "null"]
+        notes:
+          type: [string, "null"]
+        broadcastRightsDuration: { type: [integer, "null"], minimum: 1 }
+        broadcastRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        digitalRightsDuration: { type: [integer, "null"], minimum: 1 }
+        digitalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        internationalRightsDuration: { type: [integer, "null"], minimum: 1 }
+        internationalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        internationalBroadcastAirAmount: { type: [integer, "null"], minimum: 1 }
+        youtubeRightsDuration: { type: [integer, "null"], minimum: 1 }
+        youtubeRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
         year:
           type: integer
           nullable: true
@@ -417,6 +433,20 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    ContractContentItem:
+      type: object
+      required: [id, type, title, year]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [Film, TVSeries, TBN_FAST, TBN_Linear, WoF_FAST]
+        title:
+          type: string
+        year:
+          type: [integer, "null"]
 
     Season:
       type: object
@@ -440,7 +470,7 @@ components:
 
     CreateContentItemRequest:
       type: object
-      required: [type, title]
+      required: [type, title, contentSource]
       properties:
         type:
           type: string
@@ -450,6 +480,20 @@ components:
         description:
           type: string
           nullable: true
+        contentSource:
+          type: string
+          enum: [tbn, third_party]
+        tbnMediaId: { type: [string, "null"], maxLength: 200 }
+        notes: { type: [string, "null"], maxLength: 5000 }
+        broadcastRightsDuration: { type: [integer, "null"], minimum: 1 }
+        broadcastRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        digitalRightsDuration: { type: [integer, "null"], minimum: 1 }
+        digitalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        internationalRightsDuration: { type: [integer, "null"], minimum: 1 }
+        internationalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        internationalBroadcastAirAmount: { type: [integer, "null"], minimum: 1 }
+        youtubeRightsDuration: { type: [integer, "null"], minimum: 1 }
+        youtubeRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
         year:
           type: integer
           nullable: true
@@ -488,6 +532,20 @@ components:
         description:
           type: string
           nullable: true
+        contentSource:
+          type: string
+          enum: [tbn, third_party]
+        tbnMediaId: { type: [string, "null"], maxLength: 200 }
+        notes: { type: [string, "null"], maxLength: 5000 }
+        broadcastRightsDuration: { type: [integer, "null"], minimum: 1 }
+        broadcastRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        digitalRightsDuration: { type: [integer, "null"], minimum: 1 }
+        digitalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        internationalRightsDuration: { type: [integer, "null"], minimum: 1 }
+        internationalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        internationalBroadcastAirAmount: { type: [integer, "null"], minimum: 1 }
+        youtubeRightsDuration: { type: [integer, "null"], minimum: 1 }
+        youtubeRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
         year:
           type: integer
           nullable: true
@@ -597,7 +655,7 @@ components:
         contentItems:
           type: array
           items:
-            $ref: '#/components/schemas/ContentItem'
+            $ref: '#/components/schemas/ContractContentItem'
         selectedSeasons:
           type: array
           items:

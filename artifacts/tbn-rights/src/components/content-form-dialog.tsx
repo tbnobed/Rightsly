@@ -60,32 +60,124 @@ const seasonSchema = z.object({
 
 const contentSchema = z.object({
   title: z.string().min(1, "Title is required"),
+  contentSource: z.enum(["tbn", "third_party"], { message: "Choose TBN content or third-party content" }),
+  tbnMediaId: z.string().optional(),
   type: z.enum(["Film", "TVSeries", "TBN_FAST", "TBN_Linear", "WoF_FAST"]),
   year: z.string().refine(
     (value) => !value || (/^\d{4}$/.test(value) && Number(value) >= 1900 && Number(value) <= new Date().getFullYear() + 5),
     () => ({ message: `Year must be between 1900 and ${new Date().getFullYear() + 5}` }),
   ).optional(),
   description: z.string().optional(),
+  notes: z.string().max(5000, "Notes must be 5,000 characters or fewer").optional(),
+  broadcastRightsDuration: z.string().optional(),
+  broadcastRightsTerm: z.enum(["none", "months", "years", "in_perpetuity"]),
+  digitalRightsDuration: z.string().optional(),
+  digitalRightsTerm: z.enum(["none", "months", "years", "in_perpetuity"]),
+  internationalRightsDuration: z.string().optional(),
+  internationalRightsTerm: z.enum(["none", "months", "years", "in_perpetuity"]),
+  internationalBroadcastAirAmount: z.string().refine(
+    (value) => !value || (/^\d+$/.test(value) && Number(value) > 0),
+    "Broadcast Air Amount must be a positive whole number",
+  ).optional(),
+  youtubeRightsDuration: z.string().optional(),
+  youtubeRightsTerm: z.enum(["none", "months", "years", "in_perpetuity"]),
   hasCleans: z.boolean().default(false),
   hasCaptions: z.boolean().default(false),
   seasons: z.array(seasonSchema).default([]),
 }).superRefine((values, ctx) => {
-  if (values.type !== "TVSeries") return;
-  const seen = new Set<number>();
-  values.seasons.forEach((season, index) => {
-    const number = Number(season.seasonNumber);
-    if (seen.has(number)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["seasons", index, "seasonNumber"],
-        message: `Season ${number} is already listed`,
-      });
+  if (values.contentSource === "tbn" && !values.tbnMediaId?.trim()) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["tbnMediaId"], message: "TBN Media ID is required for TBN content" });
+  }
+  const rights = [
+    ["broadcastRightsDuration", values.broadcastRightsDuration, values.broadcastRightsTerm],
+    ["digitalRightsDuration", values.digitalRightsDuration, values.digitalRightsTerm],
+    ["internationalRightsDuration", values.internationalRightsDuration, values.internationalRightsTerm],
+    ["youtubeRightsDuration", values.youtubeRightsDuration, values.youtubeRightsTerm],
+  ] as const;
+  rights.forEach(([field, duration, term]) => {
+    if ((term === "months" || term === "years") && (!duration || !/^\d+$/.test(duration) || Number(duration) <= 0)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: "Enter a positive whole number" });
+    } else if ((term === "none" || term === "in_perpetuity") && duration) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: "Leave the number blank for this term" });
     }
-    seen.add(number);
   });
+  if (values.type === "TVSeries") {
+    const seen = new Set<number>();
+    values.seasons.forEach((season, index) => {
+      const number = Number(season.seasonNumber);
+      if (seen.has(number)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["seasons", index, "seasonNumber"],
+          message: `Season ${number} is already listed`,
+        });
+      }
+      seen.add(number);
+    });
+  }
 });
 
 type ContentFormValues = z.infer<typeof contentSchema>;
+type RightsDurationName = "broadcastRightsDuration" | "digitalRightsDuration" | "internationalRightsDuration" | "youtubeRightsDuration";
+type RightsTermName = "broadcastRightsTerm" | "digitalRightsTerm" | "internationalRightsTerm" | "youtubeRightsTerm";
+
+function RightsDurationFields({
+  form, label, durationName, termName, testId,
+}: {
+  form: ReturnType<typeof useForm<ContentFormValues>>;
+  label: string;
+  durationName: RightsDurationName;
+  termName: RightsTermName;
+  testId: string;
+}) {
+  const term = form.watch(termName);
+  const numberDisabled = term === "none" || term === "in_perpetuity";
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <h4 className="mb-3 text-sm font-semibold text-slate-900">{label}</h4>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <FormField
+          control={form.control}
+          name={durationName}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Number</FormLabel>
+              <FormControl>
+                <Input type="number" min="1" step="1" placeholder={numberDisabled ? "Not needed" : "e.g. 6"} disabled={numberDisabled} {...field} data-testid={`input-${testId}-duration`} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name={termName}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Term</FormLabel>
+              <Select
+                value={field.value}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  if (value === "none" || value === "in_perpetuity") form.setValue(durationName, "", { shouldValidate: true });
+                }}
+              >
+                <FormControl><SelectTrigger data-testid={`select-${testId}-term`}><SelectValue /></SelectTrigger></FormControl>
+                <SelectContent>
+                  <SelectItem value="none">Blank</SelectItem>
+                  <SelectItem value="months">Months</SelectItem>
+                  <SelectItem value="years">Years</SelectItem>
+                  <SelectItem value="in_perpetuity">In Perpetuity</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    </div>
+  );
+}
 
 interface ContentFormDialogProps {
   open: boolean;
@@ -105,9 +197,21 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
     resolver: zodResolver(contentSchema),
     defaultValues: {
       title: "",
+      contentSource: undefined,
+      tbnMediaId: "",
       type: "Film",
       year: "",
       description: "",
+      notes: "",
+      broadcastRightsDuration: "",
+      broadcastRightsTerm: "none",
+      digitalRightsDuration: "",
+      digitalRightsTerm: "none",
+      internationalRightsDuration: "",
+      internationalRightsTerm: "none",
+      internationalBroadcastAirAmount: "",
+      youtubeRightsDuration: "",
+      youtubeRightsTerm: "none",
       hasCleans: false,
       hasCaptions: false,
       seasons: [],
@@ -115,14 +219,27 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
   });
   const seasons = useFieldArray({ control: form.control, name: "seasons" });
   const selectedType = form.watch("type");
+  const selectedSource = form.watch("contentSource");
 
   useEffect(() => {
     if (open) {
       form.reset({
         title: content?.title ?? "",
+        contentSource: content?.contentSource ?? undefined,
+        tbnMediaId: content?.tbnMediaId ?? "",
         type: (content?.type as ContentFormValues["type"]) ?? "Film",
         year: content?.year ? String(content.year) : "",
         description: content?.description ?? "",
+        notes: content?.notes ?? "",
+        broadcastRightsDuration: content?.broadcastRightsDuration ? String(content.broadcastRightsDuration) : "",
+        broadcastRightsTerm: content?.broadcastRightsTerm ?? "none",
+        digitalRightsDuration: content?.digitalRightsDuration ? String(content.digitalRightsDuration) : "",
+        digitalRightsTerm: content?.digitalRightsTerm ?? "none",
+        internationalRightsDuration: content?.internationalRightsDuration ? String(content.internationalRightsDuration) : "",
+        internationalRightsTerm: content?.internationalRightsTerm ?? "none",
+        internationalBroadcastAirAmount: content?.internationalBroadcastAirAmount ? String(content.internationalBroadcastAirAmount) : "",
+        youtubeRightsDuration: content?.youtubeRightsDuration ? String(content.youtubeRightsDuration) : "",
+        youtubeRightsTerm: content?.youtubeRightsTerm ?? "none",
         hasCleans: content?.hasCleans ?? false,
         hasCaptions: content?.hasCaptions ?? false,
         seasons: (content?.seasons ?? []).map((season) => ({
@@ -143,9 +260,21 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
   const onSubmit = async (values: ContentFormValues) => {
     const payload = {
       title: values.title,
+      contentSource: values.contentSource,
+      tbnMediaId: values.contentSource === "tbn" ? values.tbnMediaId?.trim() || null : null,
       type: values.type as CreateContentItemRequestType,
       year: values.year ? parseInt(values.year, 10) : null,
       description: values.description || null,
+      notes: values.notes || null,
+      broadcastRightsDuration: values.broadcastRightsDuration ? Number(values.broadcastRightsDuration) : null,
+      broadcastRightsTerm: values.broadcastRightsTerm === "none" ? null : values.broadcastRightsTerm,
+      digitalRightsDuration: values.digitalRightsDuration ? Number(values.digitalRightsDuration) : null,
+      digitalRightsTerm: values.digitalRightsTerm === "none" ? null : values.digitalRightsTerm,
+      internationalRightsDuration: values.internationalRightsDuration ? Number(values.internationalRightsDuration) : null,
+      internationalRightsTerm: values.internationalRightsTerm === "none" ? null : values.internationalRightsTerm,
+      internationalBroadcastAirAmount: values.internationalBroadcastAirAmount ? Number(values.internationalBroadcastAirAmount) : null,
+      youtubeRightsDuration: values.youtubeRightsDuration ? Number(values.youtubeRightsDuration) : null,
+      youtubeRightsTerm: values.youtubeRightsTerm === "none" ? null : values.youtubeRightsTerm,
       hasCleans: values.hasCleans,
       hasCaptions: values.hasCaptions,
       seasons: values.type === "TVSeries"
@@ -203,7 +332,11 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <div>
+              <h3 className="text-base font-semibold text-slate-900">Basic Information</h3>
+              <p className="text-xs text-slate-500">Identify the title and whether it belongs to TBN.</p>
+            </div>
             <FormField
               control={form.control}
               name="title"
@@ -218,7 +351,7 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="type"
@@ -259,6 +392,45 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
               />
             </div>
 
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="contentSource"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Content Source</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        if (value === "third_party") form.setValue("tbnMediaId", "", { shouldValidate: true });
+                      }}
+                    >
+                      <FormControl><SelectTrigger data-testid="select-content-source"><SelectValue placeholder="Choose source..." /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="tbn">TBN Content</SelectItem>
+                        <SelectItem value="third_party">Third-Party Content</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {selectedSource === "tbn" && (
+                <FormField
+                  control={form.control}
+                  name="tbnMediaId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>TBN Media ID</FormLabel>
+                      <FormControl><Input placeholder="Enter TBN Media ID..." {...field} data-testid="input-tbn-media-id" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
             <FormField
               control={form.control}
               name="description"
@@ -268,6 +440,44 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
                   <FormControl>
                     <Textarea placeholder="Synopsis..." {...field} data-testid="input-content-description" />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Rights Information</h3>
+                <p className="text-xs text-slate-500">Leave a term blank when no title-level rights summary is available.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                <RightsDurationFields form={form} label="Broadcast Rights" durationName="broadcastRightsDuration" termName="broadcastRightsTerm" testId="broadcast-rights" />
+                <RightsDurationFields form={form} label="Digital Rights" durationName="digitalRightsDuration" termName="digitalRightsTerm" testId="digital-rights" />
+                <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+                  <RightsDurationFields form={form} label="International Rights" durationName="internationalRightsDuration" termName="internationalRightsTerm" testId="international-rights" />
+                  <FormField
+                    control={form.control}
+                    name="internationalBroadcastAirAmount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Broadcast Air Amount</FormLabel>
+                        <FormControl><Input type="number" min="1" step="1" placeholder="e.g. 4 allowed airings" {...field} data-testid="input-international-air-amount" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <RightsDurationFields form={form} label="YouTube Rights" durationName="youtubeRightsDuration" termName="youtubeRightsTerm" testId="youtube-rights" />
+              </div>
+            </div>
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl><Textarea placeholder="Additional title or rights notes..." className="min-h-[90px]" {...field} data-testid="input-content-notes" /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}

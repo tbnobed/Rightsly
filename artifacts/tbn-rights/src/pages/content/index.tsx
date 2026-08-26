@@ -158,6 +158,7 @@ export default function ContentList() {
               <tr>
                 <SortHeader field="title" label="Title" />
                 <SortHeader field="type" label="Type" />
+                <th className="px-6 py-4 font-medium">Source</th>
                 <SortHeader field="year" label="Year" />
                 <SortHeader field="contractCount" label="Active Contracts" />
                 <th className="px-6 py-4"></th>
@@ -165,10 +166,10 @@ export default function ContentList() {
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
               {isLoading ? (
-                <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">Loading catalog...</td></tr>
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">Loading catalog...</td></tr>
               ) : !result?.data || result.data.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center">
+                  <td colSpan={6} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <Film className="w-10 h-10 text-slate-300 mb-3" />
                       <p className="text-slate-500 font-medium">No content found</p>
@@ -207,6 +208,13 @@ export default function ContentList() {
                       <Badge variant="outline" className="font-medium bg-white">
                         {item.type.replace(/_/g, ' ')}
                       </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      {item.contentSource ? (
+                        <Badge variant="outline" className={item.contentSource === "tbn" ? "border-amber-200 bg-amber-50 text-amber-800" : "bg-white text-slate-600"} data-testid={`badge-source-${item.id}`}>
+                          {item.contentSource === "tbn" ? "TBN" : "Third Party"}
+                        </Badge>
+                      ) : <span className="text-slate-400">Not set</span>}
                     </td>
                     <td className="px-6 py-4 text-slate-600 font-medium">
                       {item.year || '-'}

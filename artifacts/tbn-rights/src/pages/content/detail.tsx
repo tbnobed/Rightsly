@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/pages/contracts/index";
 import { ContentFormDialog } from "@/components/content-form-dialog";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, Edit, Film, FileText, ChevronRight, Layers, LayoutList, Globe, Sparkles, Captions, Trash2 } from "lucide-react";
+import { ChevronLeft, Edit, Film, FileText, ChevronRight, Layers, LayoutList, Globe, Sparkles, Captions, Trash2, ShieldCheck } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +23,13 @@ import {
 import { useAuth } from "@/contexts/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+
+function formatTitleRight(duration: number | null, term: "months" | "years" | "in_perpetuity" | null) {
+  if (term === "in_perpetuity") return "In Perpetuity";
+  if (!term || !duration) return "Not specified";
+  const label = term === "months" ? "Month" : "Year";
+  return `${duration} ${label}${duration === 1 ? "" : "s"}`;
+}
 
 export default function ContentDetail() {
   const { id } = useParams<{ id: string }>();
@@ -96,6 +103,11 @@ export default function ContentDetail() {
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">{content.title}</h1>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <Badge variant="outline" className="bg-white">{content.type.replace(/_/g, ' ')}</Badge>
+                {content.contentSource && (
+                  <Badge variant="outline" className={content.contentSource === "tbn" ? "border-amber-200 bg-amber-50 text-amber-800" : "bg-white text-slate-600"} data-testid="badge-content-source">
+                    {content.contentSource === "tbn" ? "TBN Content" : "Third-Party Content"}
+                  </Badge>
+                )}
                 {content.year && <span className="text-sm font-medium text-slate-500">{content.year}</span>}
                 {content.hasCleans && (
                   <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50 text-[10px] gap-1" data-testid="badge-cleans">
@@ -157,6 +169,22 @@ export default function ContentDetail() {
                   <p className="text-sm text-slate-700 leading-relaxed">{content.description}</p>
                 </div>
               )}
+              <div>
+                <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">Content Source</span>
+                <p className="text-sm text-slate-700">{content.contentSource === "tbn" ? "TBN Content" : content.contentSource === "third_party" ? "Third-Party Content" : "Not set"}</p>
+              </div>
+              {content.contentSource === "tbn" && (
+                <div>
+                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">TBN Media ID</span>
+                  <p className="text-sm font-mono text-slate-700" data-testid="text-tbn-media-id">{content.tbnMediaId}</p>
+                </div>
+              )}
+              {content.notes && (
+                <div>
+                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">Notes</span>
+                  <p className="whitespace-pre-wrap text-sm text-slate-700 leading-relaxed" data-testid="text-content-notes">{content.notes}</p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">Internal ID</span>
@@ -166,6 +194,31 @@ export default function ContentDetail() {
                   <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">Added</span>
                   <p className="text-sm text-slate-700">{format(parseISO(content.createdAt), 'MMM yyyy')}</p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 shadow-sm" data-testid="card-title-rights">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg"><ShieldCheck className="h-5 w-5 text-emerald-600" /> Rights Information</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2">
+              {[
+                ["Broadcast Rights", formatTitleRight(content.broadcastRightsDuration, content.broadcastRightsTerm)],
+                ["Digital Rights", formatTitleRight(content.digitalRightsDuration, content.digitalRightsTerm)],
+                ["International Rights", formatTitleRight(content.internationalRightsDuration, content.internationalRightsTerm)],
+                ["YouTube Rights", formatTitleRight(content.youtubeRightsDuration, content.youtubeRightsTerm)],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <span className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</span>
+                  <p className="mt-1 text-sm font-semibold text-slate-800">{value}</p>
+                </div>
+              ))}
+              <div className="sm:col-span-2 rounded-md bg-slate-50 p-3">
+                <span className="text-xs font-medium uppercase tracking-wider text-slate-500">International Broadcast Air Amount</span>
+                <p className="mt-1 text-sm font-semibold text-slate-800" data-testid="text-international-air-amount">
+                  {content.internationalBroadcastAirAmount ? `${content.internationalBroadcastAirAmount} allowed airing${content.internationalBroadcastAirAmount === 1 ? "" : "s"}` : "Not specified"}
+                </p>
               </div>
             </CardContent>
           </Card>

@@ -924,7 +924,7 @@ async function getContractById(id: string, role?: string) {
       reportingFrequency: c.rightsOutReportingFrequency,
       minPaymentThreshold: canViewFinancials(role) && c.rightsOutMinPaymentThreshold ? Number(c.rightsOutMinPaymentThreshold) : null,
     } : null,
-    contentItems: linkedContent.map(item => ({ ...item, contractCount: 0, seasons: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })),
+    contentItems: linkedContent,
     selectedSeasons: linkedSeasons,
     amendments,
     createdAt: c.createdAt,

@@ -4,7 +4,7 @@ import { contentItemsTable, seasonsTable, contractContentTable, contractSeasonsT
 import { eq, ilike, and, count, sql, desc, asc, inArray } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
-import { routeParam, validateContentYear } from "../lib/validation";
+import { normalizeTitleRights, routeParam, validateContentYear } from "../lib/validation";
 import { normalizeContentType } from "../lib/rightsValidation";
 
 const router = Router();
@@ -48,7 +48,19 @@ router.get("/", async (req, res) => {
         type: contentItemsTable.type,
         title: contentItemsTable.title,
         description: contentItemsTable.description,
+        contentSource: contentItemsTable.contentSource,
+        tbnMediaId: contentItemsTable.tbnMediaId,
+        notes: contentItemsTable.notes,
         year: contentItemsTable.year,
+        broadcastRightsDuration: contentItemsTable.broadcastRightsDuration,
+        broadcastRightsTerm: contentItemsTable.broadcastRightsTerm,
+        digitalRightsDuration: contentItemsTable.digitalRightsDuration,
+        digitalRightsTerm: contentItemsTable.digitalRightsTerm,
+        internationalRightsDuration: contentItemsTable.internationalRightsDuration,
+        internationalRightsTerm: contentItemsTable.internationalRightsTerm,
+        internationalBroadcastAirAmount: contentItemsTable.internationalBroadcastAirAmount,
+        youtubeRightsDuration: contentItemsTable.youtubeRightsDuration,
+        youtubeRightsTerm: contentItemsTable.youtubeRightsTerm,
         hasCleans: contentItemsTable.hasCleans,
         hasCaptions: contentItemsTable.hasCaptions,
         createdAt: contentItemsTable.createdAt,
@@ -100,7 +112,7 @@ router.get("/", async (req, res) => {
 router.post("/", requireRole("admin", "legal"), async (req, res) => {
   const { type, title, description, year, seasons, hasCleans, hasCaptions } = req.body;
 
-  if (!type || !title) {
+  if (!type || typeof title !== "string" || !title.trim()) {
     res.status(400).json({ message: "type and title are required" });
     return;
   }
@@ -111,11 +123,17 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
   }
   const yearError = validateContentYear(year);
   if (yearError) { res.status(400).json({ message: yearError }); return; }
+  const normalizedRights = normalizeTitleRights(req.body);
+  if (!normalizedRights.value) { res.status(400).json({ message: normalizedRights.error }); return; }
 
   const id = crypto.randomUUID();
   const [item] = await db
     .insert(contentItemsTable)
-    .values({ id, type: normalizedType, title, description: description || null, year: year || null, hasCleans: !!hasCleans, hasCaptions: !!hasCaptions })
+    .values({
+      id, type: normalizedType, title: title.trim(), description: description || null,
+      year: year || null, hasCleans: !!hasCleans, hasCaptions: !!hasCaptions,
+      ...normalizedRights.value,
+    })
     .returning();
 
   let createdSeasons: any[] = [];
@@ -164,13 +182,58 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   const id = routeParam(req.params.id);
   const { type, title, description, year, seasons, hasCleans, hasCaptions } = req.body;
-  const normalizedType = normalizeContentType(type);
+  const [current] = await db.select().from(contentItemsTable).where(eq(contentItemsTable.id, id));
+  if (!current) { res.status(404).json({ message: "Content item not found" }); return; }
+  if (title !== undefined && (typeof title !== "string" || !title.trim())) {
+    res.status(400).json({ message: "title must be a non-empty string" });
+    return;
+  }
+  const normalizedType = normalizeContentType(type ?? current.type);
   if (!normalizedType) {
     res.status(400).json({ message: `Unrecognized content type: ${type}` });
     return;
   }
-  const yearError = validateContentYear(year);
+  const yearError = validateContentYear(year === undefined ? current.year : year);
   if (yearError) { res.status(400).json({ message: yearError }); return; }
+  const rightsInput = {
+    contentSource: req.body.contentSource ?? current.contentSource,
+    tbnMediaId: req.body.tbnMediaId === undefined ? current.tbnMediaId : req.body.tbnMediaId,
+    notes: req.body.notes === undefined ? current.notes : req.body.notes,
+    broadcastRightsDuration: req.body.broadcastRightsDuration === undefined ? current.broadcastRightsDuration : req.body.broadcastRightsDuration,
+    broadcastRightsTerm: req.body.broadcastRightsTerm === undefined ? current.broadcastRightsTerm : req.body.broadcastRightsTerm,
+    digitalRightsDuration: req.body.digitalRightsDuration === undefined ? current.digitalRightsDuration : req.body.digitalRightsDuration,
+    digitalRightsTerm: req.body.digitalRightsTerm === undefined ? current.digitalRightsTerm : req.body.digitalRightsTerm,
+    internationalRightsDuration: req.body.internationalRightsDuration === undefined ? current.internationalRightsDuration : req.body.internationalRightsDuration,
+    internationalRightsTerm: req.body.internationalRightsTerm === undefined ? current.internationalRightsTerm : req.body.internationalRightsTerm,
+    internationalBroadcastAirAmount: req.body.internationalBroadcastAirAmount === undefined ? current.internationalBroadcastAirAmount : req.body.internationalBroadcastAirAmount,
+    youtubeRightsDuration: req.body.youtubeRightsDuration === undefined ? current.youtubeRightsDuration : req.body.youtubeRightsDuration,
+    youtubeRightsTerm: req.body.youtubeRightsTerm === undefined ? current.youtubeRightsTerm : req.body.youtubeRightsTerm,
+  };
+  const rightsFieldNames = [
+    "tbnMediaId", "broadcastRightsDuration", "broadcastRightsTerm",
+    "digitalRightsDuration", "digitalRightsTerm", "internationalRightsDuration",
+    "internationalRightsTerm", "internationalBroadcastAirAmount",
+    "youtubeRightsDuration", "youtubeRightsTerm",
+  ];
+  let rightsValues;
+  if (current.contentSource === null && req.body.contentSource === undefined) {
+    if (rightsFieldNames.some((field) => Object.prototype.hasOwnProperty.call(req.body, field))) {
+      res.status(400).json({ message: "contentSource is required when updating title rights information" });
+      return;
+    }
+    const notes = req.body.notes === undefined
+      ? current.notes
+      : typeof req.body.notes === "string" && req.body.notes.trim() ? req.body.notes.trim() : null;
+    if (notes && notes.length > 5000) {
+      res.status(400).json({ message: "notes must be 5,000 characters or fewer" });
+      return;
+    }
+    rightsValues = { ...rightsInput, contentSource: null, notes };
+  } else {
+    const normalizedRights = normalizeTitleRights(rightsInput);
+    if (!normalizedRights.value) { res.status(400).json({ message: normalizedRights.error }); return; }
+    rightsValues = normalizedRights.value;
+  }
   try {
     const result = await db.transaction(async (tx) => {
       let currentSeasonRows: { id: string }[] = [];
@@ -198,9 +261,10 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
 
       const [item] = await tx.update(contentItemsTable).set({
         type: normalizedType,
-        title,
-        description: description || null,
-        year: year || null,
+        title: title === undefined ? current.title : title.trim(),
+        description: description === undefined ? current.description : description || null,
+        year: year === undefined ? current.year : year || null,
+        ...rightsValues,
         ...(hasCleans !== undefined ? { hasCleans: !!hasCleans } : {}),
         ...(hasCaptions !== undefined ? { hasCaptions: !!hasCaptions } : {}),
         updatedAt: new Date(),

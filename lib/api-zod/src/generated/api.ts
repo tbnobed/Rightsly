@@ -645,21 +645,7 @@ export const CreateContractResponse = zod.object({
   "id": zod.string(),
   "type": zod.enum(['Film', 'TVSeries', 'TBN_FAST', 'TBN_Linear', 'WoF_FAST']),
   "title": zod.string(),
-  "description": zod.string().nullish(),
-  "year": zod.number().nullish(),
-  "seasons": zod.array(zod.object({
-  "id": zod.string(),
-  "contentItemId": zod.string(),
-  "seasonNumber": zod.number(),
-  "title": zod.string().nullish(),
-  "year": zod.number().nullish(),
-  "episodeCount": zod.number().nullish()
-})).optional(),
-  "contractCount": zod.number().optional(),
-  "hasCleans": zod.boolean().optional(),
-  "hasCaptions": zod.boolean().optional(),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date().optional()
+  "year": zod.number().nullable()
 })).optional(),
   "selectedSeasons": zod.array(zod.object({
   "id": zod.string(),
@@ -750,21 +736,7 @@ export const GetContractResponse = zod.object({
   "id": zod.string(),
   "type": zod.enum(['Film', 'TVSeries', 'TBN_FAST', 'TBN_Linear', 'WoF_FAST']),
   "title": zod.string(),
-  "description": zod.string().nullish(),
-  "year": zod.number().nullish(),
-  "seasons": zod.array(zod.object({
-  "id": zod.string(),
-  "contentItemId": zod.string(),
-  "seasonNumber": zod.number(),
-  "title": zod.string().nullish(),
-  "year": zod.number().nullish(),
-  "episodeCount": zod.number().nullish()
-})).optional(),
-  "contractCount": zod.number().optional(),
-  "hasCleans": zod.boolean().optional(),
-  "hasCaptions": zod.boolean().optional(),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date().optional()
+  "year": zod.number().nullable()
 })).optional(),
   "selectedSeasons": zod.array(zod.object({
   "id": zod.string(),
@@ -884,21 +856,7 @@ export const UpdateContractResponse = zod.object({
   "id": zod.string(),
   "type": zod.enum(['Film', 'TVSeries', 'TBN_FAST', 'TBN_Linear', 'WoF_FAST']),
   "title": zod.string(),
-  "description": zod.string().nullish(),
-  "year": zod.number().nullish(),
-  "seasons": zod.array(zod.object({
-  "id": zod.string(),
-  "contentItemId": zod.string(),
-  "seasonNumber": zod.number(),
-  "title": zod.string().nullish(),
-  "year": zod.number().nullish(),
-  "episodeCount": zod.number().nullish()
-})).optional(),
-  "contractCount": zod.number().optional(),
-  "hasCleans": zod.boolean().optional(),
-  "hasCaptions": zod.boolean().optional(),
-  "createdAt": zod.coerce.date(),
-  "updatedAt": zod.coerce.date().optional()
+  "year": zod.number().nullable()
 })).optional(),
   "selectedSeasons": zod.array(zod.object({
   "id": zod.string(),
@@ -1331,12 +1289,31 @@ export const ListContentQueryParams = zod.object({
   "sortDirection": zod.enum(['asc', 'desc']).default(listContentQuerySortDirectionDefault)
 })
 
+
+
+
+
+
+
+
 export const ListContentResponse = zod.object({
   "data": zod.array(zod.object({
   "id": zod.string(),
   "type": zod.enum(['Film', 'TVSeries', 'TBN_FAST', 'TBN_Linear', 'WoF_FAST']),
   "title": zod.string(),
   "description": zod.string().nullish(),
+  "contentSource": zod.union([zod.literal('tbn'),zod.literal('third_party'),zod.literal(null)]).nullable(),
+  "tbnMediaId": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "broadcastRightsDuration": zod.number().min(1).nullable(),
+  "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "digitalRightsDuration": zod.number().min(1).nullable(),
+  "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalRightsDuration": zod.number().min(1).nullable(),
+  "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalBroadcastAirAmount": zod.number().min(1).nullable(),
+  "youtubeRightsDuration": zod.number().min(1).nullable(),
+  "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
   "year": zod.number().nullish(),
   "seasons": zod.array(zod.object({
   "id": zod.string(),
@@ -1361,10 +1338,33 @@ export const ListContentResponse = zod.object({
 /**
  * @summary Create a content catalog item
  */
+export const createContentBodyTbnMediaIdMax = 200;
+
+export const createContentBodyNotesMax = 5000;
+
+
+
+
+
+
+
+
 export const CreateContentBody = zod.object({
   "type": zod.enum(['Film', 'TVSeries', 'TBN_FAST', 'TBN_Linear', 'WoF_FAST']),
   "title": zod.string(),
   "description": zod.string().nullish(),
+  "contentSource": zod.enum(['tbn', 'third_party']),
+  "tbnMediaId": zod.string().max(createContentBodyTbnMediaIdMax).nullish(),
+  "notes": zod.string().max(createContentBodyNotesMax).nullish(),
+  "broadcastRightsDuration": zod.number().min(1).nullish(),
+  "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "digitalRightsDuration": zod.number().min(1).nullish(),
+  "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "internationalRightsDuration": zod.number().min(1).nullish(),
+  "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "internationalBroadcastAirAmount": zod.number().min(1).nullish(),
+  "youtubeRightsDuration": zod.number().min(1).nullish(),
+  "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
   "year": zod.number().nullish(),
   "hasCleans": zod.boolean().optional(),
   "hasCaptions": zod.boolean().optional(),
@@ -1377,11 +1377,30 @@ export const CreateContentBody = zod.object({
 })).optional()
 })
 
+
+
+
+
+
+
+
 export const CreateContentResponse = zod.object({
   "id": zod.string(),
   "type": zod.enum(['Film', 'TVSeries', 'TBN_FAST', 'TBN_Linear', 'WoF_FAST']),
   "title": zod.string(),
   "description": zod.string().nullish(),
+  "contentSource": zod.union([zod.literal('tbn'),zod.literal('third_party'),zod.literal(null)]).nullable(),
+  "tbnMediaId": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "broadcastRightsDuration": zod.number().min(1).nullable(),
+  "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "digitalRightsDuration": zod.number().min(1).nullable(),
+  "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalRightsDuration": zod.number().min(1).nullable(),
+  "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalBroadcastAirAmount": zod.number().min(1).nullable(),
+  "youtubeRightsDuration": zod.number().min(1).nullable(),
+  "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
   "year": zod.number().nullish(),
   "seasons": zod.array(zod.object({
   "id": zod.string(),
@@ -1406,11 +1425,30 @@ export const GetContentParams = zod.object({
   "id": zod.coerce.string()
 })
 
+
+
+
+
+
+
+
 export const GetContentResponse = zod.object({
   "id": zod.string(),
   "type": zod.enum(['Film', 'TVSeries', 'TBN_FAST', 'TBN_Linear', 'WoF_FAST']),
   "title": zod.string(),
   "description": zod.string().nullish(),
+  "contentSource": zod.union([zod.literal('tbn'),zod.literal('third_party'),zod.literal(null)]).nullable(),
+  "tbnMediaId": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "broadcastRightsDuration": zod.number().min(1).nullable(),
+  "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "digitalRightsDuration": zod.number().min(1).nullable(),
+  "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalRightsDuration": zod.number().min(1).nullable(),
+  "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalBroadcastAirAmount": zod.number().min(1).nullable(),
+  "youtubeRightsDuration": zod.number().min(1).nullable(),
+  "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
   "year": zod.number().nullish(),
   "seasons": zod.array(zod.object({
   "id": zod.string(),
@@ -1435,10 +1473,33 @@ export const UpdateContentParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const updateContentBodyTbnMediaIdMax = 200;
+
+export const updateContentBodyNotesMax = 5000;
+
+
+
+
+
+
+
+
 export const UpdateContentBody = zod.object({
   "type": zod.enum(['Film', 'TVSeries', 'TBN_FAST', 'TBN_Linear', 'WoF_FAST']).optional(),
   "title": zod.string().optional(),
   "description": zod.string().nullish(),
+  "contentSource": zod.enum(['tbn', 'third_party']).optional(),
+  "tbnMediaId": zod.string().max(updateContentBodyTbnMediaIdMax).nullish(),
+  "notes": zod.string().max(updateContentBodyNotesMax).nullish(),
+  "broadcastRightsDuration": zod.number().min(1).nullish(),
+  "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "digitalRightsDuration": zod.number().min(1).nullish(),
+  "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "internationalRightsDuration": zod.number().min(1).nullish(),
+  "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "internationalBroadcastAirAmount": zod.number().min(1).nullish(),
+  "youtubeRightsDuration": zod.number().min(1).nullish(),
+  "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
   "year": zod.number().nullish(),
   "hasCleans": zod.boolean().optional(),
   "hasCaptions": zod.boolean().optional(),
@@ -1451,11 +1512,30 @@ export const UpdateContentBody = zod.object({
 })).optional()
 })
 
+
+
+
+
+
+
+
 export const UpdateContentResponse = zod.object({
   "id": zod.string(),
   "type": zod.enum(['Film', 'TVSeries', 'TBN_FAST', 'TBN_Linear', 'WoF_FAST']),
   "title": zod.string(),
   "description": zod.string().nullish(),
+  "contentSource": zod.union([zod.literal('tbn'),zod.literal('third_party'),zod.literal(null)]).nullable(),
+  "tbnMediaId": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "broadcastRightsDuration": zod.number().min(1).nullable(),
+  "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "digitalRightsDuration": zod.number().min(1).nullable(),
+  "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalRightsDuration": zod.number().min(1).nullable(),
+  "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalBroadcastAirAmount": zod.number().min(1).nullable(),
+  "youtubeRightsDuration": zod.number().min(1).nullable(),
+  "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
   "year": zod.number().nullish(),
   "seasons": zod.array(zod.object({
   "id": zod.string(),
