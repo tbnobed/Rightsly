@@ -18,7 +18,7 @@ export default function PartnersList() {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
   const [sortBy, setSortBy] = useState<PartnerSortBy>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [, navigate] = useLocation();
@@ -46,8 +46,8 @@ export default function PartnersList() {
   const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / pageSize));
 
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
+    if (result && page > totalPages) setPage(totalPages);
+  }, [page, result, totalPages]);
 
   const changeSort = (field: PartnerSortBy) => {
     if (sortBy === field) {
