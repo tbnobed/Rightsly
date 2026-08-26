@@ -703,6 +703,19 @@ export const CreateAmendmentResponse = zod.object({
 
 
 /**
+ * @summary Delete an amendment from a contract
+ */
+export const DeleteAmendmentParams = zod.object({
+  "id": zod.coerce.string(),
+  "amendmentId": zod.coerce.string()
+})
+
+export const DeleteAmendmentResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
  * @summary List file attachments for a contract
  */
 export const ListContractAttachmentsParams = zod.object({

@@ -33,6 +33,7 @@ import type {
   CreateRevenueReportRequest,
   CreateUserRequest,
   DashboardSummary,
+  DeleteAmendment200,
   DeleteContent200,
   DeleteContract200,
   DeletePartner200,
@@ -1754,6 +1755,79 @@ export const useCreateAmendment = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateAmendmentMutationOptions(options));
+    }
+
+export const getDeleteAmendmentUrl = (id: string,
+    amendmentId: string,) => {
+
+
+
+
+  return `/api/contracts/${id}/amendments/${amendmentId}`
+}
+
+/**
+ * @summary Delete an amendment from a contract
+ */
+export const deleteAmendment = async (id: string,
+    amendmentId: string, options?: RequestInit): Promise<DeleteAmendment200> => {
+
+  return customFetch<DeleteAmendment200>(getDeleteAmendmentUrl(id,amendmentId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteAmendmentMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAmendment>>, TError,{id: string;amendmentId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAmendment>>, TError,{id: string;amendmentId: string}, TContext> => {
+
+const mutationKey = ['deleteAmendment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAmendment>>, {id: string;amendmentId: string}> = (props) => {
+          const {id,amendmentId} = props ?? {};
+
+          return  deleteAmendment(id,amendmentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAmendmentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAmendment>>>
+
+    export type DeleteAmendmentMutationError = ErrorType<Error>
+
+    /**
+ * @summary Delete an amendment from a contract
+ */
+export const useDeleteAmendment = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAmendment>>, TError,{id: string;amendmentId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAmendment>>,
+        TError,
+        {id: string;amendmentId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteAmendmentMutationOptions(options));
     }
 
 export const getListContractAttachmentsUrl = (id: string,) => {

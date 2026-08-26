@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { normalizeRightValue, territoriesOverlap } from "./rightsMatching.ts";
-import { distributionTypesIntersect } from "./rightsVocabulary.ts";
+import {
+  distributionTypesIntersect,
+  isRecognizedDistributionType,
+  isRecognizedTerritory,
+  unrecognizedDistributionTypes,
+  unrecognizedTerritories,
+} from "./rightsVocabulary.ts";
 
 test("Global request overlaps a specific territorial grant", () => {
   assert.equal(territoriesOverlap("Global", ["US"]), true);
@@ -35,4 +41,17 @@ test("regional hierarchy and distribution groupings match conservatively both wa
   assert.equal(distributionTypesIntersect("VOD", "SVOD"), true);
   assert.equal(distributionTypesIntersect("Broadcast", "Linear"), true);
   assert.equal(distributionTypesIntersect("FAST", "SVOD"), false);
+});
+
+test("canonical rights values and documented aliases are recognized", () => {
+  assert.equal(isRecognizedTerritory("United States"), true);
+  assert.equal(isRecognizedTerritory("us"), true);
+  assert.equal(isRecognizedTerritory("LATAM"), true);
+  assert.equal(isRecognizedDistributionType("Linear"), true);
+  assert.equal(isRecognizedDistributionType("Linear Broadcast"), true);
+});
+
+test("unknown rights values are rejected by boundary validators", () => {
+  assert.deepEqual(unrecognizedTerritories(["US", "Atlantis"]), ["Atlantis"]);
+  assert.deepEqual(unrecognizedDistributionTypes(["SVOD", "Hologram"]), ["Hologram"]);
 });

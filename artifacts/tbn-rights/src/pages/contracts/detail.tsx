@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/auth";
 import { Link, useLocation, useParams } from "wouter";
-import { useGetContract, getGetContractQueryKey, useGetContentContracts, getGetContentContractsQueryKey, useUpdateContract, useDeleteContract, getListContractsQueryKey } from "@workspace/api-client-react";
+import { useGetContract, getGetContractQueryKey, useGetContentContracts, getGetContentContractsQueryKey, useUpdateContract, useDeleteContract, useCreateAmendment, useDeleteAmendment, useRequestUploadUrl, getListContractsQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -13,6 +13,10 @@ import { format, parseISO } from "date-fns";
 import { ChevronLeft, Edit, FileText, Globe, Link as LinkIcon, Download, AlertCircle, Plus, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContractAttachments } from "@/components/contract-attachments";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function ContractDetail() {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +34,92 @@ export default function ContractDetail() {
 
   const updateContract = useUpdateContract();
   const deleteContract = useDeleteContract();
+  const createAmendment = useCreateAmendment();
+  const deleteAmendment = useDeleteAmendment();
+  const requestUploadUrl = useRequestUploadUrl();
+  const [amendmentOpen, setAmendmentOpen] = useState(false);
+  const [amendmentDate, setAmendmentDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [amendmentDescription, setAmendmentDescription] = useState("");
+  const [amendmentFile, setAmendmentFile] = useState<File | null>(null);
+
+  const resetAmendmentForm = () => {
+    setAmendmentDate(format(new Date(), "yyyy-MM-dd"));
+    setAmendmentDescription("");
+    setAmendmentFile(null);
+  };
+
+  const handleAmendmentOpenChange = (open: boolean) => {
+    setAmendmentOpen(open);
+    if (!open) resetAmendmentForm();
+  };
+
+  const handleCreateAmendment = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!contract || !amendmentDate || !amendmentDescription.trim()) return;
+    try {
+      let documentUrl: string | undefined;
+      if (amendmentFile) {
+        const contentType = amendmentFile.type || "application/octet-stream";
+        const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
+          data: { name: amendmentFile.name, size: amendmentFile.size, contentType },
+        });
+        const uploadResponse = await fetch(uploadURL, {
+          method: "PUT",
+          headers: { "Content-Type": contentType },
+          body: amendmentFile,
+        });
+        if (!uploadResponse.ok) throw new Error("Document upload failed");
+        documentUrl = objectPath;
+      }
+      await createAmendment.mutateAsync({
+        id: contract.id,
+        data: {
+          date: amendmentDate,
+          description: amendmentDescription.trim(),
+          documentUrl,
+        },
+      });
+      await queryClient.invalidateQueries({ queryKey: getGetContractQueryKey(contract.id) });
+      handleAmendmentOpenChange(false);
+      toast({ title: "Amendment added", description: "The contract amendment is now recorded." });
+    } catch (err) {
+      toast({
+        title: "Could not add amendment",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openAmendmentDocument = async (documentUrl: string) => {
+    if (!documentUrl.startsWith("/")) {
+      window.open(documentUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const token = localStorage.getItem("auth_token");
+    const response = await fetch(`${import.meta.env.BASE_URL}api/storage${documentUrl}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!response.ok) throw new Error("Failed to download document");
+    const blobUrl = URL.createObjectURL(await response.blob());
+    window.open(blobUrl, "_blank");
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+  };
+
+  const handleDeleteAmendment = async (amendmentId: string) => {
+    if (!contract || !window.confirm("Delete this amendment? This cannot be undone.")) return;
+    try {
+      await deleteAmendment.mutateAsync({ id: contract.id, amendmentId });
+      await queryClient.invalidateQueries({ queryKey: getGetContractQueryKey(contract.id) });
+      toast({ title: "Amendment deleted" });
+    } catch (err) {
+      toast({
+        title: "Could not delete amendment",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleToggleArchive = async () => {
     if (!contract) return;
@@ -357,7 +447,13 @@ export default function ContractDetail() {
             <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/80 pb-4">
               <CardTitle className="text-lg">Amendments</CardTitle>
               {(user?.role === 'admin' || user?.role === 'legal') && (
-                <Button size="sm" variant="outline" className="bg-white">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-white"
+                  onClick={() => setAmendmentOpen(true)}
+                  data-testid="button-add-amendment"
+                >
                   <Plus className="w-4 h-4 mr-2" /> Add Amendment
                 </Button>
               )}
@@ -369,11 +465,38 @@ export default function ContractDetail() {
                     <li key={amd.id} className="p-4">
                       <div className="flex justify-between items-start mb-2">
                         <span className="font-medium text-slate-900">{format(parseISO(amd.date), 'MMMM d, yyyy')}</span>
-                        {amd.documentUrl && (
-                          <a href={amd.documentUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm flex items-center">
-                            <FileText className="w-3 h-3 mr-1" /> Document
-                          </a>
-                        )}
+                        <div className="flex items-center gap-3">
+                          {amd.documentUrl && (
+                            <Button
+                              type="button"
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-blue-600"
+                              onClick={() =>
+                                openAmendmentDocument(amd.documentUrl!).catch(() =>
+                                  toast({ title: "Failed to open document", variant: "destructive" }),
+                                )
+                              }
+                              data-testid={`button-amendment-document-${amd.id}`}
+                            >
+                              <FileText className="w-3 h-3 mr-1" /> Document
+                            </Button>
+                          )}
+                          {(user?.role === "admin" || user?.role === "legal") && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                              onClick={() => handleDeleteAmendment(amd.id)}
+                              disabled={deleteAmendment.isPending}
+                              aria-label="Delete amendment"
+                              data-testid={`button-delete-amendment-${amd.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm text-slate-600">{amd.description}</p>
                     </li>
@@ -405,6 +528,65 @@ export default function ContractDetail() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={amendmentOpen} onOpenChange={handleAmendmentOpenChange}>
+        <DialogContent className="sm:max-w-lg">
+          <form onSubmit={handleCreateAmendment}>
+            <DialogHeader>
+              <DialogTitle>Add Amendment</DialogTitle>
+              <DialogDescription>Record a dated change to this contract.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-5">
+              <div className="space-y-2">
+                <Label htmlFor="amendment-date">Effective date</Label>
+                <Input
+                  id="amendment-date"
+                  type="date"
+                  value={amendmentDate}
+                  onChange={(event) => setAmendmentDate(event.target.value)}
+                  required
+                  data-testid="input-amendment-date"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="amendment-description">Description</Label>
+                <Textarea
+                  id="amendment-description"
+                  value={amendmentDescription}
+                  onChange={(event) => setAmendmentDescription(event.target.value)}
+                  placeholder="Describe what changed"
+                  rows={4}
+                  required
+                  data-testid="input-amendment-description"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="amendment-document">Document (optional)</Label>
+                <Input
+                  id="amendment-document"
+                  type="file"
+                  accept="application/pdf,.pdf,.doc,.docx"
+                  onChange={(event) => setAmendmentFile(event.target.files?.[0] ?? null)}
+                  data-testid="input-amendment-document"
+                />
+                <p className="text-xs text-slate-500">PDF, DOC, or DOCX</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => handleAmendmentOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createAmendment.isPending || requestUploadUrl.isPending || !amendmentDate || !amendmentDescription.trim()}
+                data-testid="button-save-amendment"
+              >
+                {createAmendment.isPending || requestUploadUrl.isPending ? "Adding..." : "Add Amendment"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

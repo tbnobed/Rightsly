@@ -928,6 +928,10 @@ export type DeleteContract200 = {
   message?: string;
 };
 
+export type DeleteAmendment200 = {
+  message: string;
+};
+
 export type ListRevenueReportsParams = {
 page?: number;
 pageSize?: number;

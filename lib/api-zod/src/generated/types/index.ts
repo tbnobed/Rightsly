@@ -42,6 +42,7 @@ export * from './createRevenueReportRequestStatus';
 export * from './createUserRequest';
 export * from './createUserRequestRole';
 export * from './dashboardSummary';
+export * from './deleteAmendment200';
 export * from './deleteContent200';
 export * from './deleteContract200';
 export * from './deletePartner200';

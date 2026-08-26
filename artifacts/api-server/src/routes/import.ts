@@ -7,10 +7,16 @@ import { eq, ilike } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { validateContractDates } from "../lib/contractDates";
-import { canonicalDistributionTypes, canonicalTerritories } from "../lib/rightsVocabulary";
+import {
+  canonicalDistributionTypes,
+  canonicalTerritories,
+  unrecognizedDistributionTypes,
+  unrecognizedTerritories,
+} from "../lib/rightsVocabulary";
 import { validateHttpUrl } from "../lib/validation";
 
 const IMPORT_HEADERS = ["direction", "partner_name", "licensor", "licensee", "status", "start_date", "end_type", "end_date", "territories", "distribution_types", "platform", "royalty_type", "royalty_details", "payment_terms", "notes", "website_link"];
+const REQUIRED_IMPORT_HEADERS = ["direction", "partner_name", "end_type"];
 
 const router = Router();
 router.use(authenticateToken, requireRole("admin", "legal"));
@@ -59,9 +65,13 @@ router.post("/contracts", upload.single("file"), async (req, res) => {
     const source = req.file.buffer.toString("utf-8");
     const [header] = parse(source, { to_line: 1, trim: true, skip_empty_lines: true }) as string[][];
     const unknown = (header ?? []).filter((name) => !IMPORT_HEADERS.includes(name));
-    const missing = IMPORT_HEADERS.filter((name) => !(header ?? []).includes(name));
-    if (unknown.length || missing.length) {
-      res.status(400).json({ message: `Unrecognized columns. Expected: ${IMPORT_HEADERS.join(", ")}` });
+    const missing = REQUIRED_IMPORT_HEADERS.filter((name) => !(header ?? []).includes(name));
+    if (unknown.length) {
+      res.status(400).json({ message: `Unrecognized columns: ${unknown.join(", ")}` });
+      return;
+    }
+    if (missing.length) {
+      res.status(400).json({ message: `Missing required columns: ${missing.join(", ")}` });
       return;
     }
     records = (parse(source, {
@@ -101,6 +111,16 @@ router.post("/contracts", upload.single("file"), async (req, res) => {
       if (dateError) throw new Error(dateError);
       const websiteError = validateHttpUrl(row.website_link);
       if (websiteError) throw new Error(websiteError);
+      const rawTerritories = row.territories ? row.territories.split(/[|,;]/) : [];
+      const unknownTerritories = unrecognizedTerritories(rawTerritories);
+      if (unknownTerritories.length) {
+        throw new Error(`Unrecognized territories: ${unknownTerritories.join(", ")}`);
+      }
+      const rawDistributionTypes = row.distribution_types ? row.distribution_types.split(/[|,;]/) : [];
+      const unknownDistributionTypes = unrecognizedDistributionTypes(rawDistributionTypes);
+      if (unknownDistributionTypes.length) {
+        throw new Error(`Unrecognized distribution types: ${unknownDistributionTypes.join(", ")}`);
+      }
 
       // Find or create partner
       const [existingPartner] = await db
@@ -132,8 +152,8 @@ router.post("/contracts", upload.single("file"), async (req, res) => {
         startDate: row.start_date || null,
         endType: row.end_type as any,
         endDate: row.end_date || null,
-        territories: canonicalTerritories(row.territories ? row.territories.split(/[|,;]/) : []),
-        distributionTypes: canonicalDistributionTypes(row.distribution_types ? row.distribution_types.split(/[|,;]/) : []),
+        territories: canonicalTerritories(rawTerritories),
+        distributionTypes: canonicalDistributionTypes(rawDistributionTypes),
         platform: row.platform || null,
         royaltyType: (row.royalty_type as any) || null,
         royaltyDetails: row.royalty_details || null,

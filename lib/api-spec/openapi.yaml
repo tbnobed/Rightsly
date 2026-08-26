@@ -1707,6 +1707,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/Amendment'
 
+  /contracts/{id}/amendments/{amendmentId}:
+    delete:
+      operationId: deleteAmendment
+      summary: Delete an amendment from a contract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: amendmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Amendment deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Amendment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /contracts/{id}/attachments:
     get:
       operationId: listContractAttachments

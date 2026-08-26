@@ -1,0 +1,63 @@
+New issues
+NEW-1 · REGRESSION — CSV import now rejects files missing optional columns
+
+Severity: Medium · Introduced by the R-15 fix
+
+The header validator requires all 16 columns to be present, including the optional trailing ones. A CSV carrying only the meaningful columns is now rejected outright.
+
+Header	Result
+All 16, template order	200 {"imported":1,...} ✅
+All 16, reordered	200 ✅
+All 16, whitespace after commas	200 ✅
+10 columns (drops platform, royalty_type, royalty_details, payment_terms, notes, website_link)	400 Unrecognized columns... ❌
+
+This exact 10-column file imported successfully before the fix — it's how Acme Media and Bad Dates Co were created during the original QA pass.
+
+Two problems:
+
+Optional columns are being treated as required.
+The message says "Unrecognized columns" when the actual problem is missing columns — it names what was expected but never says which were absent, so the user can't tell what to change.
+
+Fix: Validate that (a) every supplied column is recognized, and (b) the genuinely required columns are present. Treat the rest as optional. Change the message to name the specific offending columns — Missing required columns: x, y vs. Unrecognized columns: z.
+
+NEW-2 · Unrecognized territories are accepted on write and silently clear on read
+
+Severity: Medium-High — same false-clearance shape the whole remediation targeted
+
+Territories are now a canonical enum in both UIs, but nothing enforces it at the API boundary:
+
+# Write — accepted
+CSV row with territories = "Atlantis"  →  200 {"imported":1}
+GET /api/contracts/468187e4…          →  "territories": ["Atlantis"]
+
+# Read — silently clear
+GET /api/rights-check?territory=Atlantis&...  →  200 {"available":true,"conflicts":[],"grants":[]}
+
+A typo'd or legacy territory becomes a contract that can never match any rights check, and a typo'd query returns a confident green "available." Since the enum now exists, both sides should reject anything outside it (allowing the documented aliases).
+
+Fix: Validate territory / territories[] and distributionType against the canonical set + alias map on both the write endpoints and /api/rights-check; return 400 for unknown values.
+
+NEW-3 · Unknown contentItemId returns "available" instead of 404
+
+Severity: Medium
+
+GET /api/rights-check?contentItemId=00000000-0000-0000-0000-000000000000&...
+  →  200 {"available":true,"conflicts":[],"grants":[]}
+
+A stale or mistyped title ID reports the title as clear. Same failure mode as the original R-08: the answer means "I couldn't find that" but reads as "you're cleared."
+
+Fix: Return 404 Content item not found.
+
+Not verified
+
+The Chrome extension driving the browser stopped responding partway through the P3 pass. These are unverified, not failed — I have no evidence either way:
+
+Item	Note
+R-20 · Export CSV disabled when empty	not reached
+R-21 · Archive confirmation dialog	not reached
+R-23 · Partner update audit before/after	not reached
+R-25 · Controlled/uncontrolled console warning	no warning seen in the sessions that did run, but no clean regression pass
+R-26 · Mobile navigation	a "Toggle Sidebar" button is present in the DOM (it wasn't before), so the fix is at least shipped — I couldn't confirm behavior at 390×844
+Sales-role restrictions	cannot test — requires non-admin credentials, and I don't create accounts
+
+Worth a second pass on these before you call the remediation closed.

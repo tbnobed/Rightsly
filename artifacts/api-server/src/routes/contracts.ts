@@ -13,7 +13,12 @@ import { eq, and, or, ilike, inArray, sql, count, lte, gte, asc, desc } from "dr
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { validateContractDates } from "../lib/contractDates";
-import { canonicalDistributionTypes, canonicalTerritories } from "../lib/rightsVocabulary";
+import {
+  canonicalDistributionTypes,
+  canonicalTerritories,
+  unrecognizedDistributionTypes,
+  unrecognizedTerritories,
+} from "../lib/rightsVocabulary";
 import { routeParam, validateHttpUrl } from "../lib/validation";
 import { displayContractStatus } from "../lib/contractStatus";
 
@@ -186,6 +191,16 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
   }
   const websiteError = validateHttpUrl(websiteLink);
   if (websiteError) { res.status(400).json({ message: websiteError }); return; }
+  const unknownTerritories = unrecognizedTerritories(territories ?? []);
+  if (unknownTerritories.length) {
+    res.status(400).json({ message: `Unrecognized territories: ${unknownTerritories.join(", ")}` });
+    return;
+  }
+  const unknownDistributionTypes = unrecognizedDistributionTypes(distributionTypes ?? []);
+  if (unknownDistributionTypes.length) {
+    res.status(400).json({ message: `Unrecognized distribution types: ${unknownDistributionTypes.join(", ")}` });
+    return;
+  }
 
   const id = crypto.randomUUID();
   const ri = rightsInDetails || {};
@@ -318,6 +333,20 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
     const websiteError = validateHttpUrl(websiteLink);
     if (websiteError) { res.status(400).json({ message: websiteError }); return; }
   }
+  if (territories !== undefined) {
+    const unknownTerritories = unrecognizedTerritories(territories);
+    if (unknownTerritories.length) {
+      res.status(400).json({ message: `Unrecognized territories: ${unknownTerritories.join(", ")}` });
+      return;
+    }
+  }
+  if (distributionTypes !== undefined) {
+    const unknownDistributionTypes = unrecognizedDistributionTypes(distributionTypes);
+    if (unknownDistributionTypes.length) {
+      res.status(400).json({ message: `Unrecognized distribution types: ${unknownDistributionTypes.join(", ")}` });
+      return;
+    }
+  }
 
   const ri = rightsInDetails || {};
   const ro = rightsOutDetails || {};
@@ -432,6 +461,31 @@ router.post("/:id/amendments", requireRole("admin", "legal"), async (req, res) =
 
   await logAudit({ user: req.user, action: "create", entityType: "amendment", entityId: id, after: { contractId, date } });
   res.status(201).json({ ...amendment, createdByName: req.user!.name });
+});
+
+// DELETE /api/contracts/:id/amendments/:amendmentId
+router.delete("/:id/amendments/:amendmentId", requireRole("admin", "legal"), async (req, res) => {
+  const contractId = routeParam(req.params.id);
+  const amendmentId = routeParam(req.params.amendmentId);
+  const [deleted] = await db
+    .delete(amendmentsTable)
+    .where(and(
+      eq(amendmentsTable.id, amendmentId),
+      eq(amendmentsTable.contractId, contractId),
+    ))
+    .returning({ id: amendmentsTable.id });
+  if (!deleted) {
+    res.status(404).json({ message: "Amendment not found" });
+    return;
+  }
+  await logAudit({
+    user: req.user,
+    action: "delete",
+    entityType: "amendment",
+    entityId: amendmentId,
+    before: { contractId },
+  });
+  res.json({ message: "Amendment deleted" });
 });
 
 // GET /api/contracts/:id/attachments

@@ -6,7 +6,7 @@ import {
 import { Router, type IRouter, type Request, type Response } from 'express';
 
 import { db } from '@workspace/db';
-import { contractAttachmentsTable, revenueReportsTable } from '@workspace/db';
+import { amendmentsTable, contractAttachmentsTable, revenueReportsTable } from '@workspace/db';
 import { eq } from 'drizzle-orm';
 
 import { authenticateToken, requireRole } from '../lib/auth';
@@ -129,15 +129,21 @@ router.get('/storage/objects/*path', authenticateToken, async (req: Request, res
     const wildcardPath = Array.isArray(raw) ? raw.join('/') : raw;
     const objectPath = `/objects/${wildcardPath}`;
 
-    // Only serve objects registered as contract attachments or revenue report
-    // documents. All authenticated roles can read contracts, so existence is
-    // the gate for contract attachments; revenue docs are finance/admin only.
-    const [attachment] = await db
-      .select({ id: contractAttachmentsTable.id })
-      .from(contractAttachmentsTable)
-      .where(eq(contractAttachmentsTable.objectPath, objectPath))
-      .limit(1);
-    if (!attachment) {
+    // Only serve objects registered as contract attachments, amendments, or
+    // revenue report documents. Revenue documents remain finance/admin only.
+    const [[attachment], [amendment]] = await Promise.all([
+      db
+        .select({ id: contractAttachmentsTable.id })
+        .from(contractAttachmentsTable)
+        .where(eq(contractAttachmentsTable.objectPath, objectPath))
+        .limit(1),
+      db
+        .select({ id: amendmentsTable.id })
+        .from(amendmentsTable)
+        .where(eq(amendmentsTable.documentUrl, objectPath))
+        .limit(1),
+    ]);
+    if (!attachment && !amendment) {
       const [revenueDoc] = await db
         .select({ id: revenueReportsTable.id })
         .from(revenueReportsTable)

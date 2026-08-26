@@ -1,7 +1,4 @@
-/**
- * Canonical rights vocabulary.  Values outside this list are retained as
- * trimmed title-cased custom values; they intentionally only match themselves.
- */
+/** Canonical rights vocabulary and documented aliases. */
 export const TERRITORIES = [
   "Global", "North America", "Europe", "Latin America", "Asia Pacific",
   "Middle East", "Africa", "United States", "Canada", "United Kingdom",
@@ -34,12 +31,30 @@ const regionCountries: Record<string, string[]> = {
 
 const key = (value: string) => value.trim().toLocaleLowerCase("en-US").replace(/\s+/g, " ");
 const title = (value: string) => value.trim().replace(/\s+/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-export const canonicalTerritory = (value: string) => territoryAliases[key(value)] ?? title(value);
-export const canonicalDistributionType = (value: string) => distributionAliases[key(value)] ?? title(value);
+const canonicalTerritoriesByKey = Object.fromEntries(TERRITORIES.map((value) => [key(value), value]));
+const canonicalDistributionTypesByKey = Object.fromEntries(DISTRIBUTION_TYPES.map((value) => [key(value), value]));
+export const canonicalTerritory = (value: string) =>
+  territoryAliases[key(value)] ?? canonicalTerritoriesByKey[key(value)] ?? title(value);
+export const canonicalDistributionType = (value: string) =>
+  distributionAliases[key(value)] ?? canonicalDistributionTypesByKey[key(value)] ?? title(value);
 export const canonicalTerritories = (values: unknown) =>
   Array.isArray(values) ? [...new Set(values.filter((v): v is string => typeof v === "string" && !!v.trim()).map(canonicalTerritory))] : [];
 export const canonicalDistributionTypes = (values: unknown) =>
   Array.isArray(values) ? [...new Set(values.filter((v): v is string => typeof v === "string" && !!v.trim()).map(canonicalDistributionType))] : [];
+export const unrecognizedTerritories = (values: unknown) =>
+  !Array.isArray(values)
+    ? ["territories must be an array"]
+    : values.filter((value): value is string =>
+      typeof value !== "string" || !TERRITORIES.includes(canonicalTerritory(value) as typeof TERRITORIES[number]));
+export const unrecognizedDistributionTypes = (values: unknown) =>
+  !Array.isArray(values)
+    ? ["distributionTypes must be an array"]
+    : values.filter((value): value is string =>
+      typeof value !== "string" || !DISTRIBUTION_TYPES.includes(canonicalDistributionType(value) as typeof DISTRIBUTION_TYPES[number]));
+export const isRecognizedTerritory = (value: string) =>
+  TERRITORIES.includes(canonicalTerritory(value) as typeof TERRITORIES[number]);
+export const isRecognizedDistributionType = (value: string) =>
+  DISTRIBUTION_TYPES.includes(canonicalDistributionType(value) as typeof DISTRIBUTION_TYPES[number]);
 
 export function territoriesIntersect(a: string, b: string) {
   const left = canonicalTerritory(a), right = canonicalTerritory(b);
