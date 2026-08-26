@@ -64,12 +64,19 @@ const contentSchema = z.object({
   contentSource: z.enum(["tbn", "third_party"], { message: "Choose TBN content or third-party content" }),
   tbnMediaId: z.string().optional(),
   catalogImportKey: z.string().optional(),
+  catalogInternalId: z.string().max(200, "Catalog Internal ID must be 200 characters or fewer").optional(),
   type: z.enum(["Film", "TVSeries", "TBN_FAST", "TBN_Linear", "WoF_FAST"]),
   year: z.string().refine(
     (value) => !value || (/^\d{4}$/.test(value) && Number(value) >= 1900 && Number(value) <= new Date().getFullYear() + 5),
     () => ({ message: `Year must be between 1900 and ${new Date().getFullYear() + 5}` }),
   ).optional(),
   description: z.string().optional(),
+  mediaFormat: z.string().max(100, "Format must be 100 characters or fewer").optional(),
+  genres: z.string().max(1000, "Genres must be 1,000 characters or fewer").optional(),
+  director: z.string().max(500, "Director must be 500 characters or fewer").optional(),
+  actors: z.string().max(2000, "Actors must be 2,000 characters or fewer").optional(),
+  releaseDate: z.string().optional(),
+  contentRating: z.string().max(100, "Rating must be 100 characters or fewer").optional(),
   notes: z.string().max(5000, "Notes must be 5,000 characters or fewer").optional(),
   broadcastRightsDuration: z.string().optional(),
   broadcastRightsTerm: z.enum(["none", "months", "years", "in_perpetuity"]),
@@ -281,9 +288,16 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
       contentSource: undefined,
       tbnMediaId: "",
       catalogImportKey: "",
+      catalogInternalId: "",
       type: "Film",
       year: "",
       description: "",
+      mediaFormat: "",
+      genres: "",
+      director: "",
+      actors: "",
+      releaseDate: "",
+      contentRating: "",
       notes: "",
       broadcastRightsDuration: "",
       broadcastRightsTerm: "none",
@@ -314,9 +328,16 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
         contentSource: content?.contentSource ?? undefined,
         tbnMediaId: content?.tbnMediaId ?? "",
         catalogImportKey: content?.catalogImportKey ?? "",
+        catalogInternalId: content?.catalogInternalId ?? "",
         type: (content?.type as ContentFormValues["type"]) ?? "Film",
         year: content?.year ? String(content.year) : "",
         description: content?.description ?? "",
+        mediaFormat: content?.mediaFormat ?? "",
+        genres: content?.genres ?? "",
+        director: content?.director ?? "",
+        actors: content?.actors ?? "",
+        releaseDate: content?.releaseDate ?? "",
+        contentRating: content?.contentRating ?? "",
         notes: content?.notes ?? "",
         broadcastRightsDuration: content?.broadcastRightsDuration ? String(content.broadcastRightsDuration) : "",
         broadcastRightsTerm: content?.broadcastRightsTerm ?? "none",
@@ -356,6 +377,13 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
       type: values.type as CreateContentItemRequestType,
       year: values.year ? parseInt(values.year, 10) : null,
       description: values.description || null,
+      catalogInternalId: values.catalogInternalId?.trim() || null,
+      mediaFormat: values.mediaFormat?.trim() || null,
+      genres: values.genres?.trim() || null,
+      director: values.director?.trim() || null,
+      actors: values.actors?.trim() || null,
+      releaseDate: values.releaseDate || null,
+      contentRating: values.contentRating?.trim() || null,
       notes: values.notes || null,
       broadcastRightsDuration: values.broadcastRightsDuration ? Number(values.broadcastRightsDuration) : null,
       broadcastRightsTerm: values.broadcastRightsTerm === "none" ? null : values.broadcastRightsTerm,
@@ -539,6 +567,92 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
                 </FormItem>
               )}
             />
+
+            <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Catalog Metadata</h3>
+                <p className="text-xs text-slate-500">Edit the descriptive metadata shown on the title detail page.</p>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="catalogInternalId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Catalog Internal ID</FormLabel>
+                      <FormControl><Input placeholder="e.g. TBNSPL0676" {...field} data-testid="input-catalog-internal-id" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="mediaFormat"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Format</FormLabel>
+                      <FormControl><Input placeholder="e.g. HD, SD, or Both" {...field} data-testid="input-content-format" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="genres"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Genres</FormLabel>
+                      <FormControl><Input placeholder="e.g. Sports, Drama" {...field} data-testid="input-content-genres" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="director"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Director</FormLabel>
+                      <FormControl><Input placeholder="Director name" {...field} data-testid="input-content-director" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="releaseDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Release Date</FormLabel>
+                      <FormControl><Input type="date" {...field} data-testid="input-content-release-date" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="contentRating"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Rating</FormLabel>
+                      <FormControl><Input placeholder="e.g. PG-13 or TV-PG" {...field} data-testid="input-content-rating" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="actors"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Actors</FormLabel>
+                    <FormControl><Textarea className="min-h-[110px]" placeholder="Cast names" {...field} data-testid="input-content-actors" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
               <div>
