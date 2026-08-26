@@ -369,7 +369,7 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Content" : "Add Title"}</DialogTitle>
           <DialogDescription>
