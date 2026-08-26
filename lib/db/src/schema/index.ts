@@ -1,5 +1,6 @@
 export * from "./users";
 export * from "./partners";
+export * from "./contacts";
 export * from "./content";
 export * from "./contracts";
 export * from "./revenue";

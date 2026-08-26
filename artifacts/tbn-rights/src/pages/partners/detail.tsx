@@ -1,18 +1,42 @@
-import { useGetPartner, getGetPartnerQueryKey, useListContracts, getListContractsQueryKey } from "@workspace/api-client-react";
-import { Link, useParams } from "wouter";
+import { useGetPartner, getGetPartnerQueryKey, useListContracts, getListContractsQueryKey, useDeletePartner, getListPartnersQueryKey } from "@workspace/api-client-react";
+import { Link, useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/pages/contracts/index";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, Edit, Globe, FileText, ChevronRight } from "lucide-react";
+import { ChevronLeft, Edit, Globe, FileText, ChevronRight, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { PartnerFormDialog } from "@/components/partner-form-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/contexts/auth";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function PartnerDetail() {
   const { id } = useParams<{ id: string }>();
+  const [, setLocation] = useLocation();
   const [editOpen, setEditOpen] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const canEdit = user?.role === "admin" || user?.role === "legal";
+  const canDelete = user?.role === "admin";
+
+  const deletePartner = useDeletePartner();
 
   const { data: partner, isLoading } = useGetPartner(id!, {
     query: {
@@ -35,6 +59,29 @@ export default function PartnerDetail() {
 
   if (!partner) return null;
 
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await deletePartner.mutateAsync({ id: partner.id });
+      queryClient.removeQueries({ queryKey: getGetPartnerQueryKey(partner.id) });
+      queryClient.invalidateQueries({ queryKey: getListPartnersQueryKey() });
+      toast({
+        title: "Partner deleted",
+        description: `${partner.name} has been removed.`,
+      });
+      setLocation("/partners");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.data?.message || err?.message || "Could not delete partner.";
+      toast({
+        title: "Delete failed",
+        description: msg,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -54,10 +101,38 @@ export default function PartnerDetail() {
             </div>
           </div>
         </div>
-        <Button className="bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 shadow-sm" onClick={() => setEditOpen(true)} data-testid="button-edit-partner">
-          <Edit className="w-4 h-4 mr-2" /> Edit Details
-        </Button>
-        <PartnerFormDialog open={editOpen} onOpenChange={setEditOpen} partner={partner} />
+        <div className="flex items-center gap-2">
+          {canEdit && (
+            <Button className="bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 shadow-sm" onClick={() => setEditOpen(true)} data-testid="button-edit-partner">
+              <Edit className="w-4 h-4 mr-2" /> Edit Details
+            </Button>
+          )}
+          {canDelete && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" data-testid="button-delete-partner">
+                  <Trash2 className="w-4 h-4" />
+                  <span className="sr-only">Delete {partner.name}</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Partner</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete <strong>{partner.name}</strong>? This action cannot be undone and will fail if the partner is linked to any contracts.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 text-white hover:bg-red-700" disabled={isDeleting}>
+                    {isDeleting ? "Deleting..." : "Delete Partner"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+        {canEdit && <PartnerFormDialog open={editOpen} onOpenChange={setEditOpen} partner={partner} />}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

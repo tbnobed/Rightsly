@@ -15,6 +15,7 @@ test("reconciled schema persists new rights and revenue fields", async () => {
   const seasonId = id();
   const contractId = id();
   const reportId = id();
+  const contactId = id();
   const scheduleKey = `schema-upgrade:${id()}`;
 
   try {
@@ -54,6 +55,10 @@ test("reconciled schema persists new rights and revenue fields", async () => {
         '2026-01-01', '2026-01-31', true, $3)`,
       [reportId, contractId, scheduleKey],
     );
+    await client.query(
+      "INSERT INTO contacts (id, name, company, email) VALUES ($1, $2, $3, $4)",
+      [contactId, "Schema Contact", "Rightsly", "schema.contact@example.com"],
+    );
 
     const persisted = await client.query<{
       rights_in_social_accounts: Record<string, string>;
@@ -72,6 +77,20 @@ test("reconciled schema persists new rights and revenue fields", async () => {
     assert.deepEqual(persisted.rows[0]?.rights_in_social_accounts, { Instagram: "@schema-upgrade" });
     assert.equal(persisted.rows[0]?.season_count, 1);
     assert.equal(persisted.rows[0]?.schedule_count, 1);
+
+    const contact = await client.query<{ name: string; company: string | null; created_at: Date; updated_at: Date }>(
+      "SELECT name, company, created_at, updated_at FROM contacts WHERE id = $1",
+      [contactId],
+    );
+    assert.equal(contact.rows[0]?.name, "Schema Contact");
+    assert.equal(contact.rows[0]?.company, "Rightsly");
+    assert.ok(contact.rows[0]?.created_at);
+    assert.ok(contact.rows[0]?.updated_at);
+    const indexes = await client.query<{ indexname: string }>(
+      "SELECT indexname FROM pg_indexes WHERE tablename = 'contacts'",
+    );
+    assert.ok(indexes.rows.some(({ indexname }) => indexname === "contacts_name_idx"));
+    assert.ok(indexes.rows.some(({ indexname }) => indexname === "contacts_company_idx"));
 
     await client.query("SAVEPOINT season_delete");
     await assert.rejects(

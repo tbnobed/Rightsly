@@ -5,6 +5,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type DeleteContent200 = {
-  message?: string;
-};
+export interface MessageResponse {
+  message: string;
+}

@@ -3,6 +3,7 @@ import healthRouter from "./health";
 import authRouter from "./auth";
 import usersRouter from "./users";
 import partnersRouter from "./partners";
+import contactsRouter from "./contacts";
 import contractsRouter from "./contracts";
 import contentRouter from "./content";
 import revenueRouter from "./revenue";
@@ -21,6 +22,7 @@ router.use("/", healthRouter);
 router.use("/auth", authRouter);
 router.use("/users", usersRouter);
 router.use("/partners", partnersRouter);
+router.use("/contacts", contactsRouter);
 router.use("/contracts", contractsRouter);
 // Signed local upload PUTs authenticate with their short-lived HMAC signature.
 // Mount storage before root-mounted authenticated routers so those PUTs remain reachable.

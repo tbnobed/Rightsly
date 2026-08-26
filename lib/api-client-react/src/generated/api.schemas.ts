@@ -18,6 +18,10 @@ export interface Error {
   errors?: ErrorErrorsItem[];
 }
 
+export interface MessageResponse {
+  message: string;
+}
+
 export interface UploadUrlRequest {
   /**
      * Original file name.
@@ -152,6 +156,97 @@ export interface Partner {
   contractCount?: number;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface Contact {
+  /** UUID identifier. */
+  id: string;
+  name: string;
+  /** @nullable */
+  company: string | null;
+  /** @nullable */
+  title: string | null;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  phone: string | null;
+  /** @nullable */
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContactInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name: string;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  company?: string | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  title?: string | null;
+  /**
+     * @maxLength 320
+     * @nullable
+     */
+  email?: string | null;
+  /**
+     * @maxLength 50
+     * @nullable
+     */
+  phone?: string | null;
+  /**
+     * @maxLength 5000
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export interface ContactUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  name?: string;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  company?: string | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  title?: string | null;
+  /**
+     * @maxLength 320
+     * @nullable
+     */
+  email?: string | null;
+  /**
+     * @maxLength 50
+     * @nullable
+     */
+  phone?: string | null;
+  /**
+     * @maxLength 5000
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export interface ContactListResponse {
+  data: Contact[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export type CreatePartnerRequestType = typeof CreatePartnerRequestType[keyof typeof CreatePartnerRequestType];
@@ -983,9 +1078,38 @@ export const ListPartnersSortDirection = {
   desc: 'desc',
 } as const;
 
-export type DeletePartner200 = {
-  message?: string;
+export type ListContactsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+search?: string;
+sortBy?: ListContactsSortBy;
+sortDirection?: ListContactsSortDirection;
 };
+
+export type ListContactsSortBy = typeof ListContactsSortBy[keyof typeof ListContactsSortBy];
+
+
+export const ListContactsSortBy = {
+  name: 'name',
+  company: 'company',
+  title: 'title',
+  updatedAt: 'updatedAt',
+} as const;
+
+export type ListContactsSortDirection = typeof ListContactsSortDirection[keyof typeof ListContactsSortDirection];
+
+
+export const ListContactsSortDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
 
 export type ListContractsParams = {
 /**
@@ -1125,10 +1249,6 @@ export const ListContentSortDirection = {
   asc: 'asc',
   desc: 'desc',
 } as const;
-
-export type DeleteContent200 = {
-  message?: string;
-};
 
 export type RightsCheckParams = {
 contentItemId: string;

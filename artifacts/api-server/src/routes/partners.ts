@@ -150,7 +150,35 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
 // DELETE /api/partners/:id
 router.delete("/:id", requireRole("admin"), async (req, res) => {
   const id = routeParam(req.params.id);
-  await db.delete(partnersTable).where(eq(partnersTable.id, id));
+  try {
+    const result = await db.transaction(async (tx) => {
+      // Serialize the reference check with contract creation and partner deletion.
+      await tx.execute(sql`LOCK TABLE partners, contracts IN SHARE ROW EXCLUSIVE MODE`);
+      const [reference] = await tx.select({ id: contractsTable.id })
+        .from(contractsTable)
+        .where(eq(contractsTable.partnerId, id))
+        .limit(1);
+      if (reference) return "referenced" as const;
+      const [deleted] = await tx.delete(partnersTable)
+        .where(eq(partnersTable.id, id))
+        .returning({ id: partnersTable.id });
+      return deleted ? "deleted" as const : "not_found" as const;
+    });
+    if (result !== "deleted") {
+      res.status(result === "referenced" ? 409 : 404).json({
+        message: result === "referenced"
+          ? "Partner linked to a contract cannot be deleted"
+          : "Partner not found",
+      });
+      return;
+    }
+  } catch (error) {
+    if ((error as { code?: string }).code === "23503") {
+      res.status(409).json({ message: "Partner linked to a contract cannot be deleted" });
+      return;
+    }
+    throw error;
+  }
   await logAudit({ user: req.user, action: "delete", entityType: "partner", entityId: id });
   res.json({ message: "Partner deleted" });
 });

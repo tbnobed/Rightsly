@@ -42,6 +42,13 @@ components:
               message:
                 type: string
 
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
     UploadUrlRequest:
       type: object
       required: [name, size, contentType]
@@ -215,6 +222,94 @@ components:
         updatedAt:
           type: string
           format: date-time
+
+    Contact:
+      type: object
+      required: [id, name, company, title, email, phone, notes, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          description: UUID identifier.
+        name:
+          type: string
+        company:
+          type: [string, "null"]
+        title:
+          type: [string, "null"]
+        email:
+          type: [string, "null"]
+        phone:
+          type: [string, "null"]
+        notes:
+          type: [string, "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ContactInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        company:
+          type: [string, "null"]
+          maxLength: 200
+        title:
+          type: [string, "null"]
+          maxLength: 200
+        email:
+          type: [string, "null"]
+          maxLength: 320
+        phone:
+          type: [string, "null"]
+          maxLength: 50
+        notes:
+          type: [string, "null"]
+          maxLength: 5000
+
+    ContactUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        company:
+          type: [string, "null"]
+          maxLength: 200
+        title:
+          type: [string, "null"]
+          maxLength: 200
+        email:
+          type: [string, "null"]
+          maxLength: 320
+        phone:
+          type: [string, "null"]
+          maxLength: 50
+        notes:
+          type: [string, "null"]
+          maxLength: 5000
+
+    ContactListResponse:
+      type: object
+      required: [data, total, page, pageSize]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contact'
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
 
     CreatePartnerRequest:
       type: object
@@ -1654,6 +1749,159 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /contacts:
+    get:
+      operationId: listContacts
+      summary: List contacts
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [name, company, title, updatedAt]
+            default: name
+        - name: sortDirection
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Paginated contact list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactListResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: createContact
+      summary: Create a contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactInput'
+      responses:
+        '201':
+          description: Created contact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /contacts/{id}:
+    get:
+      operationId: getContact
+      summary: Get a contact
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            description: UUID identifier.
+      responses:
+        '200':
+          description: Contact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: updateContact
+      summary: Update a contact
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            description: UUID identifier.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactUpdate'
+      responses:
+        '200':
+          description: Updated contact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: deleteContact
+      summary: Delete a contact
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            description: UUID identifier.
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /partners/{id}:
     get:
       operationId: getPartner
@@ -1714,10 +1962,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Partner has linked contracts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /contracts:
     get:
@@ -2372,10 +2629,19 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
+                $ref: '#/components/schemas/MessageResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Content has linked contracts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /content/{id}/contracts:
     get:

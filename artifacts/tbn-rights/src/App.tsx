@@ -23,6 +23,7 @@ import ImportData from '@/pages/import';
 import AuditLog from '@/pages/audit-log';
 import Users from '@/pages/users';
 import AcceptInvite from '@/pages/accept-invite';
+import ContactsList from '@/pages/contacts/index';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,6 +48,7 @@ function AuthenticatedRouter() {
         <Route path="/content" component={ContentList} />
         <Route path="/content/:id" component={ContentDetail} />
         <Route path="/rights-check" component={RightsCheck} />
+        <Route path="/contacts" component={ContactsList} />
         <Route path="/royalties" component={Royalties} />
         <Route path="/reports" component={Reports} />
         <Route path="/import" component={ImportData} />

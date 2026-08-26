@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useAuth } from "@/contexts/auth";
 import { Link, useLocation } from "wouter";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarFooter, SidebarTrigger } from "@/components/ui/sidebar";
-import { LayoutDashboard, FileText, Users, Film, CheckCircle, Calculator, BarChart3, Upload, History, UserCog, LogOut, Briefcase } from "lucide-react";
+import { LayoutDashboard, FileText, Users, Film, CheckCircle, Calculator, BarChart3, Upload, History, UserCog, LogOut, Briefcase, Contact } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationsBell } from "@/components/notifications-bell";
 
@@ -75,6 +75,14 @@ export function Shell({ children }: { children: ReactNode }) {
                   <Link href="/rights-check">
                     <CheckCircle className="w-4 h-4 mr-2" />
                     <span>Rights Check</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location.startsWith("/contacts")}>
+                  <Link href="/contacts">
+                    <Contact className="w-4 h-4 mr-2" />
+                    <span>Contacts</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

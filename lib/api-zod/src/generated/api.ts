@@ -259,6 +259,157 @@ export const CreatePartnerResponse = zod.object({
 
 
 /**
+ * @summary List contacts
+ */
+export const listContactsQueryPageDefault = 1;
+
+export const listContactsQueryPageSizeDefault = 20;
+export const listContactsQueryPageSizeMax = 100;
+
+export const listContactsQuerySortByDefault = `name`;
+export const listContactsQuerySortDirectionDefault = `asc`;
+
+export const ListContactsQueryParams = zod.object({
+  "page": zod.coerce.number().min(1).default(listContactsQueryPageDefault),
+  "pageSize": zod.coerce.number().min(1).max(listContactsQueryPageSizeMax).default(listContactsQueryPageSizeDefault),
+  "search": zod.coerce.string().optional(),
+  "sortBy": zod.enum(['name', 'company', 'title', 'updatedAt']).default(listContactsQuerySortByDefault),
+  "sortDirection": zod.enum(['asc', 'desc']).default(listContactsQuerySortDirectionDefault)
+})
+
+export const ListContactsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string().describe('UUID identifier.'),
+  "name": zod.string(),
+  "company": zod.string().nullable(),
+  "title": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})),
+  "total": zod.number(),
+  "page": zod.number(),
+  "pageSize": zod.number()
+})
+
+
+/**
+ * @summary Create a contact
+ */
+export const createContactBodyNameMax = 200;
+
+export const createContactBodyCompanyMax = 200;
+
+export const createContactBodyTitleMax = 200;
+
+export const createContactBodyEmailMax = 320;
+
+export const createContactBodyPhoneMax = 50;
+
+export const createContactBodyNotesMax = 5000;
+
+
+
+export const CreateContactBody = zod.object({
+  "name": zod.string().min(1).max(createContactBodyNameMax),
+  "company": zod.string().max(createContactBodyCompanyMax).nullish(),
+  "title": zod.string().max(createContactBodyTitleMax).nullish(),
+  "email": zod.string().max(createContactBodyEmailMax).nullish(),
+  "phone": zod.string().max(createContactBodyPhoneMax).nullish(),
+  "notes": zod.string().max(createContactBodyNotesMax).nullish()
+})
+
+export const CreateContactResponse = zod.object({
+  "id": zod.string().describe('UUID identifier.'),
+  "name": zod.string(),
+  "company": zod.string().nullable(),
+  "title": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get a contact
+ */
+export const GetContactParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetContactResponse = zod.object({
+  "id": zod.string().describe('UUID identifier.'),
+  "name": zod.string(),
+  "company": zod.string().nullable(),
+  "title": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a contact
+ */
+export const UpdateContactParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateContactBodyNameMax = 200;
+
+export const updateContactBodyCompanyMax = 200;
+
+export const updateContactBodyTitleMax = 200;
+
+export const updateContactBodyEmailMax = 320;
+
+export const updateContactBodyPhoneMax = 50;
+
+export const updateContactBodyNotesMax = 5000;
+
+
+
+export const UpdateContactBody = zod.object({
+  "name": zod.string().min(1).max(updateContactBodyNameMax).optional(),
+  "company": zod.string().max(updateContactBodyCompanyMax).nullish(),
+  "title": zod.string().max(updateContactBodyTitleMax).nullish(),
+  "email": zod.string().max(updateContactBodyEmailMax).nullish(),
+  "phone": zod.string().max(updateContactBodyPhoneMax).nullish(),
+  "notes": zod.string().max(updateContactBodyNotesMax).nullish()
+})
+
+export const UpdateContactResponse = zod.object({
+  "id": zod.string().describe('UUID identifier.'),
+  "name": zod.string(),
+  "company": zod.string().nullable(),
+  "title": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "notes": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a contact
+ */
+export const DeleteContactParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteContactResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
  * @summary Get partner by ID
  */
 export const GetPartnerParams = zod.object({
@@ -311,7 +462,7 @@ export const DeletePartnerParams = zod.object({
 })
 
 export const DeletePartnerResponse = zod.object({
-  "message": zod.string().optional()
+  "message": zod.string()
 })
 
 
@@ -1294,7 +1445,7 @@ export const DeleteContentParams = zod.object({
 })
 
 export const DeleteContentResponse = zod.object({
-  "message": zod.string().optional()
+  "message": zod.string()
 })
 
 

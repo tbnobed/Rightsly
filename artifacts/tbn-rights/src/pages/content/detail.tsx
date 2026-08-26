@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useGetContent, getGetContentQueryKey, useGetContentContracts, getGetContentContractsQueryKey } from "@workspace/api-client-react";
-import { Link, useParams } from "wouter";
+import { useGetContent, getGetContentQueryKey, useGetContentContracts, getGetContentContractsQueryKey, useDeleteContent, getListContentQueryKey } from "@workspace/api-client-react";
+import { Link, useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,11 +8,35 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/pages/contracts/index";
 import { ContentFormDialog } from "@/components/content-form-dialog";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, Edit, Film, FileText, ChevronRight, Layers, LayoutList, Globe, Sparkles, Captions } from "lucide-react";
+import { ChevronLeft, Edit, Film, FileText, ChevronRight, Layers, LayoutList, Globe, Sparkles, Captions, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/contexts/auth";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ContentDetail() {
   const { id } = useParams<{ id: string }>();
+  const [, setLocation] = useLocation();
   const [editOpen, setEditOpen] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const canEdit = user?.role === "admin" || user?.role === "legal";
+  const canDelete = user?.role === "admin";
+
+  const deleteContent = useDeleteContent();
 
   const { data: content, isLoading } = useGetContent(id!, {
     query: {
@@ -33,6 +57,29 @@ export default function ContentDetail() {
   }
 
   if (!content) return null;
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteContent.mutateAsync({ id: content.id });
+      queryClient.removeQueries({ queryKey: getGetContentQueryKey(content.id) });
+      queryClient.invalidateQueries({ queryKey: getListContentQueryKey() });
+      toast({
+        title: "Content deleted",
+        description: `${content.title} has been removed from the catalog.`,
+      });
+      setLocation("/content");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.data?.message || err?.message || "Could not delete content.";
+      toast({
+        title: "Delete failed",
+        description: msg,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6">
@@ -64,9 +111,37 @@ export default function ContentDetail() {
             </div>
           </div>
         </div>
-        <Button className="bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 shadow-sm" onClick={() => setEditOpen(true)} data-testid="button-edit-content">
-          <Edit className="w-4 h-4 mr-2" /> {content.type === "TVSeries" ? "Edit Title & Seasons" : "Edit Metadata"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {canEdit && (
+            <Button className="bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 shadow-sm" onClick={() => setEditOpen(true)} data-testid="button-edit-content">
+              <Edit className="w-4 h-4 mr-2" /> {content.type === "TVSeries" ? "Edit Title & Seasons" : "Edit Metadata"}
+            </Button>
+          )}
+          {canDelete && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700" data-testid="button-delete-content">
+                  <Trash2 className="w-4 h-4" />
+                  <span className="sr-only">Delete {content.title}</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Content</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete <strong>{content.title}</strong>? This action cannot be undone and will fail if the title is linked to any contract.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-red-600 text-white hover:bg-red-700" disabled={isDeleting}>
+                    {isDeleting ? "Deleting..." : "Delete Content"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -102,9 +177,11 @@ export default function ContentDetail() {
                   <Layers className="w-5 h-5 text-indigo-500" />
                   <CardTitle className="text-lg">Seasons ({content.seasons.length})</CardTitle>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)} data-testid="button-manage-seasons">
-                  <Edit className="w-3.5 h-3.5 mr-1.5" /> Manage Seasons
-                </Button>
+                {canEdit && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)} data-testid="button-manage-seasons">
+                    <Edit className="w-3.5 h-3.5 mr-1.5" /> Manage Seasons
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="p-0">
                 <ul className="divide-y divide-slate-100">
@@ -167,7 +244,7 @@ export default function ContentDetail() {
         </Card>
       </div>
 
-      <ContentFormDialog open={editOpen} onOpenChange={setEditOpen} content={content} />
+      {canEdit && <ContentFormDialog open={editOpen} onOpenChange={setEditOpen} content={content} />}
     </div>
   );
 }
