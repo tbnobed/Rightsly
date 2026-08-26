@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './acceptInviteRequest';
 export * from './amendment';
 export * from './auditLog';
 export * from './auditLogAction';

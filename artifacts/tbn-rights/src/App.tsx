@@ -22,6 +22,7 @@ import Reports from '@/pages/reports';
 import ImportData from '@/pages/import';
 import AuditLog from '@/pages/audit-log';
 import Users from '@/pages/users';
+import AcceptInvite from '@/pages/accept-invite';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +62,7 @@ function MainRouter() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/accept-invite" component={AcceptInvite} />
       <Route component={AuthenticatedRouter} />
     </Switch>
   );

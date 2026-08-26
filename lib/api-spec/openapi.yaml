@@ -130,6 +130,16 @@ components:
         user:
           $ref: '#/components/schemas/User'
 
+    AcceptInviteRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          minLength: 8
+
     User:
       type: object
       required: [id, email, name, role, createdAt]
@@ -152,10 +162,12 @@ components:
           type: string
           format: date-time
           nullable: true
+        invitePending:
+          type: boolean
 
     CreateUserRequest:
       type: object
-      required: [email, name, role, password]
+      required: [email, name, role]
       properties:
         email:
           type: string
@@ -164,8 +176,6 @@ components:
         role:
           type: string
           enum: [admin, legal, finance, sales]
-        password:
-          type: string
 
     UpdateUserRequest:
       type: object
@@ -1318,6 +1328,31 @@ paths:
                 $ref: '#/components/schemas/LoginData'
         '401':
           description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/invitations/accept:
+    post:
+      operationId: acceptInvitation
+      summary: Set a password and accept a user invitation
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptInviteRequest'
+      responses:
+        '200':
+          description: Invitation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginData'
+        '400':
+          description: Invalid or expired invitation
           content:
             application/json:
               schema:

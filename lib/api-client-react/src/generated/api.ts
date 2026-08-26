@@ -19,6 +19,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AcceptInviteRequest,
   Amendment,
   ContentItem,
   Contract,
@@ -259,6 +260,77 @@ export const useLogin = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getLoginMutationOptions(options));
+    }
+
+export const getAcceptInvitationUrl = () => {
+
+
+
+
+  return `/api/auth/invitations/accept`
+}
+
+/**
+ * @summary Set a password and accept a user invitation
+ */
+export const acceptInvitation = async (acceptInviteRequest: AcceptInviteRequest, options?: RequestInit): Promise<LoginData> => {
+
+  return customFetch<LoginData>(getAcceptInvitationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(acceptInviteRequest)
+  }
+);}
+
+
+
+
+
+export const getAcceptInvitationMutationOptions = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptInvitation>>, TError,{data: BodyType<AcceptInviteRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptInvitation>>, TError,{data: BodyType<AcceptInviteRequest>}, TContext> => {
+
+const mutationKey = ['acceptInvitation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptInvitation>>, {data: BodyType<AcceptInviteRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  acceptInvitation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof acceptInvitation>>>
+    export type AcceptInvitationMutationBody = BodyType<AcceptInviteRequest>
+    export type AcceptInvitationMutationError = ErrorType<Error>
+
+    /**
+ * @summary Set a password and accept a user invitation
+ */
+export const useAcceptInvitation = <TError = ErrorType<Error>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptInvitation>>, TError,{data: BodyType<AcceptInviteRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptInvitation>>,
+        TError,
+        {data: BodyType<AcceptInviteRequest>},
+        TContext
+      > => {
+      return useMutation(getAcceptInvitationMutationOptions(options));
     }
 
 export const getGetSsoConfigUrl = () => {

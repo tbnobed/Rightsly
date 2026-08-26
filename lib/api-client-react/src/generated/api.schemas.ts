@@ -87,11 +87,18 @@ export interface User {
   isActive?: boolean;
   createdAt: string;
   lastLogin?: string | null;
+  invitePending?: boolean;
 }
 
 export interface LoginData {
   token: string;
   user: User;
+}
+
+export interface AcceptInviteRequest {
+  token: string;
+  /** @minLength 8 */
+  password: string;
 }
 
 export type CreateUserRequestRole = typeof CreateUserRequestRole[keyof typeof CreateUserRequestRole];
@@ -108,7 +115,6 @@ export interface CreateUserRequest {
   email: string;
   name: string;
   role: CreateUserRequestRole;
-  password: string;
 }
 
 export type UpdateUserRequestRole = typeof UpdateUserRequestRole[keyof typeof UpdateUserRequestRole];

@@ -1,10 +1,12 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
-import { eq, ilike, count } from "drizzle-orm";
+import { eq, ilike, count, sql } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
+import { sendInvitationEmail } from "../lib/email";
 
 const router = Router();
 router.use(authenticateToken, requireRole("admin"));
@@ -24,6 +26,7 @@ router.get("/", async (req, res) => {
         isActive: usersTable.isActive,
         createdAt: usersTable.createdAt,
         lastLogin: usersTable.lastLogin,
+        invitePending: sql<boolean>`${usersTable.inviteTokenHash} is not null`,
       })
       .from(usersTable)
       .limit(pageSize)
@@ -36,19 +39,24 @@ router.get("/", async (req, res) => {
 
 // POST /api/users
 router.post("/", async (req, res) => {
-  const { email, name, role, password } = req.body;
+  const { email, name, role } = req.body;
 
-  if (!email || !name || !role || !password) {
-    res.status(400).json({ message: "email, name, role, and password are required" });
+  if (!email || !name || !role) {
+    res.status(400).json({ message: "email, name, and role are required" });
     return;
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  const token = crypto.randomBytes(32).toString("base64url");
+  const inviteTokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("base64url"), 12);
   const id = crypto.randomUUID();
 
   const [user] = await db
     .insert(usersTable)
-    .values({ id, email: email.toLowerCase().trim(), name, role, passwordHash, isActive: true })
+    .values({
+      id, email: email.toLowerCase().trim(), name, role, passwordHash, isActive: false,
+      inviteTokenHash, inviteExpiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000),
+    })
     .returning({
       id: usersTable.id,
       email: usersTable.email,
@@ -57,8 +65,15 @@ router.post("/", async (req, res) => {
       isActive: usersTable.isActive,
       createdAt: usersTable.createdAt,
       lastLogin: usersTable.lastLogin,
+      invitePending: sql<boolean>`true`,
     });
 
+  const sent = await sendInvitationEmail(user, token);
+  if (!sent) {
+    await db.delete(usersTable).where(eq(usersTable.id, id));
+    res.status(502).json({ message: "The invitation email could not be sent. No user was created." });
+    return;
+  }
   await logAudit({ user: req.user, action: "create", entityType: "user", entityId: id, after: { email, name, role } });
   res.status(201).json(user);
 });

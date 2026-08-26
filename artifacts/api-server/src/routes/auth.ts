@@ -3,7 +3,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { signToken, authenticateToken } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import {
@@ -17,6 +17,66 @@ import { sendWelcomeEmail } from "../lib/email";
 import { logger } from "../lib/logger";
 
 const router = Router();
+
+// POST /api/auth/invitations/accept
+router.post("/invitations/accept", async (req, res) => {
+  const { token, password } = req.body;
+  if (typeof token !== "string" || !token || typeof password !== "string" || password.length < 8) {
+    res.status(400).json({ message: "A valid invitation and password of at least 8 characters are required." });
+    return;
+  }
+
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const [invitedUser] = await db
+    .select()
+    .from(usersTable)
+    .where(and(eq(usersTable.inviteTokenHash, tokenHash), gt(usersTable.inviteExpiresAt, new Date())));
+
+  if (!invitedUser) {
+    res.status(400).json({ message: "This invitation is invalid, expired, or has already been used." });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  const [user] = await db
+    .update(usersTable)
+    .set({
+      passwordHash,
+      isActive: true,
+      inviteTokenHash: null,
+      inviteExpiresAt: null,
+      inviteAcceptedAt: new Date(),
+      lastLogin: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(usersTable.id, invitedUser.id), eq(usersTable.inviteTokenHash, tokenHash)))
+    .returning();
+
+  if (!user) {
+    res.status(400).json({ message: "This invitation has already been used." });
+    return;
+  }
+
+  const authToken = signToken({ userId: user.id, role: user.role });
+  await logAudit({
+    user: { id: user.id, email: user.email, name: user.name, role: user.role, isActive: true },
+    action: "update",
+    entityType: "user",
+    entityId: user.id,
+  });
+  res.json({
+    token: authToken,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+    },
+  });
+});
 
 const PKCE_COOKIE = "sso_pkce_verifier";
 const STATE_COOKIE = "sso_state";

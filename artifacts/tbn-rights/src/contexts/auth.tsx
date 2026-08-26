@@ -14,7 +14,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem("auth_token"));
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -55,10 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (!token && !isUserLoading) {
+    if (!token && !isUserLoading && location !== "/login" && location !== "/accept-invite") {
       setLocation("/login");
     }
-  }, [token, isUserLoading, setLocation]);
+  }, [token, isUserLoading, location, setLocation]);
 
   return (
     <AuthContext.Provider value={{ user: user || null, isLoading: isUserLoading || loginMutation.isPending, login, logout }}>

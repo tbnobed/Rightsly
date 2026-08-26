@@ -44,7 +44,7 @@ const createSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Valid email is required"),
   role: roleEnum,
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -115,16 +115,15 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
             name: values.name,
             email: values.email,
             role: values.role as CreateUserRequestRole,
-            password: values.password,
           },
         });
       }
       queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
       toast({
-        title: isEdit ? "User updated" : "User created",
+        title: isEdit ? "User updated" : "Invitation sent",
         description: isEdit
           ? "The user's details have been updated."
-          : "The new user can now sign in.",
+          : `An invitation was sent to ${values.email}.`,
       });
       onOpenChange(false);
     } catch (err) {
@@ -140,11 +139,11 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit User" : "Add User"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit User" : "Invite User"}</DialogTitle>
           <DialogDescription>
             {isEdit
               ? "Update this user's role, status, or password."
-              : "Create a new account with platform access."}
+              : "Send a secure invitation. The recipient will choose their password."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -183,8 +182,8 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
+            <div className={isEdit ? "grid grid-cols-2 gap-4" : ""}>
+              {isEdit && <FormField
                 control={form.control}
                 name="role"
                 render={({ field }) => (
@@ -206,7 +205,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              />}
 
               <FormField
                 control={form.control}
@@ -259,7 +258,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
                 disabled={isPending}
                 data-testid="button-save-user"
               >
-                {isPending ? "Saving..." : isEdit ? "Save Changes" : "Add User"}
+                {isPending ? "Sending..." : isEdit ? "Save Changes" : "Send Invitation"}
               </Button>
             </DialogFooter>
           </form>

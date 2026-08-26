@@ -1,4 +1,5 @@
 import sgMail from "@sendgrid/mail";
+import { ReplitConnectors } from "@replit/connectors-sdk";
 import { logger } from "./logger";
 import { appBaseUrl } from "./sso";
 
@@ -88,14 +89,41 @@ export async function sendEmail(params: {
   subject: string;
   html: string;
   text?: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const { to, subject, html, text } = params;
+  const plainText = text ?? html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  if (SENDGRID_FROM_EMAIL) {
+    try {
+      const connectors = new ReplitConnectors();
+      const response = await connectors.proxy("sendgrid", "/v3/mail/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: to }] }],
+          from: { email: SENDGRID_FROM_EMAIL },
+          subject,
+          content: [
+            { type: "text/plain", value: plainText },
+            { type: "text/html", value: html },
+          ],
+        }),
+      });
+      if (!response.ok) throw new Error(`SendGrid returned ${response.status}`);
+      return true;
+    } catch (err) {
+      if (!SENDGRID_API_KEY) {
+        logger.error({ err, to, subject }, "Failed to send email via SendGrid connector");
+        return false;
+      }
+      logger.warn({ err, to, subject }, "SendGrid connector failed; trying API key fallback");
+    }
+  }
   if (!ensureConfigured()) {
     logger.warn(
       { to, subject },
       "SendGrid is not configured (SENDGRID_API_KEY / SENDGRID_FROM_EMAIL); skipping email",
     );
-    return;
+    return false;
   }
   try {
     await sgMail.send({
@@ -103,11 +131,24 @@ export async function sendEmail(params: {
       from: SENDGRID_FROM_EMAIL as string,
       subject,
       html,
-      text: text ?? html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+      text: plainText,
     });
+    return true;
   } catch (err) {
     logger.error({ err, to, subject }, "Failed to send email via SendGrid");
+    return false;
   }
+}
+
+export async function sendInvitationEmail(user: { email: string; name: string }, token: string): Promise<boolean> {
+  const inviteUrl = `${appBaseUrl()}/accept-invite?token=${encodeURIComponent(token)}`;
+  const inner = `
+    <h1 style="margin:0 0 16px;font-size:20px;color:#0f172a;">You're invited to Rightsly</h1>
+    <p style="margin:0 0 16px;">Hello ${escapeHtml(user.name)}, an administrator has invited you to Rightsly.</p>
+    <p style="margin:0 0 24px;">Use the secure link below to choose your password. This invitation expires in 72 hours and can only be used once.</p>
+    <p style="margin:0 0 24px;">${brandButton(inviteUrl, "Choose password")}</p>
+  `;
+  return sendEmail({ to: user.email, subject: "You're invited to Rightsly", html: brandedHtml(inner) });
 }
 
 export async function sendWelcomeEmail(user: {

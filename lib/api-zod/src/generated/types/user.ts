@@ -14,4 +14,5 @@ export interface User {
   isActive?: boolean;
   createdAt: Date;
   lastLogin?: Date | null;
+  invitePending?: boolean;
 }

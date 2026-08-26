@@ -32,7 +32,35 @@ export const LoginResponse = zod.object({
   "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
-  "lastLogin": zod.coerce.date().nullish()
+  "lastLogin": zod.coerce.date().nullish(),
+  "invitePending": zod.boolean().optional()
+})
+})
+
+
+/**
+ * @summary Set a password and accept a user invitation
+ */
+export const acceptInvitationBodyPasswordMin = 8;
+
+
+
+export const AcceptInvitationBody = zod.object({
+  "token": zod.string(),
+  "password": zod.string().min(acceptInvitationBodyPasswordMin)
+})
+
+export const AcceptInvitationResponse = zod.object({
+  "token": zod.string(),
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "name": zod.string(),
+  "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
+  "isActive": zod.boolean().optional(),
+  "createdAt": zod.coerce.date(),
+  "lastLogin": zod.coerce.date().nullish(),
+  "invitePending": zod.boolean().optional()
 })
 })
 
@@ -63,7 +91,8 @@ export const GetMeResponse = zod.object({
   "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
-  "lastLogin": zod.coerce.date().nullish()
+  "lastLogin": zod.coerce.date().nullish(),
+  "invitePending": zod.boolean().optional()
 })
 
 
@@ -86,7 +115,8 @@ export const ListUsersResponse = zod.object({
   "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
-  "lastLogin": zod.coerce.date().nullish()
+  "lastLogin": zod.coerce.date().nullish(),
+  "invitePending": zod.boolean().optional()
 })),
   "total": zod.number(),
   "page": zod.number(),
@@ -100,8 +130,7 @@ export const ListUsersResponse = zod.object({
 export const CreateUserBody = zod.object({
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
-  "password": zod.string()
+  "role": zod.enum(['admin', 'legal', 'finance', 'sales'])
 })
 
 export const CreateUserResponse = zod.object({
@@ -111,7 +140,8 @@ export const CreateUserResponse = zod.object({
   "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
-  "lastLogin": zod.coerce.date().nullish()
+  "lastLogin": zod.coerce.date().nullish(),
+  "invitePending": zod.boolean().optional()
 })
 
 
@@ -129,7 +159,8 @@ export const GetUserResponse = zod.object({
   "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
-  "lastLogin": zod.coerce.date().nullish()
+  "lastLogin": zod.coerce.date().nullish(),
+  "invitePending": zod.boolean().optional()
 })
 
 
@@ -154,7 +185,8 @@ export const UpdateUserResponse = zod.object({
   "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
-  "lastLogin": zod.coerce.date().nullish()
+  "lastLogin": zod.coerce.date().nullish(),
+  "invitePending": zod.boolean().optional()
 })
 
 

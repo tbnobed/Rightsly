@@ -70,7 +70,7 @@ export default function Users() {
         </div>
         <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => setAddOpen(true)} data-testid="button-add-user">
           <UserPlus className="w-4 h-4 mr-2" />
-          Add User
+          Invite User
         </Button>
       </div>
 
@@ -118,7 +118,11 @@ export default function Users() {
                       {getRoleBadge(u.role)}
                     </td>
                     <td className="px-6 py-4">
-                      {u.isActive !== false ? (
+                      {u.invitePending ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Invitation pending
+                        </span>
+                      ) : u.isActive !== false ? (
                         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
                         </span>

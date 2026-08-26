@@ -10,5 +10,4 @@ export interface CreateUserRequest {
   email: string;
   name: string;
   role: CreateUserRequestRole;
-  password: string;
 }
