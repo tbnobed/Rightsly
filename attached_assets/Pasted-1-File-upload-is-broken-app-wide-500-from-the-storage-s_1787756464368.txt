@@ -1,0 +1,67 @@
+1 — File upload is broken app-wide (500 from the storage service)
+
+Confirmed reproduction. Single root cause. Four broken features. This is the top item.
+
+The failure
+POST /api/storage/uploads/request-url
+{"name":"signed-contract.pdf","size":15,"contentType":"application/pdf"}
+
+→ 500 {"error":"Failed to generate upload URL"}
+What the diagnosis narrows it to
+
+The route's validation layer works — a 999,999,999-byte request returns a clean 400 File exceeds the 50 MB size limit. Everything that passes validation returns 500, and it is not input-dependent:
+
+Request	Result
+a.pdf, 15 bytes, application/pdf	500 Failed to generate upload URL
+c.docx, 2 KB, Word MIME type	500 Failed to generate upload URL
+d.csv, 100 bytes, text/csv	500 Failed to generate upload URL
+f.pdf, 999999999 bytes	400 size limit ✅ (validation reached and correct)
+
+Validation runs, then signed-URL generation fails unconditionally. That points at object storage rather than the request handler — most likely a missing bucket name or credentials in the environment, an uninitialised storage SDK client, or the storage integration never being provisioned in this deployment. Please surface the server-side exception behind that 500; the client is being told nothing useful.
+
+Why it matters more than its size suggests
+
+/api/storage/uploads/request-url is the only upload path in the bundle, so everything that takes a file is down:
+
+Contract document upload — Documents tab → Upload PDF
+Contract Document field on the create and edit forms
+Revenue report attachment
+Amendment document upload
+
+Two map directly to named stakeholder requests: "Contract Document upload" in the Rights Dashboard Form, and "add in file attachment to upload reports" in the Notes — the one Obed was most explicit about.
+
+Also fix while you are in here
+
+The client shows the user the raw HTTP 500 Internal Server Error: Failed to generate upload URL in a red toast. A storage outage should read as something a person can act on — "Couldn't upload the file. Try again, or contact your administrator if this continues." — with the technical detail logged, not displayed.
+
+Acceptance: a PDF attaches to a contract, an amendment and a revenue report; each persists (documentPath / documentName populated) and downloads again afterwards.
+
+🔴 2 — Decide what the availability checker is for
+
+Behavioural finding, not a missing field.
+
+The Rights Checker says "Verify content availability before drafting a new license." It only reads Rights Out grants. Rights In contracts never appear in results and never affect the answer.
+
+Reproduced: a title acquired from FreeCast through 2026-12-31 and licensed out through 2027-12-31. A check dated 2027-06-01 — after the acquisition lapsed — returns a clean green Rights Available, with no mention of the expired acquisition.
+
+Licensing content past the date you acquired it is the classic rights failure, and the app carries a full Rights In direction. Two acceptable resolutions — please pick deliberately rather than leaving it implicit:
+
+(a) Include Rights In in the check: surface acquisitions under Active Grants and warn when the requested date falls outside the acquisition window — "TBN's rights to this title end 31 Dec 2026."
+(b) Narrow the promise: retitle the page and its copy to say it checks outbound conflicts only.
+
+(a) is what the product implies. (b) is honest and cheap.
+
+🟠 3 — The API does not validate enum values
+
+Three separate symptoms, one underlying gap. Worth fixing as a single pass over the write endpoints rather than three tickets.
+
+Endpoint	Bad input	Current behaviour	Should be
+POST /api/content	type: "TV Series" (display label; enum wants TVSeries)	500 Internal Server Error	400 naming the accepted values — and ideally accept display labels as aliases
+POST /api/contracts	territories: ["Atlantis"]	Accepted and stored. The record can then never match any rights check	400 — territories are a canonical enum now
+POST /api/contracts	rightsOutDetails.exclusivity: "non-exclusive" (hyphen; enum wants non_exclusive)	Accepted and stored. The edit form then cannot prefill that field, marks it required, and blocks the save until the user re-picks it	400, or normalise on write
+
+The third is the instructive one. The UI always writes the correct value, so this does not bite in normal use — but any integration, migration script, or the CSV importer writing a near-miss value creates a record the app's own edit form cannot round-trip. Given Rightsline data is arriving by import, that is worth closing before migration.
+
+The territory case is the dangerous one: a stored territory outside the enum silently never matches, which produces a false Rights Available.
+
+Also apply the same validation on read — GET /api/rights-check?territory=Atlantis returns 200 {"available":true} rather than 400. An unrecognised query term should be an error, not a green light.
