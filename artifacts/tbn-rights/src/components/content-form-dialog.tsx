@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useCreateContent,
@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Form,
   FormControl,
@@ -39,7 +40,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 
 const seasonSchema = z.object({
   id: z.string().optional(),
@@ -142,6 +143,7 @@ function RightsDurationFields({
 }) {
   const term = form.watch(termName);
   const customTerm = form.watch(customTermName);
+  const [termOpen, setTermOpen] = useState(false);
   const numberDisabled = term === "in_perpetuity";
   const termValue = term === "months"
     ? "Months"
@@ -150,7 +152,6 @@ function RightsDurationFields({
       : term === "in_perpetuity"
         ? "In Perpetuity"
         : customTerm ?? "";
-  const termOptionsId = `${testId}-term-options`;
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
       <h4 className="mb-3 text-sm font-semibold text-slate-900">{label}</h4>
@@ -183,41 +184,72 @@ function RightsDurationFields({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Term</FormLabel>
-              <FormControl>
-                <Input
-                  ref={field.ref}
-                  name={field.name}
-                  onBlur={field.onBlur}
-                  value={termValue}
-                  list={termOptionsId}
-                  maxLength={50}
-                  placeholder="e.g. Weeks, Days, Hours"
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    const normalized = value.trim().toLowerCase();
-                    if (normalized === "months") {
-                      form.setValue(termName, "months", { shouldValidate: true });
-                      field.onChange("");
-                    } else if (normalized === "years") {
-                      form.setValue(termName, "years", { shouldValidate: true });
-                      field.onChange("");
-                    } else if (normalized === "in perpetuity") {
-                      form.setValue(termName, "in_perpetuity", { shouldValidate: true });
-                      field.onChange("");
-                      form.setValue(durationName, "", { shouldValidate: true });
-                    } else {
+              <Popover open={termOpen} onOpenChange={setTermOpen}>
+                <FormControl>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={termOpen}
+                      className="w-full justify-between font-normal"
+                      data-testid={`select-${testId}-term`}
+                    >
+                      <span className={termValue ? "" : "text-muted-foreground"}>
+                        {termValue || "Select or enter term..."}
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                </FormControl>
+                <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-2">
+                  <Input
+                    ref={field.ref}
+                    name={field.name}
+                    value={term === "none" ? customTerm ?? "" : ""}
+                    maxLength={50}
+                    autoFocus
+                    placeholder="Type a custom term..."
+                    onBlur={field.onBlur}
+                    onChange={(event) => {
                       form.setValue(termName, "none", { shouldValidate: true });
-                      field.onChange(value);
-                    }
-                  }}
-                  data-testid={`input-${testId}-term`}
-                />
-              </FormControl>
-              <datalist id={termOptionsId}>
-                <option value="Months" />
-                <option value="Years" />
-                <option value="In Perpetuity" />
-              </datalist>
+                      field.onChange(event.target.value);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && (field.value ?? "").trim()) {
+                        event.preventDefault();
+                        setTermOpen(false);
+                      }
+                    }}
+                    data-testid={`input-${testId}-custom-term`}
+                  />
+                  <div className="mt-2 space-y-1 border-t pt-2">
+                    {[
+                      { value: "months" as const, label: "Months" },
+                      { value: "years" as const, label: "Years" },
+                      { value: "in_perpetuity" as const, label: "In Perpetuity" },
+                    ].map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          form.setValue(termName, option.value, { shouldValidate: true });
+                          field.onChange("");
+                          if (option.value === "in_perpetuity") {
+                            form.setValue(durationName, "", { shouldValidate: true });
+                          }
+                          setTermOpen(false);
+                        }}
+                      >
+                        <Check className={`h-4 w-4 ${term === option.value ? "opacity-100" : "opacity-0"}`} />
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
               <FormMessage />
             </FormItem>
           )}

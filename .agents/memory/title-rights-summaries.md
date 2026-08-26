@@ -5,7 +5,7 @@ description: Boundary between title-level operational rights metadata and author
 
 Title-level Broadcast, Digital, International, and YouTube durations—and International broadcast-air amount—are optional operational summaries. They must remain independent from contract terms, territories, platforms, rights direction, and Rights Check logic.
 
-The Term control is an editable text field, not a Blank dropdown option. It accepts custom values such as Weeks/Days/Hours while recognizing Months, Years, and In Perpetuity; only In Perpetuity disables the number.
+The Term control is a dropdown containing a custom-text input plus Months, Years, and In Perpetuity options. Custom values persist separately; only In Perpetuity disables the number.
 
 **Why:** A title may need a quick operational summary while multiple contracts remain the authoritative source for legal scope. Inferring or synchronizing the summary from contracts can collapse conflicting grants and make Rights Check results unreliable.
 
