@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --experimental-strip-types --test src/lib/*.test.ts",
     "test:integration": "node --experimental-strip-types --test src/integration/*.test.ts",
-    "seed": "node --enable-source-maps ./dist/seed.mjs"
+    "seed": "node --enable-source-maps ./dist/seed.mjs",
+    "generate:master-import": "pnpm --filter @workspace/scripts exec tsx ../artifacts/api-server/src/scripts/generateRightslyMasterImport.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.21.0",

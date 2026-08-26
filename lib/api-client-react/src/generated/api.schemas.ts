@@ -853,17 +853,33 @@ export interface ContractImportInput {
   file: Blob;
 }
 
-export type ImportResultErrorsItem = {
+export interface ImportIssue {
   row: number;
   message: string;
-};
+}
 
 export interface ImportResult {
   imported: number;
   failed: number;
+  skipped: number;
+  review: number;
+  duplicates: number;
   /** Number of previously unknown partners created while importing. */
   createdPartners: number;
-  errors: ImportResultErrorsItem[];
+  linkedContent: number;
+  linkedSeasons: number;
+  errors: ImportIssue[];
+  warnings: ImportIssue[];
+}
+
+export interface ImportPreview {
+  total: number;
+  ready: number;
+  review: number;
+  skipped: number;
+  invalid: number;
+  errors: ImportIssue[];
+  warnings: ImportIssue[];
 }
 
 export interface PaginatedContracts {
@@ -1235,3 +1251,4 @@ export type ListNotifications200 = {
   data: Notification[];
   unreadCount: number;
 };
+

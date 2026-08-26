@@ -6,6 +6,7 @@ import {
   hasFinancialImportValues,
   normalizeContractImportRecord,
   parseContractImportCsv,
+  previewContractImportRecords,
 } from "./contractImportCore.ts";
 
 const sample: Record<string, string> = {
@@ -87,8 +88,81 @@ test("contract import rejects malformed optional values with clear errors", () =
     ["website", { ...sample, website_link: "javascript:alert(1)" }, /must use HTTP or HTTPS/],
     ["territory", { ...sample, territories: "Atlantis" }, /Unrecognized territories/],
     ["distribution", { ...sample, distribution_types: "Unknown" }, /Unrecognized distribution types/],
+    ["reporting frequency", { ...sample, reporting_frequency: "every other month" }, /reporting_frequency is invalid/],
   ];
   for (const [name, record, expected] of cases) {
     assert.throws(() => normalizeContractImportRecord(record), expected, name);
   }
+});
+
+test("expanded contract import parses source metadata and content references", () => {
+  const normalized = normalizeContractImportRecord({
+    ...sample,
+    source_key: "legacy:contracts:2",
+    source_sheet: "Contracts",
+    source_row: "2",
+    document_url: "https://example.com/contract.pdf",
+    partner_website: "https://partner.example.com",
+    partner_contacts: "Primary <primary@example.com>",
+    content_titles: "Whole Title|Another Title",
+    content_seasons: "Seasonal Title::1|Seasonal Title::2",
+    reporting_frequency: "quarterly",
+  });
+  assert.equal(normalized.sourceKey, "legacy:contracts:2");
+  assert.equal(normalized.sourceRow, 2);
+  assert.equal(normalized.documentUrl, "https://example.com/contract.pdf");
+  assert.deepEqual(normalized.contentTitles, ["Whole Title", "Another Title"]);
+  assert.deepEqual(normalized.contentSeasons, [
+    { title: "Seasonal Title", seasonNumber: 1 },
+    { title: "Seasonal Title", seasonNumber: 2 },
+  ]);
+});
+
+test("expanded contract import deduplicates normalized content and season references", () => {
+  const normalized = normalizeContractImportRecord({
+    ...sample,
+    content_titles: "Show| show |SHOW",
+    content_seasons: "Show::1| show ::1|SHOW::1",
+  });
+  assert.deepEqual(normalized.contentTitles, ["Show"]);
+  assert.deepEqual(normalized.contentSeasons, [{ title: "Show", seasonNumber: 1 }]);
+});
+
+test("import preview separates ready, review, skipped, and invalid rows", () => {
+  const preview = previewContractImportRecords([
+    { direction: "rights_out", partner_name: "Ready", end_type: "perpetuity", source_key: "ready" },
+    { import_action: "review", review_notes: "Confirm the territory" },
+    { import_action: "skip", review_notes: "Operational row" },
+    { direction: "rights_out", partner_name: "Broken", end_type: "unknown" },
+  ]);
+  assert.deepEqual(
+    {
+      total: preview.total,
+      ready: preview.ready,
+      review: preview.review,
+      skipped: preview.skipped,
+      invalid: preview.invalid,
+    },
+    { total: 4, ready: 1, review: 1, skipped: 1, invalid: 1 },
+  );
+  assert.match(preview.errors[0].message, /end_type/);
+  assert.match(preview.warnings[0].message, /Confirm the territory/);
+});
+
+test("import preview rejects duplicate source keys and parser blocks formulas", () => {
+  const preview = previewContractImportRecords([
+    { direction: "rights_out", partner_name: "First", end_type: "perpetuity", source_key: "duplicate" },
+    { direction: "rights_out", partner_name: "Second", end_type: "perpetuity", source_key: "duplicate" },
+  ]);
+  assert.equal(preview.ready, 1);
+  assert.equal(preview.invalid, 1);
+  assert.match(preview.errors[0].message, /Duplicate source_key/);
+  assert.throws(
+    () => parseContractImportCsv("direction,partner_name,end_type\nrights_out,=CMD(),perpetuity\n"),
+    /Potential spreadsheet formula/,
+  );
+  assert.throws(
+    () => parseContractImportCsv("direction,partner_name,end_type\nrights_out,-CMD(),perpetuity\n"),
+    /Potential spreadsheet formula/,
+  );
 });

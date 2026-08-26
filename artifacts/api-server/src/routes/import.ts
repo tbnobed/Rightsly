@@ -6,6 +6,7 @@ import {
   hasFinancialImportValues,
   importContractRecords,
   parseContractImportCsv,
+  previewContractImportRecords,
 } from "../lib/contractImport";
 
 const router = Router();
@@ -34,13 +35,46 @@ router.get("/template", (_req, res) => {
     "net_30",
     "Sample contract",
     "https://tubi.tv",
+    "legacy-contracts:tubi:2024",
+    "import",
+    "",
+    "Legacy Contracts",
+    "2",
+    "https://example.com/contracts/tubi",
+    "https://tubi.tv",
+    "Licensing contact <licensing@example.com>",
+    "Sample Series",
+    "Sample Series::1",
+    "quarterly",
+    "",
   ];
 
-  const csv = [headers.join(","), exampleRow.join(",")].join("\n");
+  const csvCell = (value: string) => `"${value.replaceAll('"', '""')}"`;
+  const csv = [headers.map(csvCell).join(","), exampleRow.map(csvCell).join(",")].join("\n");
 
   res.setHeader("Content-Type", "text/csv");
   res.setHeader("Content-Disposition", "attachment; filename=contract-import-template.csv");
   res.send(csv);
+});
+
+// POST /api/import/contracts/validate
+router.post("/contracts/validate", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    res.status(400).json({ message: "No file uploaded" });
+    return;
+  }
+  try {
+    const records = parseContractImportCsv(req.file.buffer.toString("utf-8"));
+    if (req.user?.role === "legal" && hasFinancialImportValues(records)) {
+      res.status(403).json({ message: "Legal users cannot import financial contract fields" });
+      return;
+    }
+    res.json(await previewContractImportRecords(records));
+  } catch (error) {
+    res.status(400).json({
+      message: error instanceof Error ? error.message : "Invalid CSV file",
+    });
+  }
 });
 
 // POST /api/import/contracts

@@ -4,12 +4,18 @@
  * Api
  * OpenAPI spec version: 0.1.0
  */
-import type { ImportResultErrorsItem } from './importResultErrorsItem';
+import type { ImportIssue } from './importIssue';
 
 export interface ImportResult {
   imported: number;
   failed: number;
+  skipped: number;
+  review: number;
+  duplicates: number;
   /** Number of previously unknown partners created while importing. */
   createdPartners: number;
-  errors: ImportResultErrorsItem[];
+  linkedContent: number;
+  linkedSeasons: number;
+  errors: ImportIssue[];
+  warnings: ImportIssue[];
 }

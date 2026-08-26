@@ -1201,25 +1201,65 @@ components:
 
     ImportResult:
       type: object
-      required: [imported, failed, errors, createdPartners]
+      required: [imported, failed, skipped, review, duplicates, errors, warnings, createdPartners, linkedContent, linkedSeasons]
       properties:
         imported:
           type: integer
         failed:
           type: integer
+        skipped:
+          type: integer
+        review:
+          type: integer
+        duplicates:
+          type: integer
         createdPartners:
           type: integer
           description: Number of previously unknown partners created while importing.
+        linkedContent:
+          type: integer
+        linkedSeasons:
+          type: integer
         errors:
           type: array
           items:
-            type: object
-            required: [row, message]
-            properties:
-              row:
-                type: integer
-              message:
-                type: string
+            $ref: '#/components/schemas/ImportIssue'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportIssue'
+
+    ImportIssue:
+      type: object
+      required: [row, message]
+      properties:
+        row:
+          type: integer
+        message:
+          type: string
+
+    ImportPreview:
+      type: object
+      required: [total, ready, review, skipped, invalid, errors, warnings]
+      properties:
+        total:
+          type: integer
+        ready:
+          type: integer
+        review:
+          type: integer
+        skipped:
+          type: integer
+        invalid:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportIssue'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportIssue'
 
     PaginatedContracts:
       type: object
@@ -2491,6 +2531,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImportResult'
+
+  /import/contracts/validate:
+    post:
+      operationId: validateContractImport
+      summary: Validate and preview a contract CSV import
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContractImportInput'
+      responses:
+        '200':
+          description: Import validation preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportPreview'
 
   /import/template:
     get:

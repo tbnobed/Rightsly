@@ -52,6 +52,7 @@ import type {
   GetRoyaltyReportParams,
   GetSsoConfig200,
   HealthStatus,
+  ImportPreview,
   ImportResult,
   ListAuditLogsParams,
   ListContentParams,
@@ -3659,6 +3660,79 @@ export const useImportContracts = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getImportContractsMutationOptions(options));
+    }
+
+export const getValidateContractImportUrl = () => {
+
+
+
+
+  return `/api/import/contracts/validate`
+}
+
+/**
+ * @summary Validate and preview a contract CSV import
+ */
+export const validateContractImport = async (contractImportInput: ContractImportInput, options?: RequestInit): Promise<ImportPreview> => {
+    const formData = new FormData();
+formData.append(`file`, contractImportInput.file);
+
+  return customFetch<ImportPreview>(getValidateContractImportUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getValidateContractImportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateContractImport>>, TError,{data: BodyType<ContractImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof validateContractImport>>, TError,{data: BodyType<ContractImportInput>}, TContext> => {
+
+const mutationKey = ['validateContractImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof validateContractImport>>, {data: BodyType<ContractImportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  validateContractImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ValidateContractImportMutationResult = NonNullable<Awaited<ReturnType<typeof validateContractImport>>>
+    export type ValidateContractImportMutationBody = BodyType<ContractImportInput>
+    export type ValidateContractImportMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Validate and preview a contract CSV import
+ */
+export const useValidateContractImport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateContractImport>>, TError,{data: BodyType<ContractImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof validateContractImport>>,
+        TError,
+        {data: BodyType<ContractImportInput>},
+        TContext
+      > => {
+      return useMutation(getValidateContractImportMutationOptions(options));
     }
 
 export const getGetImportTemplateUrl = () => {

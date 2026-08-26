@@ -1472,8 +1472,41 @@ export const ImportContractsBody = zod.object({
 export const ImportContractsResponse = zod.object({
   "imported": zod.number(),
   "failed": zod.number(),
+  "skipped": zod.number(),
+  "review": zod.number(),
+  "duplicates": zod.number(),
   "createdPartners": zod.number().describe('Number of previously unknown partners created while importing.'),
+  "linkedContent": zod.number(),
+  "linkedSeasons": zod.number(),
   "errors": zod.array(zod.object({
+  "row": zod.number(),
+  "message": zod.string()
+})),
+  "warnings": zod.array(zod.object({
+  "row": zod.number(),
+  "message": zod.string()
+}))
+})
+
+
+/**
+ * @summary Validate and preview a contract CSV import
+ */
+export const ValidateContractImportBody = zod.object({
+  "file": zod.instanceof(File)
+})
+
+export const ValidateContractImportResponse = zod.object({
+  "total": zod.number(),
+  "ready": zod.number(),
+  "review": zod.number(),
+  "skipped": zod.number(),
+  "invalid": zod.number(),
+  "errors": zod.array(zod.object({
+  "row": zod.number(),
+  "message": zod.string()
+})),
+  "warnings": zod.array(zod.object({
   "row": zod.number(),
   "message": zod.string()
 }))
@@ -1633,3 +1666,5 @@ export const MarkAllNotificationsReadResponse = zod.void()
  * @summary Clear (delete) all notifications for the current user
  */
 export const ClearNotificationsResponse = zod.void()
+
+

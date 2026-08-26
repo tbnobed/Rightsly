@@ -7,3 +7,10 @@ uri = "file://docs/rightsly-requirements-remediation-report.md"
 type = "text"
 title = "Rightsly Requirements Remediation Report"
 description = "Complete disposition of all 74 audited requirements, including fixes, pre-existing coverage, exclusions, open policy questions, and verification evidence."
+
+[[outputs]]
+id = "qaJiw-PQzhHTRPaMB79wu"
+uri = "file://attached_assets/rightsly-master-import.csv"
+type = "table"
+title = "Rightsly one-time master import CSV"
+description = "Validated 132-row migration file: 6 ready to import, 50 held for review, 76 safely skipped or merged. Dashboard credentials are excluded."

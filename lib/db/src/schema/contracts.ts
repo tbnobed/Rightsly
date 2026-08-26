@@ -50,6 +50,10 @@ export const contractsTable = pgTable("contracts", {
   notes: text("notes"),
   documentUrl: text("document_url"),
   websiteLink: text("website_link"),
+  importSourceKey: text("import_source_key"),
+  importSourceSheet: text("import_source_sheet"),
+  importSourceRow: integer("import_source_row"),
+  importRawData: text("import_raw_data"),
   departmentTags: json("department_tags").$type<string[]>().notNull().default([]),
   archived: boolean("archived").notNull().default(false),
 
@@ -75,7 +79,9 @@ export const contractsTable = pgTable("contracts", {
   createdBy: text("created_by").references(() => usersTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("contracts_import_source_key_idx").on(table.importSourceKey),
+]);
 
 export const contractContentTable = pgTable("contract_content", {
   contractId: text("contract_id")

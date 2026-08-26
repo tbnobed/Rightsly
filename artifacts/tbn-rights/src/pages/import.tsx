@@ -3,22 +3,51 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Upload, FileDown, CheckCircle, AlertCircle, FileSpreadsheet, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useImportContracts } from "@workspace/api-client-react";
+import {
+  useImportContracts,
+  useValidateContractImport,
+  type ImportPreview,
+  type ImportResult,
+} from "@workspace/api-client-react";
 import { Progress } from "@/components/ui/progress";
 
 export default function ImportData() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<{ imported: number, failed: number, errors: any[], createdPartners?: number } | null>(null);
+  const [preview, setPreview] = useState<ImportPreview | null>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
   const { toast } = useToast();
   
   const importMutation = useImportContracts();
+  const validateMutation = useValidateContractImport();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setResult(null);
+      setPreview(null);
+    }
+  };
+
+  const handleValidate = async () => {
+    if (!file) return;
+    try {
+      const validation = await validateMutation.mutateAsync({
+        data: { file: file as unknown as Blob },
+      });
+      setPreview(validation);
+      toast({
+        title: validation.invalid ? "Validation found errors" : "CSV validated",
+        description: `${validation.ready} ready, ${validation.review} need review, ${validation.skipped} skipped.`,
+        variant: validation.invalid ? "destructive" : "default",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Validation Failed",
+        description: error instanceof Error ? error.message : "Unable to validate the CSV.",
+      });
     }
   };
 
@@ -63,6 +92,25 @@ export default function ImportData() {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const downloadIssues = (
+    name: string,
+    issues: Array<{ row: number; message: string }>,
+  ) => {
+    const quote = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`;
+    const source = [
+      "row,message",
+      ...issues.map((issue) => `${quote(issue.row)},${quote(issue.message)}`),
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([source], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   const handleDownloadTemplate = async () => {
@@ -142,14 +190,65 @@ export default function ImportData() {
                   </div>
                 )}
 
-                <div className="flex justify-end">
+                {preview && (
+                  <div className="space-y-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {[
+                        ["Ready", preview.ready, "text-emerald-700"],
+                        ["Needs review", preview.review, "text-amber-700"],
+                        ["Skipped", preview.skipped, "text-slate-600"],
+                        ["Invalid", preview.invalid, "text-red-700"],
+                      ].map(([label, value, color]) => (
+                        <div key={label} className="rounded-md bg-white p-3 text-center border border-slate-100">
+                          <div className={`text-2xl font-bold ${color}`}>{value}</div>
+                          <div className="text-xs text-slate-500">{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {(preview.errors.length > 0 || preview.warnings.length > 0) && (
+                      <div className="flex flex-wrap gap-2">
+                        {preview.errors.length > 0 && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => downloadIssues("contract-import-validation-errors.csv", preview.errors)}
+                          >
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Download errors
+                          </Button>
+                        )}
+                        {preview.warnings.length > 0 && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => downloadIssues("contract-import-validation-warnings.csv", preview.warnings)}
+                          >
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Download warnings
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-col-reverse justify-end gap-3 sm:flex-row">
+                  <Button
+                    variant="outline"
+                    onClick={handleValidate}
+                    disabled={!file || validateMutation.isPending || isUploading}
+                  >
+                    {validateMutation.isPending ? "Validating..." : preview ? "Validate Again" : "Validate CSV"}
+                  </Button>
                   <Button 
                     onClick={handleUpload} 
-                    disabled={!file || isUploading}
+                    disabled={!file || !preview || preview.ready === 0 || preview.invalid > 0 || isUploading}
                     className="bg-amber-600 hover:bg-amber-700 text-white w-full sm:w-auto"
                     data-testid="button-upload-csv"
                   >
-                    {isUploading ? "Importing..." : "Run Import"}
+                    {isUploading ? "Importing..." : `Import ${preview?.ready ?? 0} Ready Rows`}
                   </Button>
                 </div>
               </div>
@@ -161,7 +260,9 @@ export default function ImportData() {
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900">Import Complete</h3>
-                    <p className="text-sm text-slate-600">Processed {result.imported + result.failed} rows from {file?.name}</p>
+                    <p className="text-sm text-slate-600">
+                      Imported {result.imported} rows from {file?.name}; review and skipped rows were not written.
+                    </p>
                   </div>
                 </div>
 
@@ -176,9 +277,12 @@ export default function ImportData() {
                   </div>
                 </div>
                 {typeof result.createdPartners === "number" && (
-                  <p className="text-sm text-slate-600" data-testid="text-created-partners">
-                    Created partners: <span className="font-semibold">{result.createdPartners}</span>
-                  </p>
+                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-600 sm:grid-cols-4">
+                    <p data-testid="text-created-partners">Partners: <span className="font-semibold">{result.createdPartners}</span></p>
+                    <p>Skipped: <span className="font-semibold">{result.skipped}</span></p>
+                    <p>Duplicates: <span className="font-semibold">{result.duplicates}</span></p>
+                    <p>Content links: <span className="font-semibold">{result.linkedContent + result.linkedSeasons}</span></p>
+                  </div>
                 )}
 
                 {result.errors && result.errors.length > 0 && (
@@ -197,8 +301,20 @@ export default function ImportData() {
                   </div>
                 )}
 
+                {result.warnings.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      onClick={() => downloadIssues("contract-import-warnings.csv", result.warnings)}
+                    >
+                      <FileDown className="mr-2 h-4 w-4" />
+                      Download {result.warnings.length} warnings
+                    </Button>
+                  </div>
+                )}
+
                 <div className="pt-4 flex justify-end">
-                  <Button variant="outline" onClick={() => { setFile(null); setResult(null); setProgress(0); }}>
+                  <Button variant="outline" onClick={() => { setFile(null); setPreview(null); setResult(null); setProgress(0); }}>
                     Import Another File
                   </Button>
                 </div>
@@ -212,11 +328,12 @@ export default function ImportData() {
             <CardTitle className="text-lg">Instructions</CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-4 text-sm text-slate-600">
-            <p>Upload a CSV file containing contract records. Ensure columns match the template exactly.</p>
+            <p>Validate a CSV before importing. Only rows marked <code>import</code> are written; <code>review</code> and <code>skip</code> rows remain untouched.</p>
             <ul className="list-disc pl-5 space-y-2">
-              <li>Use these snake_case columns exactly: <code>direction, partner_name, licensor, licensee, status, start_date, end_type, end_date, territories, distribution_types, platform, royalty_type, royalty_details, payment_terms, notes, website_link</code>.</li>
+              <li>The original columns remain supported. The expanded template adds source tracking, document links, contacts, content/season matching, and reporting frequency.</li>
               <li>Use <code>YYYY-MM-DD</code> dates and values such as <code>rights_out</code> and <code>active</code>.</li>
               <li>Separate multiple <code>territories</code> and <code>distribution_types</code> with a pipe (<code>|</code>), for example <code>US|Canada</code>.</li>
+              <li>Use <code>Title::1</code> in <code>content_seasons</code>. Titles and seasons are linked only on one exact Rightsly match.</li>
             </ul>
             <Button variant="outline" className="w-full mt-4 bg-white" onClick={handleDownloadTemplate}>
               <FileDown className="w-4 h-4 mr-2" /> Download Template
