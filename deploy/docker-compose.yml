@@ -29,8 +29,8 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsly}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsly}}
 
-  # Runs on every `docker compose up`: seeds initial users only if the
-  # database is empty (idempotent), then exits. SEED_FORCE=true re-seeds.
+  # Runs on every `docker compose up`: creates the single initial admin account
+  # from .env only when the database has no users, then exits.
   seed:
     build:
       context: ..
@@ -45,8 +45,9 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-rightsly}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rightsly}}
       SEED_FORCE: ${SEED_FORCE:-false}
       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrator}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?set ADMIN_EMAIL in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
     command: ["node", "dist/seed.mjs"]
 
   api:

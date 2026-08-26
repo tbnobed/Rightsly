@@ -1,19 +1,24 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth";
-import { useListUsers, getListUsersQueryKey } from "@workspace/api-client-react";
+import { useListUsers, getListUsersQueryKey, useDeleteUser } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO } from "date-fns";
-import { AlertCircle, UserPlus, Users as UsersIcon, Settings, Edit, Shield } from "lucide-react";
+import { AlertCircle, UserPlus, Users as UsersIcon, Edit, Shield, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserFormDialog } from "@/components/user-form-dialog";
 import type { User } from "@workspace/api-client-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Users() {
   const { user } = useAuth();
   const [addOpen, setAddOpen] = useState(false);
   const [editUser, setEditUser] = useState<User | undefined>(undefined);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const deleteUser = useDeleteUser();
   
   const { data: result, isLoading } = useListUsers(undefined, {
     query: {
@@ -38,6 +43,21 @@ export default function Users() {
       case 'legal': return <Badge className="bg-blue-100 text-blue-800 border-none">Legal</Badge>;
       case 'sales': return <Badge className="bg-amber-100 text-amber-800 border-none">Sales</Badge>;
       default: return <Badge variant="outline" className="capitalize">{role}</Badge>;
+    }
+  };
+
+  const handleDelete = async (target: User) => {
+    if (!window.confirm(`Delete ${target.name} (${target.email})? This cannot be undone.`)) return;
+    try {
+      await deleteUser.mutateAsync({ id: target.id });
+      await queryClient.invalidateQueries({ queryKey: getListUsersQueryKey() });
+      toast({ title: "User deleted", description: target.email });
+    } catch (error) {
+      toast({
+        title: "Could not delete user",
+        description: error instanceof Error ? error.message : "Unexpected error",
+        variant: "destructive",
+      });
     }
   };
 
@@ -115,6 +135,19 @@ export default function Users() {
                       <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-900" onClick={() => setEditUser(u)} data-testid={`button-edit-user-${u.id}`}>
                         <Edit className="w-4 h-4" />
                       </Button>
+                      {u.id !== user.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-slate-400 hover:text-red-600 hover:bg-red-50"
+                          onClick={() => handleDelete(u)}
+                          disabled={deleteUser.isPending}
+                          title="Delete user"
+                          data-testid={`button-delete-user-${u.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 ))

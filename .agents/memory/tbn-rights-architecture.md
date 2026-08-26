@@ -26,13 +26,16 @@ description: Key decisions, constraints, and patterns for the TBN Rights Managem
 - Multipart bodies must use `$ref` not inline schema to avoid name collisions
 - `lib/api-zod/tsconfig.json` needs `"lib": ["esnext", "dom"]` for File/Blob types
 
-## Seed credentials (development only)
-- admin@tbn.org / Admin1234!
-- legal@tbn.org / Legal1234!
-- finance@tbn.org / Finance1234!
-- sales@tbn.org / Sales1234!
+## Initial account seeding
+Only one administrator is seeded, using required `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` values (plus optional `ADMIN_NAME`) from the environment.
+Never add built-in credentials or default Legal, Finance, or Sales users.
 
-Run seed: `pnpm --filter @workspace/api-server run seed`
+**Why:** Production installations must not create shared sample accounts or
+ship known passwords.
+
+**How to apply:** Keep the seed idempotent for non-empty user tables. Additional
+users must be created by an administrator in the Users screen.
 
 ## Route structure (api-server)
 - `/api/auth` — login/logout/me (public login, rest authenticated)

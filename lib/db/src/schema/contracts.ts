@@ -69,7 +69,7 @@ export const contractsTable = pgTable("contracts", {
   rightsOutReportingFrequency: text("rights_out_reporting_frequency"),
   rightsOutMinPaymentThreshold: numeric("rights_out_min_payment_threshold"),
 
-  createdBy: text("created_by").references(() => usersTable.id),
+  createdBy: text("created_by").references(() => usersTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -89,7 +89,7 @@ export const amendmentsTable = pgTable("amendments", {
   date: date("date").notNull(),
   description: text("description").notNull(),
   documentUrl: text("document_url"),
-  createdBy: text("created_by").references(() => usersTable.id),
+  createdBy: text("created_by").references(() => usersTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -102,7 +102,7 @@ export const contractAttachmentsTable = pgTable("contract_attachments", {
   objectPath: text("object_path").notNull(),
   contentType: text("content_type"),
   size: integer("size"),
-  uploadedBy: text("uploaded_by").references(() => usersTable.id),
+  uploadedBy: text("uploaded_by").references(() => usersTable.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

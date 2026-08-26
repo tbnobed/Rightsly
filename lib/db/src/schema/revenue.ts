@@ -32,7 +32,7 @@ export const royaltyApprovalsTable = pgTable("royalty_approvals", {
     .notNull()
     .references(() => revenueReportsTable.id, { onDelete: "cascade" }),
   status: royaltyReviewStatusEnum("status").notNull().default("pending"),
-  reviewedBy: text("reviewed_by").references(() => usersTable.id),
+  reviewedBy: text("reviewed_by").references(() => usersTable.id, { onDelete: "set null" }),
   reviewedAt: timestamp("reviewed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

@@ -13,6 +13,12 @@ import {
 async function seed() {
   console.log("Seeding database...");
 
+  const adminEmail = process.env.ADMIN_EMAIL?.trim();
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) {
+    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD are required to seed the initial admin account.");
+  }
+
   // Idempotency guard: skip if data already exists (unless SEED_FORCE=true).
   // This makes it safe to run the seed on every `docker compose up`.
   if (process.env.SEED_FORCE !== "true") {
@@ -33,18 +39,18 @@ async function seed() {
   await db.delete(usersTable);
 
   // --- Users ---
-  const adminPass = await bcrypt.hash(process.env.ADMIN_PASSWORD || "Admin1234!", 12);
-  const legalPass = await bcrypt.hash("Legal1234!", 12);
-  const financePass = await bcrypt.hash("Finance1234!", 12);
-  const salesPass = await bcrypt.hash("Sales1234!", 12);
+  const adminPass = await bcrypt.hash(adminPassword, 12);
+  const adminUser = {
+    id: crypto.randomUUID(),
+    email: adminEmail.toLowerCase(),
+    name: process.env.ADMIN_NAME?.trim() || "Administrator",
+    role: "admin" as const,
+    passwordHash: adminPass,
+    isActive: true,
+  };
 
-  const adminUser = { id: crypto.randomUUID(), email: process.env.ADMIN_EMAIL || "admin@tbn.org", name: "Admin User", role: "admin" as const, passwordHash: adminPass, isActive: true };
-  const legalUser = { id: crypto.randomUUID(), email: "legal@tbn.org", name: "Sarah Mitchell", role: "legal" as const, passwordHash: legalPass, isActive: true };
-  const financeUser = { id: crypto.randomUUID(), email: "finance@tbn.org", name: "Marcus Chen", role: "finance" as const, passwordHash: financePass, isActive: true };
-  const salesUser = { id: crypto.randomUUID(), email: "sales@tbn.org", name: "Jordan Rivers", role: "sales" as const, passwordHash: salesPass, isActive: true };
-
-  await db.insert(usersTable).values([adminUser, legalUser, financeUser, salesUser]);
-  console.log("✓ Users seeded");
+  await db.insert(usersTable).values(adminUser);
+  console.log("✓ Initial admin account seeded");
 
   // Demo/mock data (partners, content, contracts, revenue) is only seeded
   // when explicitly requested via SEED_DEMO_DATA=true.
@@ -137,7 +143,7 @@ async function seed() {
     rightsOutHasAmendment: false,
     rightsOutExclusivity: "exclusive",
     rightsOutReportingFrequency: "annually",
-    createdBy: legalUser.id,
+    createdBy: adminUser.id,
   };
 
   // Rights In from Daystar
@@ -160,7 +166,7 @@ async function seed() {
     rightsInPlatforms: ["TBN Broadcast", "TBN+"] as any,
     rightsInGrantOfRights: "Non-exclusive broadcast rights for programming library",
     rightsInExclusivitySameAsDuration: true,
-    createdBy: legalUser.id,
+    createdBy: adminUser.id,
   };
 
   // Rights Out to Roku - perpetual FAST deal
@@ -204,7 +210,7 @@ async function seed() {
     paymentTerms: "net_30" as const,
     rightsOutExclusivity: "non_exclusive",
     rightsOutReportingFrequency: "quarterly",
-    createdBy: legalUser.id,
+    createdBy: adminUser.id,
   };
 
   await db.insert(contractsTable).values([tubiContract, primeContract, daystarContract, rokuContract, plutoContract]);
@@ -274,10 +280,8 @@ async function seed() {
 
 function printLogins(adminEmail: string) {
   console.log("\n✅ Database seeded successfully!");
-  console.log(`\nAdmin login: ${adminEmail} / ${process.env.ADMIN_PASSWORD || "Admin1234!"}`);
-  console.log("Legal login: legal@tbn.org / Legal1234!");
-  console.log("Finance login: finance@tbn.org / Finance1234!");
-  console.log("Sales login: sales@tbn.org / Sales1234!");
+  console.log(`\nInitial admin: ${adminEmail}`);
+  console.log("The password is the ADMIN_PASSWORD value configured in .env.");
 }
 
 seed()

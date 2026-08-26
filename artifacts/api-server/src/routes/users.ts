@@ -120,6 +120,31 @@ router.put("/:id", async (req, res) => {
 
 // DELETE /api/users/:id
 router.delete("/:id", async (req, res) => {
+  if (req.params.id === req.user!.id) {
+    res.status(400).json({ message: "You cannot delete your own account." });
+    return;
+  }
+
+  const [target] = await db
+    .select({ id: usersTable.id, role: usersTable.role })
+    .from(usersTable)
+    .where(eq(usersTable.id, req.params.id));
+  if (!target) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  if (target.role === "admin") {
+    const [{ value: adminCount }] = await db
+      .select({ value: count() })
+      .from(usersTable)
+      .where(eq(usersTable.role, "admin"));
+    if (Number(adminCount) <= 1) {
+      res.status(400).json({ message: "The last administrator cannot be deleted." });
+      return;
+    }
+  }
+
   await db.delete(usersTable).where(eq(usersTable.id, req.params.id));
   await logAudit({ user: req.user, action: "delete", entityType: "user", entityId: req.params.id });
   res.json({ message: "User deleted" });

@@ -38,12 +38,13 @@ docker compose up -d --build
 ```
 
 That single command starts Postgres, creates/updates the schema (`db-push`),
-seeds initial users if the database is empty (`seed`), then starts the API and
+creates the initial admin account from `.env` if the user table is empty, then starts the API and
 web frontend. The `db-push` and `seed` containers run to completion and exit —
 seeing them as "Exited (0)" in `docker compose ps -a` is normal.
 
-By default only user accounts are seeded — no sample partners, content, or
-contracts. Set `SEED_DEMO_DATA=true` in `.env` before the first `up` if you
+Only the `ADMIN_NAME`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD` account from `.env`
+is seeded. No Legal, Finance, Sales, or other default accounts are created.
+Set `SEED_DEMO_DATA=true` in `.env` before the first `up` if you
 want demo data for evaluation.
 
 To wipe and re-seed later: set `SEED_FORCE=true` in `.env`, run
@@ -51,8 +52,7 @@ To wipe and re-seed later: set `SEED_FORCE=true` in `.env`, run
 
 The app is now at `http://<server>:${WEB_PORT:-8081}`.
 
-Default seeded logins: `admin@tbn.org / Admin1234!` (also `legal@`, `finance@`,
-`sales@` — change these immediately in production).
+Sign in with the `ADMIN_EMAIL` and `ADMIN_PASSWORD` values configured in `.env`.
 
 ## 4. Updating to a new version
 
