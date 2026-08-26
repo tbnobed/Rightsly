@@ -41,8 +41,11 @@ function normalizeRightsDuration(label: string, duration: unknown, term: unknown
     return { error: `${label} term must be Months, Years, In Perpetuity, or blank` };
   }
   if (normalizedTerm === null) {
-    if (duration != null && duration !== "") return { error: `${label} requires a term when a duration is entered` };
-    return { duration: null, term: null };
+    if (duration == null || duration === "") return { duration: null, term: null };
+    if (typeof duration !== "number" || !Number.isInteger(duration) || duration <= 0) {
+      return { error: `${label} duration must be a positive whole number` };
+    }
+    return { duration, term: null };
   }
   if (normalizedTerm === "in_perpetuity") {
     if (duration != null && duration !== "") return { error: `${label} duration must be blank for In Perpetuity` };

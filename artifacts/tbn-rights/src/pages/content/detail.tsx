@@ -26,7 +26,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 function formatTitleRight(duration: number | null, term: "months" | "years" | "in_perpetuity" | null) {
   if (term === "in_perpetuity") return "In Perpetuity";
-  if (!term || !duration) return "Not specified";
+  if (!duration) return "Not specified";
+  if (!term) return String(duration);
   const label = term === "months" ? "Month" : "Year";
   return `${duration} ${label}${duration === 1 ? "" : "s"}`;
 }

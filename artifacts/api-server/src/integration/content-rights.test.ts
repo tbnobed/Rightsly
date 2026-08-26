@@ -71,7 +71,7 @@ test("title rights persist and enforce source and duration rules", async () => {
       internationalRightsTerm: "years",
       internationalBroadcastAirAmount: 4,
       youtubeRightsDuration: 3,
-      youtubeRightsTerm: "years",
+      youtubeRightsTerm: null,
     };
     const denied = await fetch("http://localhost:8080/api/content", {
       method: "POST", headers: headers(salesToken), body: JSON.stringify(payload),
@@ -82,10 +82,18 @@ test("title rights persist and enforce source and duration rules", async () => {
       method: "POST", headers: headers(legalToken), body: JSON.stringify(payload),
     });
     assert.equal(created.status, 201);
-    const item = await created.json() as { id: string; tbnMediaId: string; digitalRightsTerm: string };
+    const item = await created.json() as {
+      id: string;
+      tbnMediaId: string;
+      digitalRightsTerm: string;
+      youtubeRightsDuration: number;
+      youtubeRightsTerm: null;
+    };
     contentId = item.id;
     assert.equal(item.tbnMediaId, `MEDIA-${suffix}`);
     assert.equal(item.digitalRightsTerm, "in_perpetuity");
+    assert.equal(item.youtubeRightsDuration, 3);
+    assert.equal(item.youtubeRightsTerm, null);
     await pool.query(
       `INSERT INTO contracts (id, direction, partner_id, status, start_date, end_type, end_date)
        VALUES ($1, 'rights_in', $2, 'active', '2026-01-01', 'date', '2027-01-01')`,

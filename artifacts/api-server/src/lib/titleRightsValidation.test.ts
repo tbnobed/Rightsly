@@ -34,26 +34,29 @@ test("normalizes valid duration terms and independent air amount", () => {
     internationalRightsDuration: 1,
     internationalRightsTerm: "years",
     internationalBroadcastAirAmount: 4,
+    youtubeRightsDuration: 12,
   });
   assert.deepEqual(
     {
       broadcast: [result.value?.broadcastRightsDuration, result.value?.broadcastRightsTerm],
       digital: [result.value?.digitalRightsDuration, result.value?.digitalRightsTerm],
       international: [result.value?.internationalRightsDuration, result.value?.internationalRightsTerm],
+      youtube: [result.value?.youtubeRightsDuration, result.value?.youtubeRightsTerm],
       airAmount: result.value?.internationalBroadcastAirAmount,
     },
     {
       broadcast: [6, "months"],
       digital: [null, "in_perpetuity"],
       international: [1, "years"],
+      youtube: [12, null],
       airAmount: 4,
     },
   );
 });
 
 test("rejects incomplete, fractional, and incompatible duration combinations", () => {
-  assert.match(normalizeTitleRights({ ...base, broadcastRightsDuration: 6 }).error ?? "", /requires a term/);
   assert.match(normalizeTitleRights({ ...base, broadcastRightsTerm: "months" }).error ?? "", /positive whole number/);
+  assert.match(normalizeTitleRights({ ...base, broadcastRightsDuration: 1.5 }).error ?? "", /positive whole number/);
   assert.match(normalizeTitleRights({ ...base, broadcastRightsDuration: 1.5, broadcastRightsTerm: "years" }).error ?? "", /positive whole number/);
   assert.match(normalizeTitleRights({ ...base, broadcastRightsDuration: 1, broadcastRightsTerm: "in_perpetuity" }).error ?? "", /must be blank/);
   assert.match(normalizeTitleRights({ ...base, internationalBroadcastAirAmount: 0 }).error ?? "", /positive whole number/);

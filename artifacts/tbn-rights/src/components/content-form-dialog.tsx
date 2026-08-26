@@ -97,7 +97,9 @@ const contentSchema = z.object({
   rights.forEach(([field, duration, term]) => {
     if ((term === "months" || term === "years") && (!duration || !/^\d+$/.test(duration) || Number(duration) <= 0)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: "Enter a positive whole number" });
-    } else if ((term === "none" || term === "in_perpetuity") && duration) {
+    } else if (term === "none" && duration && (!/^\d+$/.test(duration) || Number(duration) <= 0)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: "Enter a positive whole number" });
+    } else if (term === "in_perpetuity" && duration) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: "Leave the number blank for this term" });
     }
   });
@@ -131,7 +133,7 @@ function RightsDurationFields({
   testId: string;
 }) {
   const term = form.watch(termName);
-  const numberDisabled = term === "none" || term === "in_perpetuity";
+  const numberDisabled = term === "in_perpetuity";
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
       <h4 className="mb-3 text-sm font-semibold text-slate-900">{label}</h4>
@@ -159,7 +161,7 @@ function RightsDurationFields({
                 value={field.value}
                 onValueChange={(value) => {
                   field.onChange(value);
-                  if (value === "none" || value === "in_perpetuity") form.setValue(durationName, "", { shouldValidate: true });
+                  if (value === "in_perpetuity") form.setValue(durationName, "", { shouldValidate: true });
                 }}
               >
                 <FormControl><SelectTrigger data-testid={`select-${testId}-term`}><SelectValue /></SelectTrigger></FormControl>
