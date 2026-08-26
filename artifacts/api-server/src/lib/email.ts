@@ -193,3 +193,35 @@ export async function sendNotificationEmail(
     html: brandedHtml(inner),
   });
 }
+
+export async function sendNotificationDigestEmail(
+  user: { email: string; name?: string },
+  notifications: Array<{ title: string; message?: string | null; link?: string | null }>,
+): Promise<void> {
+  if (notifications.length === 0) return;
+  if (notifications.length === 1) {
+    await sendNotificationEmail(user, notifications[0]);
+    return;
+  }
+
+  const items = notifications.map((notification) => {
+    const link = notification.link ? `${appBaseUrl()}${notification.link}` : null;
+    return `
+      <li style="margin:0 0 16px;">
+        <strong>${escapeHtml(notification.title)}</strong>
+        ${notification.message ? `<br><span>${escapeHtml(notification.message)}</span>` : ""}
+        ${link ? `<br><a href="${escapeHtml(link)}">View details</a>` : ""}
+      </li>
+    `;
+  }).join("");
+  const inner = `
+    <h1 style="margin:0 0 16px;font-size:18px;color:#0f172a;">You have ${notifications.length} new Rightsly notifications</h1>
+    <ul style="margin:0 0 24px;padding-left:20px;">${items}</ul>
+    <p style="margin:0 0 24px;">${brandButton(appBaseUrl(), "Open Rightsly")}</p>
+  `;
+  await sendEmail({
+    to: user.email,
+    subject: `Rightsly: ${notifications.length} new notifications`,
+    html: brandedHtml(inner),
+  });
+}

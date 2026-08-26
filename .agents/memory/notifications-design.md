@@ -11,6 +11,7 @@ Invariants:
 - Retention: dismissed generated rows older than 90 days are hard-deleted at generation time to bound growth; keep some retention if changing this, or old dedupe keys regrow forever.
 - Generated alerts must enforce the same role and row visibility as their target page: revenue/approval alerts are financial-role-only, and Sales contract alerts may reference only Sales-visible contracts.
 - Automated notification email delivery is production-only. Development sweeps still create in-app rows but must never send email because seeded recipients can route to real shared inboxes.
+- A generation pass must send at most one email per user: if several alerts are inserted together, combine them into one digest instead of looping over alerts.
 
 **Why:** unattended generation persists and emails data without a page authorization check, so a query broader than the target page becomes a durable disclosure. Development API restarts also run sweeps; sending there can turn test records into real email bursts.
 

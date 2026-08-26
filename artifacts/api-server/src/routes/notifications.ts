@@ -4,7 +4,7 @@ import { notificationsTable, contractsTable, partnersTable, revenueReportsTable,
 import { usersTable } from "@workspace/db";
 import { eq, and, or, desc, count, lte, gte, lt, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { authenticateToken } from "../lib/auth";
-import { sendNotificationEmail } from "../lib/email";
+import { sendNotificationDigestEmail } from "../lib/email";
 import { logger } from "../lib/logger";
 import { canReceiveRevenueNotifications, canSendNotificationEmails } from "../lib/notificationPolicy";
 
@@ -186,12 +186,10 @@ async function generateForUser(userId: string) {
             .from(usersTable)
             .where(eq(usersTable.id, userId));
           if (!user?.email) return;
-          for (const n of inserted) {
-            await sendNotificationEmail(
-              { email: user.email, name: user.name },
-              { title: n.title, message: n.message, link: n.link },
-            );
-          }
+          await sendNotificationDigestEmail(
+            { email: user.email, name: user.name },
+            inserted.map((n) => ({ title: n.title, message: n.message, link: n.link })),
+          );
         } catch (err) {
           logger.error({ err, userId }, "Failed to send notification emails");
         }
