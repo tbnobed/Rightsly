@@ -141,7 +141,16 @@ function RightsDurationFields({
   testId: string;
 }) {
   const term = form.watch(termName);
+  const customTerm = form.watch(customTermName);
   const numberDisabled = term === "in_perpetuity";
+  const termValue = term === "months"
+    ? "Months"
+    : term === "years"
+      ? "Years"
+      : term === "in_perpetuity"
+        ? "In Perpetuity"
+        : customTerm ?? "";
+  const termOptionsId = `${testId}-term-options`;
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4">
       <h4 className="mb-3 text-sm font-semibold text-slate-900">{label}</h4>
@@ -170,46 +179,50 @@ function RightsDurationFields({
         />
         <FormField
           control={form.control}
-          name={termName}
+          name={customTermName}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Term</FormLabel>
-              <Select
-                value={field.value}
-                onValueChange={(value) => {
-                  field.onChange(value);
-                  if (value === "in_perpetuity") form.setValue(durationName, "", { shouldValidate: true });
-                  if (value !== "none") form.setValue(customTermName, "", { shouldValidate: true });
-                }}
-              >
-                <FormControl><SelectTrigger data-testid={`select-${testId}-term`}><SelectValue /></SelectTrigger></FormControl>
-                <SelectContent>
-                  <SelectItem value="none">Blank</SelectItem>
-                  <SelectItem value="months">Months</SelectItem>
-                  <SelectItem value="years">Years</SelectItem>
-                  <SelectItem value="in_perpetuity">In Perpetuity</SelectItem>
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <Input
+                  ref={field.ref}
+                  name={field.name}
+                  onBlur={field.onBlur}
+                  value={termValue}
+                  list={termOptionsId}
+                  maxLength={50}
+                  placeholder="e.g. Weeks, Days, Hours"
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    const normalized = value.trim().toLowerCase();
+                    if (normalized === "months") {
+                      form.setValue(termName, "months", { shouldValidate: true });
+                      field.onChange("");
+                    } else if (normalized === "years") {
+                      form.setValue(termName, "years", { shouldValidate: true });
+                      field.onChange("");
+                    } else if (normalized === "in perpetuity") {
+                      form.setValue(termName, "in_perpetuity", { shouldValidate: true });
+                      field.onChange("");
+                      form.setValue(durationName, "", { shouldValidate: true });
+                    } else {
+                      form.setValue(termName, "none", { shouldValidate: true });
+                      field.onChange(value);
+                    }
+                  }}
+                  data-testid={`input-${testId}-term`}
+                />
+              </FormControl>
+              <datalist id={termOptionsId}>
+                <option value="Months" />
+                <option value="Years" />
+                <option value="In Perpetuity" />
+              </datalist>
               <FormMessage />
             </FormItem>
           )}
         />
       </div>
-      {term === "none" && (
-        <FormField
-          control={form.control}
-          name={customTermName}
-          render={({ field }) => (
-            <FormItem className="mt-3">
-              <FormLabel>Custom Term</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="e.g. Weeks, Days, Hours" data-testid={`input-${testId}-custom-term`} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      )}
     </div>
   );
 }
@@ -495,7 +508,7 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
             <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
               <div>
                 <h3 className="text-base font-semibold text-slate-900">Rights Information</h3>
-                <p className="text-xs text-slate-500">Choose Blank to enter a custom term such as Weeks, Days, or Hours.</p>
+                <p className="text-xs text-slate-500">Enter any term, such as Weeks, Days, Hours, Months, Years, or In Perpetuity.</p>
               </div>
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                 <RightsDurationFields form={form} label="Broadcast Rights" durationName="broadcastRightsDuration" termName="broadcastRightsTerm" customTermName="broadcastRightsCustomTerm" testId="broadcast-rights" />
