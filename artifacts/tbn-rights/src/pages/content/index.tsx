@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Film, Tv, PlaySquare, MonitorPlay, ChevronRight, ChevronLeft, ChevronsLeft, ChevronsRight, Sparkles, Captions, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { Search, Plus, Upload, Film, Tv, PlaySquare, MonitorPlay, ChevronRight, ChevronLeft, ChevronsLeft, ChevronsRight, Sparkles, Captions, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { ContentFormDialog } from "@/components/content-form-dialog";
 
@@ -85,10 +85,18 @@ export default function ContentList() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Content Catalog</h1>
           <p className="text-slate-500 mt-1">Central repository of all licensable media assets.</p>
         </div>
-        <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => setAddOpen(true)} data-testid="button-add-content">
-          <Plus className="w-4 h-4 mr-2" />
-          Add Title
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline" className="border-slate-300 bg-white text-slate-800 hover:bg-slate-50" data-testid="button-import-content">
+            <Link href="/import">
+              <Upload className="w-4 h-4 mr-2" />
+              Import Content
+            </Link>
+          </Button>
+          <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => setAddOpen(true)} data-testid="button-add-content">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Title
+          </Button>
+        </div>
       </div>
 
       <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
