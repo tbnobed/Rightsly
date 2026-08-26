@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { contractsTable, contractContentTable, partnersTable } from "@workspace/db";
-import { eq, and, or, lte, gte } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { authenticateToken } from "../lib/auth";
+import { normalizeRightValue, territoriesOverlap } from "../lib/rightsMatching";
 
 const router = Router();
 router.use(authenticateToken);
@@ -45,14 +46,27 @@ router.get("/", async (req, res) => {
       )
     );
 
-  const checkDate = new Date(date);
+  const checkDate = new Date(`${date}T00:00:00.000Z`);
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    Number.isNaN(checkDate.getTime()) ||
+    checkDate.toISOString().slice(0, 10) !== date
+  ) {
+    res.status(400).json({ message: "date must be a valid YYYY-MM-DD value" });
+    return;
+  }
 
   // Filter to contracts that cover the requested territory, distribution type, and date
   const matchingContracts = linkedContracts.filter((c) => {
-    const territoriesMatch =
-      (c.territories as string[]).includes("Global") ||
-      (c.territories as string[]).includes(territory);
-    const distMatch = (c.distributionTypes as string[]).includes(distributionType);
+    const territoriesMatch = territoriesOverlap(
+      territory,
+      c.territories as string[],
+      c.otherTerritories,
+    );
+    const requestedDistributionType = normalizeRightValue(distributionType);
+    const distMatch = (c.distributionTypes as string[]).some(
+      (value) => normalizeRightValue(value) === requestedDistributionType,
+    );
 
     let dateMatch = true;
     if (c.endType === "date" && c.endDate) {
