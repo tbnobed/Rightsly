@@ -29,9 +29,10 @@ test("reconciled schema persists new rights and revenue fields", async () => {
         id, type, title, content_source, tbn_media_id, notes,
         broadcast_rights_duration, broadcast_rights_term,
         digital_rights_term, international_rights_duration, international_rights_term,
-        international_broadcast_air_amount, youtube_rights_duration, youtube_rights_term
+        international_broadcast_air_amount, youtube_rights_duration, youtube_rights_term,
+        youtube_rights_custom_term
       ) VALUES ($1, 'TVSeries', $2, 'tbn', 'TBN-123', 'Title notes',
-        6, 'months', 'in_perpetuity', 3, 'years', 4, 1, 'years')`,
+        6, 'months', 'in_perpetuity', 3, 'years', 4, 1, NULL, 'Weeks')`,
       [contentId, "Schema upgrade integration"],
     );
     await client.query(
@@ -101,9 +102,10 @@ test("reconciled schema persists new rights and revenue fields", async () => {
     const titleRights = await client.query<{
       content_source: string; tbn_media_id: string; broadcast_rights_duration: number;
       digital_rights_term: string; international_broadcast_air_amount: number;
+      youtube_rights_custom_term: string;
     }>(
       `SELECT content_source, tbn_media_id, broadcast_rights_duration,
-        digital_rights_term, international_broadcast_air_amount
+        digital_rights_term, international_broadcast_air_amount, youtube_rights_custom_term
        FROM content_items WHERE id = $1`,
       [contentId],
     );
@@ -112,6 +114,7 @@ test("reconciled schema persists new rights and revenue fields", async () => {
     assert.equal(titleRights.rows[0]?.broadcast_rights_duration, 6);
     assert.equal(titleRights.rows[0]?.digital_rights_term, "in_perpetuity");
     assert.equal(titleRights.rows[0]?.international_broadcast_air_amount, 4);
+    assert.equal(titleRights.rows[0]?.youtube_rights_custom_term, "Weeks");
 
     await client.query("SAVEPOINT season_delete");
     await assert.rejects(

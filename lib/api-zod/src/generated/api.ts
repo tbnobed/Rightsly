@@ -1290,9 +1290,17 @@ export const ListContentQueryParams = zod.object({
 })
 
 
+export const listContentResponseDataItemBroadcastRightsCustomTermMax = 50;
+
+
+export const listContentResponseDataItemDigitalRightsCustomTermMax = 50;
+
+
+export const listContentResponseDataItemInternationalRightsCustomTermMax = 50;
 
 
 
+export const listContentResponseDataItemYoutubeRightsCustomTermMax = 50;
 
 
 
@@ -1307,13 +1315,17 @@ export const ListContentResponse = zod.object({
   "notes": zod.string().nullable(),
   "broadcastRightsDuration": zod.number().min(1).nullable(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "broadcastRightsCustomTerm": zod.string().max(listContentResponseDataItemBroadcastRightsCustomTermMax).nullable(),
   "digitalRightsDuration": zod.number().min(1).nullable(),
   "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "digitalRightsCustomTerm": zod.string().max(listContentResponseDataItemDigitalRightsCustomTermMax).nullable(),
   "internationalRightsDuration": zod.number().min(1).nullable(),
   "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalRightsCustomTerm": zod.string().max(listContentResponseDataItemInternationalRightsCustomTermMax).nullable(),
   "internationalBroadcastAirAmount": zod.number().min(1).nullable(),
   "youtubeRightsDuration": zod.number().min(1).nullable(),
   "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "youtubeRightsCustomTerm": zod.string().max(listContentResponseDataItemYoutubeRightsCustomTermMax).nullable(),
   "year": zod.number().nullish(),
   "seasons": zod.array(zod.object({
   "id": zod.string(),
@@ -1343,9 +1355,17 @@ export const createContentBodyTbnMediaIdMax = 200;
 export const createContentBodyNotesMax = 5000;
 
 
+export const createContentBodyBroadcastRightsCustomTermMax = 50;
+
+
+export const createContentBodyDigitalRightsCustomTermMax = 50;
+
+
+export const createContentBodyInternationalRightsCustomTermMax = 50;
 
 
 
+export const createContentBodyYoutubeRightsCustomTermMax = 50;
 
 
 
@@ -1358,13 +1378,17 @@ export const CreateContentBody = zod.object({
   "notes": zod.string().max(createContentBodyNotesMax).nullish(),
   "broadcastRightsDuration": zod.number().min(1).nullish(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "broadcastRightsCustomTerm": zod.string().max(createContentBodyBroadcastRightsCustomTermMax).nullish(),
   "digitalRightsDuration": zod.number().min(1).nullish(),
   "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "digitalRightsCustomTerm": zod.string().max(createContentBodyDigitalRightsCustomTermMax).nullish(),
   "internationalRightsDuration": zod.number().min(1).nullish(),
   "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "internationalRightsCustomTerm": zod.string().max(createContentBodyInternationalRightsCustomTermMax).nullish(),
   "internationalBroadcastAirAmount": zod.number().min(1).nullish(),
   "youtubeRightsDuration": zod.number().min(1).nullish(),
   "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "youtubeRightsCustomTerm": zod.string().max(createContentBodyYoutubeRightsCustomTermMax).nullish(),
   "year": zod.number().nullish(),
   "hasCleans": zod.boolean().optional(),
   "hasCaptions": zod.boolean().optional(),
@@ -1378,9 +1402,17 @@ export const CreateContentBody = zod.object({
 })
 
 
+export const createContentResponseBroadcastRightsCustomTermMax = 50;
+
+
+export const createContentResponseDigitalRightsCustomTermMax = 50;
+
+
+export const createContentResponseInternationalRightsCustomTermMax = 50;
 
 
 
+export const createContentResponseYoutubeRightsCustomTermMax = 50;
 
 
 
@@ -1394,13 +1426,17 @@ export const CreateContentResponse = zod.object({
   "notes": zod.string().nullable(),
   "broadcastRightsDuration": zod.number().min(1).nullable(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "broadcastRightsCustomTerm": zod.string().max(createContentResponseBroadcastRightsCustomTermMax).nullable(),
   "digitalRightsDuration": zod.number().min(1).nullable(),
   "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "digitalRightsCustomTerm": zod.string().max(createContentResponseDigitalRightsCustomTermMax).nullable(),
   "internationalRightsDuration": zod.number().min(1).nullable(),
   "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalRightsCustomTerm": zod.string().max(createContentResponseInternationalRightsCustomTermMax).nullable(),
   "internationalBroadcastAirAmount": zod.number().min(1).nullable(),
   "youtubeRightsDuration": zod.number().min(1).nullable(),
   "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "youtubeRightsCustomTerm": zod.string().max(createContentResponseYoutubeRightsCustomTermMax).nullable(),
   "year": zod.number().nullish(),
   "seasons": zod.array(zod.object({
   "id": zod.string(),
@@ -1426,9 +1462,17 @@ export const GetContentParams = zod.object({
 })
 
 
+export const getContentResponseBroadcastRightsCustomTermMax = 50;
+
+
+export const getContentResponseDigitalRightsCustomTermMax = 50;
+
+
+export const getContentResponseInternationalRightsCustomTermMax = 50;
 
 
 
+export const getContentResponseYoutubeRightsCustomTermMax = 50;
 
 
 
@@ -1442,13 +1486,17 @@ export const GetContentResponse = zod.object({
   "notes": zod.string().nullable(),
   "broadcastRightsDuration": zod.number().min(1).nullable(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "broadcastRightsCustomTerm": zod.string().max(getContentResponseBroadcastRightsCustomTermMax).nullable(),
   "digitalRightsDuration": zod.number().min(1).nullable(),
   "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "digitalRightsCustomTerm": zod.string().max(getContentResponseDigitalRightsCustomTermMax).nullable(),
   "internationalRightsDuration": zod.number().min(1).nullable(),
   "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalRightsCustomTerm": zod.string().max(getContentResponseInternationalRightsCustomTermMax).nullable(),
   "internationalBroadcastAirAmount": zod.number().min(1).nullable(),
   "youtubeRightsDuration": zod.number().min(1).nullable(),
   "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "youtubeRightsCustomTerm": zod.string().max(getContentResponseYoutubeRightsCustomTermMax).nullable(),
   "year": zod.number().nullish(),
   "seasons": zod.array(zod.object({
   "id": zod.string(),
@@ -1478,9 +1526,17 @@ export const updateContentBodyTbnMediaIdMax = 200;
 export const updateContentBodyNotesMax = 5000;
 
 
+export const updateContentBodyBroadcastRightsCustomTermMax = 50;
+
+
+export const updateContentBodyDigitalRightsCustomTermMax = 50;
+
+
+export const updateContentBodyInternationalRightsCustomTermMax = 50;
 
 
 
+export const updateContentBodyYoutubeRightsCustomTermMax = 50;
 
 
 
@@ -1493,13 +1549,17 @@ export const UpdateContentBody = zod.object({
   "notes": zod.string().max(updateContentBodyNotesMax).nullish(),
   "broadcastRightsDuration": zod.number().min(1).nullish(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "broadcastRightsCustomTerm": zod.string().max(updateContentBodyBroadcastRightsCustomTermMax).nullish(),
   "digitalRightsDuration": zod.number().min(1).nullish(),
   "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "digitalRightsCustomTerm": zod.string().max(updateContentBodyDigitalRightsCustomTermMax).nullish(),
   "internationalRightsDuration": zod.number().min(1).nullish(),
   "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "internationalRightsCustomTerm": zod.string().max(updateContentBodyInternationalRightsCustomTermMax).nullish(),
   "internationalBroadcastAirAmount": zod.number().min(1).nullish(),
   "youtubeRightsDuration": zod.number().min(1).nullish(),
   "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
+  "youtubeRightsCustomTerm": zod.string().max(updateContentBodyYoutubeRightsCustomTermMax).nullish(),
   "year": zod.number().nullish(),
   "hasCleans": zod.boolean().optional(),
   "hasCaptions": zod.boolean().optional(),
@@ -1513,9 +1573,17 @@ export const UpdateContentBody = zod.object({
 })
 
 
+export const updateContentResponseBroadcastRightsCustomTermMax = 50;
+
+
+export const updateContentResponseDigitalRightsCustomTermMax = 50;
+
+
+export const updateContentResponseInternationalRightsCustomTermMax = 50;
 
 
 
+export const updateContentResponseYoutubeRightsCustomTermMax = 50;
 
 
 
@@ -1529,13 +1597,17 @@ export const UpdateContentResponse = zod.object({
   "notes": zod.string().nullable(),
   "broadcastRightsDuration": zod.number().min(1).nullable(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "broadcastRightsCustomTerm": zod.string().max(updateContentResponseBroadcastRightsCustomTermMax).nullable(),
   "digitalRightsDuration": zod.number().min(1).nullable(),
   "digitalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "digitalRightsCustomTerm": zod.string().max(updateContentResponseDigitalRightsCustomTermMax).nullable(),
   "internationalRightsDuration": zod.number().min(1).nullable(),
   "internationalRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "internationalRightsCustomTerm": zod.string().max(updateContentResponseInternationalRightsCustomTermMax).nullable(),
   "internationalBroadcastAirAmount": zod.number().min(1).nullable(),
   "youtubeRightsDuration": zod.number().min(1).nullable(),
   "youtubeRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
+  "youtubeRightsCustomTerm": zod.string().max(updateContentResponseYoutubeRightsCustomTermMax).nullable(),
   "year": zod.number().nullish(),
   "seasons": zod.array(zod.object({
   "id": zod.string(),

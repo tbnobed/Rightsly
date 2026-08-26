@@ -386,7 +386,7 @@ components:
 
     ContentItem:
       type: object
-      required: [id, type, title, contentSource, tbnMediaId, notes, broadcastRightsDuration, broadcastRightsTerm, digitalRightsDuration, digitalRightsTerm, internationalRightsDuration, internationalRightsTerm, internationalBroadcastAirAmount, youtubeRightsDuration, youtubeRightsTerm, createdAt]
+      required: [id, type, title, contentSource, tbnMediaId, notes, broadcastRightsDuration, broadcastRightsTerm, broadcastRightsCustomTerm, digitalRightsDuration, digitalRightsTerm, digitalRightsCustomTerm, internationalRightsDuration, internationalRightsTerm, internationalRightsCustomTerm, internationalBroadcastAirAmount, youtubeRightsDuration, youtubeRightsTerm, youtubeRightsCustomTerm, createdAt]
       properties:
         id:
           type: string
@@ -407,13 +407,17 @@ components:
           type: [string, "null"]
         broadcastRightsDuration: { type: [integer, "null"], minimum: 1 }
         broadcastRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        broadcastRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         digitalRightsDuration: { type: [integer, "null"], minimum: 1 }
         digitalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        digitalRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         internationalRightsDuration: { type: [integer, "null"], minimum: 1 }
         internationalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        internationalRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         internationalBroadcastAirAmount: { type: [integer, "null"], minimum: 1 }
         youtubeRightsDuration: { type: [integer, "null"], minimum: 1 }
         youtubeRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        youtubeRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         year:
           type: integer
           nullable: true
@@ -487,13 +491,17 @@ components:
         notes: { type: [string, "null"], maxLength: 5000 }
         broadcastRightsDuration: { type: [integer, "null"], minimum: 1 }
         broadcastRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        broadcastRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         digitalRightsDuration: { type: [integer, "null"], minimum: 1 }
         digitalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        digitalRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         internationalRightsDuration: { type: [integer, "null"], minimum: 1 }
         internationalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        internationalRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         internationalBroadcastAirAmount: { type: [integer, "null"], minimum: 1 }
         youtubeRightsDuration: { type: [integer, "null"], minimum: 1 }
         youtubeRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        youtubeRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         year:
           type: integer
           nullable: true
@@ -539,13 +547,17 @@ components:
         notes: { type: [string, "null"], maxLength: 5000 }
         broadcastRightsDuration: { type: [integer, "null"], minimum: 1 }
         broadcastRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        broadcastRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         digitalRightsDuration: { type: [integer, "null"], minimum: 1 }
         digitalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        digitalRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         internationalRightsDuration: { type: [integer, "null"], minimum: 1 }
         internationalRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        internationalRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         internationalBroadcastAirAmount: { type: [integer, "null"], minimum: 1 }
         youtubeRightsDuration: { type: [integer, "null"], minimum: 1 }
         youtubeRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
+        youtubeRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
         year:
           type: integer
           nullable: true

@@ -71,16 +71,20 @@ const contentSchema = z.object({
   notes: z.string().max(5000, "Notes must be 5,000 characters or fewer").optional(),
   broadcastRightsDuration: z.string().optional(),
   broadcastRightsTerm: z.enum(["none", "months", "years", "in_perpetuity"]),
+  broadcastRightsCustomTerm: z.string().max(50, "Custom term must be 50 characters or fewer").optional(),
   digitalRightsDuration: z.string().optional(),
   digitalRightsTerm: z.enum(["none", "months", "years", "in_perpetuity"]),
+  digitalRightsCustomTerm: z.string().max(50, "Custom term must be 50 characters or fewer").optional(),
   internationalRightsDuration: z.string().optional(),
   internationalRightsTerm: z.enum(["none", "months", "years", "in_perpetuity"]),
+  internationalRightsCustomTerm: z.string().max(50, "Custom term must be 50 characters or fewer").optional(),
   internationalBroadcastAirAmount: z.string().refine(
     (value) => !value || (/^\d+$/.test(value) && Number(value) > 0),
     "Broadcast Air Amount must be a positive whole number",
   ).optional(),
   youtubeRightsDuration: z.string().optional(),
   youtubeRightsTerm: z.enum(["none", "months", "years", "in_perpetuity"]),
+  youtubeRightsCustomTerm: z.string().max(50, "Custom term must be 50 characters or fewer").optional(),
   hasCleans: z.boolean().default(false),
   hasCaptions: z.boolean().default(false),
   seasons: z.array(seasonSchema).default([]),
@@ -89,18 +93,20 @@ const contentSchema = z.object({
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["tbnMediaId"], message: "TBN Media ID is required for TBN content" });
   }
   const rights = [
-    ["broadcastRightsDuration", values.broadcastRightsDuration, values.broadcastRightsTerm],
-    ["digitalRightsDuration", values.digitalRightsDuration, values.digitalRightsTerm],
-    ["internationalRightsDuration", values.internationalRightsDuration, values.internationalRightsTerm],
-    ["youtubeRightsDuration", values.youtubeRightsDuration, values.youtubeRightsTerm],
+    ["broadcastRightsDuration", values.broadcastRightsDuration, values.broadcastRightsTerm, values.broadcastRightsCustomTerm],
+    ["digitalRightsDuration", values.digitalRightsDuration, values.digitalRightsTerm, values.digitalRightsCustomTerm],
+    ["internationalRightsDuration", values.internationalRightsDuration, values.internationalRightsTerm, values.internationalRightsCustomTerm],
+    ["youtubeRightsDuration", values.youtubeRightsDuration, values.youtubeRightsTerm, values.youtubeRightsCustomTerm],
   ] as const;
-  rights.forEach(([field, duration, term]) => {
+  rights.forEach(([field, duration, term, customTerm]) => {
     if ((term === "months" || term === "years") && (!duration || !/^\d+$/.test(duration) || Number(duration) <= 0)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: "Enter a positive whole number" });
     } else if (term === "none" && duration && (!/^\d+$/.test(duration) || Number(duration) <= 0)) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: "Enter a positive whole number" });
     } else if (term === "in_perpetuity" && duration) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: "Leave the number blank for this term" });
+    } else if (term === "none" && customTerm?.trim() && !duration) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: "Enter a positive whole number" });
     }
   });
   if (values.type === "TVSeries") {
@@ -122,14 +128,16 @@ const contentSchema = z.object({
 type ContentFormValues = z.infer<typeof contentSchema>;
 type RightsDurationName = "broadcastRightsDuration" | "digitalRightsDuration" | "internationalRightsDuration" | "youtubeRightsDuration";
 type RightsTermName = "broadcastRightsTerm" | "digitalRightsTerm" | "internationalRightsTerm" | "youtubeRightsTerm";
+type RightsCustomTermName = "broadcastRightsCustomTerm" | "digitalRightsCustomTerm" | "internationalRightsCustomTerm" | "youtubeRightsCustomTerm";
 
 function RightsDurationFields({
-  form, label, durationName, termName, testId,
+  form, label, durationName, termName, customTermName, testId,
 }: {
   form: ReturnType<typeof useForm<ContentFormValues>>;
   label: string;
   durationName: RightsDurationName;
   termName: RightsTermName;
+  customTermName: RightsCustomTermName;
   testId: string;
 }) {
   const term = form.watch(termName);
@@ -145,7 +153,16 @@ function RightsDurationFields({
             <FormItem>
               <FormLabel>Number</FormLabel>
               <FormControl>
-                <Input type="number" min="1" step="1" placeholder={numberDisabled ? "Not needed" : "e.g. 6"} disabled={numberDisabled} {...field} data-testid={`input-${testId}-duration`} />
+                <Input
+                  key={`${testId}-${term}`}
+                  {...field}
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder={numberDisabled ? "Not needed" : "e.g. 6"}
+                  disabled={numberDisabled}
+                  data-testid={`input-${testId}-duration`}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -162,6 +179,7 @@ function RightsDurationFields({
                 onValueChange={(value) => {
                   field.onChange(value);
                   if (value === "in_perpetuity") form.setValue(durationName, "", { shouldValidate: true });
+                  if (value !== "none") form.setValue(customTermName, "", { shouldValidate: true });
                 }}
               >
                 <FormControl><SelectTrigger data-testid={`select-${testId}-term`}><SelectValue /></SelectTrigger></FormControl>
@@ -177,6 +195,21 @@ function RightsDurationFields({
           )}
         />
       </div>
+      {term === "none" && (
+        <FormField
+          control={form.control}
+          name={customTermName}
+          render={({ field }) => (
+            <FormItem className="mt-3">
+              <FormLabel>Custom Term</FormLabel>
+              <FormControl>
+                <Input {...field} placeholder="e.g. Weeks, Days, Hours" data-testid={`input-${testId}-custom-term`} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
     </div>
   );
 }
@@ -207,13 +240,17 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
       notes: "",
       broadcastRightsDuration: "",
       broadcastRightsTerm: "none",
+      broadcastRightsCustomTerm: "",
       digitalRightsDuration: "",
       digitalRightsTerm: "none",
+      digitalRightsCustomTerm: "",
       internationalRightsDuration: "",
       internationalRightsTerm: "none",
+      internationalRightsCustomTerm: "",
       internationalBroadcastAirAmount: "",
       youtubeRightsDuration: "",
       youtubeRightsTerm: "none",
+      youtubeRightsCustomTerm: "",
       hasCleans: false,
       hasCaptions: false,
       seasons: [],
@@ -235,13 +272,17 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
         notes: content?.notes ?? "",
         broadcastRightsDuration: content?.broadcastRightsDuration ? String(content.broadcastRightsDuration) : "",
         broadcastRightsTerm: content?.broadcastRightsTerm ?? "none",
+        broadcastRightsCustomTerm: content?.broadcastRightsCustomTerm ?? "",
         digitalRightsDuration: content?.digitalRightsDuration ? String(content.digitalRightsDuration) : "",
         digitalRightsTerm: content?.digitalRightsTerm ?? "none",
+        digitalRightsCustomTerm: content?.digitalRightsCustomTerm ?? "",
         internationalRightsDuration: content?.internationalRightsDuration ? String(content.internationalRightsDuration) : "",
         internationalRightsTerm: content?.internationalRightsTerm ?? "none",
+        internationalRightsCustomTerm: content?.internationalRightsCustomTerm ?? "",
         internationalBroadcastAirAmount: content?.internationalBroadcastAirAmount ? String(content.internationalBroadcastAirAmount) : "",
         youtubeRightsDuration: content?.youtubeRightsDuration ? String(content.youtubeRightsDuration) : "",
         youtubeRightsTerm: content?.youtubeRightsTerm ?? "none",
+        youtubeRightsCustomTerm: content?.youtubeRightsCustomTerm ?? "",
         hasCleans: content?.hasCleans ?? false,
         hasCaptions: content?.hasCaptions ?? false,
         seasons: (content?.seasons ?? []).map((season) => ({
@@ -270,13 +311,17 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
       notes: values.notes || null,
       broadcastRightsDuration: values.broadcastRightsDuration ? Number(values.broadcastRightsDuration) : null,
       broadcastRightsTerm: values.broadcastRightsTerm === "none" ? null : values.broadcastRightsTerm,
+      broadcastRightsCustomTerm: values.broadcastRightsTerm === "none" ? values.broadcastRightsCustomTerm?.trim() || null : null,
       digitalRightsDuration: values.digitalRightsDuration ? Number(values.digitalRightsDuration) : null,
       digitalRightsTerm: values.digitalRightsTerm === "none" ? null : values.digitalRightsTerm,
+      digitalRightsCustomTerm: values.digitalRightsTerm === "none" ? values.digitalRightsCustomTerm?.trim() || null : null,
       internationalRightsDuration: values.internationalRightsDuration ? Number(values.internationalRightsDuration) : null,
       internationalRightsTerm: values.internationalRightsTerm === "none" ? null : values.internationalRightsTerm,
+      internationalRightsCustomTerm: values.internationalRightsTerm === "none" ? values.internationalRightsCustomTerm?.trim() || null : null,
       internationalBroadcastAirAmount: values.internationalBroadcastAirAmount ? Number(values.internationalBroadcastAirAmount) : null,
       youtubeRightsDuration: values.youtubeRightsDuration ? Number(values.youtubeRightsDuration) : null,
       youtubeRightsTerm: values.youtubeRightsTerm === "none" ? null : values.youtubeRightsTerm,
+      youtubeRightsCustomTerm: values.youtubeRightsTerm === "none" ? values.youtubeRightsCustomTerm?.trim() || null : null,
       hasCleans: values.hasCleans,
       hasCaptions: values.hasCaptions,
       seasons: values.type === "TVSeries"
@@ -450,13 +495,13 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
             <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
               <div>
                 <h3 className="text-base font-semibold text-slate-900">Rights Information</h3>
-                <p className="text-xs text-slate-500">Leave a term blank when no title-level rights summary is available.</p>
+                <p className="text-xs text-slate-500">Choose Blank to enter a custom term such as Weeks, Days, or Hours.</p>
               </div>
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                <RightsDurationFields form={form} label="Broadcast Rights" durationName="broadcastRightsDuration" termName="broadcastRightsTerm" testId="broadcast-rights" />
-                <RightsDurationFields form={form} label="Digital Rights" durationName="digitalRightsDuration" termName="digitalRightsTerm" testId="digital-rights" />
+                <RightsDurationFields form={form} label="Broadcast Rights" durationName="broadcastRightsDuration" termName="broadcastRightsTerm" customTermName="broadcastRightsCustomTerm" testId="broadcast-rights" />
+                <RightsDurationFields form={form} label="Digital Rights" durationName="digitalRightsDuration" termName="digitalRightsTerm" customTermName="digitalRightsCustomTerm" testId="digital-rights" />
                 <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
-                  <RightsDurationFields form={form} label="International Rights" durationName="internationalRightsDuration" termName="internationalRightsTerm" testId="international-rights" />
+                  <RightsDurationFields form={form} label="International Rights" durationName="internationalRightsDuration" termName="internationalRightsTerm" customTermName="internationalRightsCustomTerm" testId="international-rights" />
                   <FormField
                     control={form.control}
                     name="internationalBroadcastAirAmount"
@@ -469,7 +514,7 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
                     )}
                   />
                 </div>
-                <RightsDurationFields form={form} label="YouTube Rights" durationName="youtubeRightsDuration" termName="youtubeRightsTerm" testId="youtube-rights" />
+                <RightsDurationFields form={form} label="YouTube Rights" durationName="youtubeRightsDuration" termName="youtubeRightsTerm" customTermName="youtubeRightsCustomTerm" testId="youtube-rights" />
               </div>
             </div>
 

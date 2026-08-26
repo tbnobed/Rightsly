@@ -31,6 +31,11 @@ export interface ContentItem {
   /** @nullable */
   broadcastRightsTerm: ContentItemBroadcastRightsTerm;
   /**
+     * @maxLength 50
+     * @nullable
+     */
+  broadcastRightsCustomTerm: string | null;
+  /**
      * @minimum 1
      * @nullable
      */
@@ -38,12 +43,22 @@ export interface ContentItem {
   /** @nullable */
   digitalRightsTerm: ContentItemDigitalRightsTerm;
   /**
+     * @maxLength 50
+     * @nullable
+     */
+  digitalRightsCustomTerm: string | null;
+  /**
      * @minimum 1
      * @nullable
      */
   internationalRightsDuration: number | null;
   /** @nullable */
   internationalRightsTerm: ContentItemInternationalRightsTerm;
+  /**
+     * @maxLength 50
+     * @nullable
+     */
+  internationalRightsCustomTerm: string | null;
   /**
      * @minimum 1
      * @nullable
@@ -56,6 +71,11 @@ export interface ContentItem {
   youtubeRightsDuration: number | null;
   /** @nullable */
   youtubeRightsTerm: ContentItemYoutubeRightsTerm;
+  /**
+     * @maxLength 50
+     * @nullable
+     */
+  youtubeRightsCustomTerm: string | null;
   year?: number | null;
   seasons?: Season[];
   contractCount?: number;

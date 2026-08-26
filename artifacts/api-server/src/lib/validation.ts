@@ -22,39 +22,53 @@ export interface NormalizedTitleRights {
   notes: string | null;
   broadcastRightsDuration: number | null;
   broadcastRightsTerm: TitleRightsTerm | null;
+  broadcastRightsCustomTerm: string | null;
   digitalRightsDuration: number | null;
   digitalRightsTerm: TitleRightsTerm | null;
+  digitalRightsCustomTerm: string | null;
   internationalRightsDuration: number | null;
   internationalRightsTerm: TitleRightsTerm | null;
+  internationalRightsCustomTerm: string | null;
   internationalBroadcastAirAmount: number | null;
   youtubeRightsDuration: number | null;
   youtubeRightsTerm: TitleRightsTerm | null;
+  youtubeRightsCustomTerm: string | null;
 }
 
 function optionalText(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function normalizeRightsDuration(label: string, duration: unknown, term: unknown) {
+function normalizeRightsDuration(label: string, duration: unknown, term: unknown, customTerm: unknown) {
   const normalizedTerm = term == null || term === "" ? null : term;
+  const normalizedCustomTerm = optionalText(customTerm);
+  if (normalizedCustomTerm && normalizedCustomTerm.length > 50) {
+    return { error: `${label} custom term must be 50 characters or fewer` };
+  }
   if (normalizedTerm !== null && !["months", "years", "in_perpetuity"].includes(String(normalizedTerm))) {
     return { error: `${label} term must be Months, Years, In Perpetuity, or blank` };
   }
+  if (normalizedTerm !== null && normalizedCustomTerm) {
+    return { error: `${label} custom term is only allowed when Term is Blank` };
+  }
   if (normalizedTerm === null) {
-    if (duration == null || duration === "") return { duration: null, term: null };
+    if (duration == null || duration === "") {
+      if (normalizedCustomTerm) return { error: `${label} duration must be a positive whole number` };
+      return { duration: null, term: null, customTerm: null };
+    }
     if (typeof duration !== "number" || !Number.isInteger(duration) || duration <= 0) {
       return { error: `${label} duration must be a positive whole number` };
     }
-    return { duration, term: null };
+    return { duration, term: null, customTerm: normalizedCustomTerm };
   }
   if (normalizedTerm === "in_perpetuity") {
     if (duration != null && duration !== "") return { error: `${label} duration must be blank for In Perpetuity` };
-    return { duration: null, term: normalizedTerm as TitleRightsTerm };
+    return { duration: null, term: normalizedTerm as TitleRightsTerm, customTerm: null };
   }
   if (typeof duration !== "number" || !Number.isInteger(duration) || duration <= 0) {
     return { error: `${label} duration must be a positive whole number for Months or Years` };
   }
-  return { duration, term: normalizedTerm as TitleRightsTerm };
+  return { duration, term: normalizedTerm as TitleRightsTerm, customTerm: null };
 }
 
 export function normalizeTitleRights(input: Record<string, unknown>): { value?: NormalizedTitleRights; error?: string } {
@@ -69,13 +83,13 @@ export function normalizeTitleRights(input: Record<string, unknown>): { value?: 
   }
   const notes = optionalText(input.notes);
   if (notes && notes.length > 5000) return { error: "notes must be 5,000 characters or fewer" };
-  const broadcast = normalizeRightsDuration("Broadcast Rights", input.broadcastRightsDuration, input.broadcastRightsTerm);
+  const broadcast = normalizeRightsDuration("Broadcast Rights", input.broadcastRightsDuration, input.broadcastRightsTerm, input.broadcastRightsCustomTerm);
   if (broadcast.error) return { error: broadcast.error };
-  const digital = normalizeRightsDuration("Digital Rights", input.digitalRightsDuration, input.digitalRightsTerm);
+  const digital = normalizeRightsDuration("Digital Rights", input.digitalRightsDuration, input.digitalRightsTerm, input.digitalRightsCustomTerm);
   if (digital.error) return { error: digital.error };
-  const international = normalizeRightsDuration("International Rights", input.internationalRightsDuration, input.internationalRightsTerm);
+  const international = normalizeRightsDuration("International Rights", input.internationalRightsDuration, input.internationalRightsTerm, input.internationalRightsCustomTerm);
   if (international.error) return { error: international.error };
-  const youtube = normalizeRightsDuration("YouTube Rights", input.youtubeRightsDuration, input.youtubeRightsTerm);
+  const youtube = normalizeRightsDuration("YouTube Rights", input.youtubeRightsDuration, input.youtubeRightsTerm, input.youtubeRightsCustomTerm);
   if (youtube.error) return { error: youtube.error };
   const airAmount = input.internationalBroadcastAirAmount;
   if (airAmount != null && airAmount !== "" && (
@@ -90,13 +104,17 @@ export function normalizeTitleRights(input: Record<string, unknown>): { value?: 
       notes,
       broadcastRightsDuration: broadcast.duration ?? null,
       broadcastRightsTerm: broadcast.term ?? null,
+      broadcastRightsCustomTerm: broadcast.customTerm ?? null,
       digitalRightsDuration: digital.duration ?? null,
       digitalRightsTerm: digital.term ?? null,
+      digitalRightsCustomTerm: digital.customTerm ?? null,
       internationalRightsDuration: international.duration ?? null,
       internationalRightsTerm: international.term ?? null,
+      internationalRightsCustomTerm: international.customTerm ?? null,
       internationalBroadcastAirAmount: airAmount == null || airAmount === "" ? null : airAmount as number,
       youtubeRightsDuration: youtube.duration ?? null,
       youtubeRightsTerm: youtube.term ?? null,
+      youtubeRightsCustomTerm: youtube.customTerm ?? null,
     },
   };
 }

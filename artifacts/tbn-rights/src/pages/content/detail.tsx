@@ -24,10 +24,10 @@ import { useAuth } from "@/contexts/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 
-function formatTitleRight(duration: number | null, term: "months" | "years" | "in_perpetuity" | null) {
+function formatTitleRight(duration: number | null, term: "months" | "years" | "in_perpetuity" | null, customTerm: string | null) {
   if (term === "in_perpetuity") return "In Perpetuity";
   if (!duration) return "Not specified";
-  if (!term) return String(duration);
+  if (!term) return customTerm ? `${duration} ${customTerm}` : String(duration);
   const label = term === "months" ? "Month" : "Year";
   return `${duration} ${label}${duration === 1 ? "" : "s"}`;
 }
@@ -205,10 +205,10 @@ export default function ContentDetail() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2">
               {[
-                ["Broadcast Rights", formatTitleRight(content.broadcastRightsDuration, content.broadcastRightsTerm)],
-                ["Digital Rights", formatTitleRight(content.digitalRightsDuration, content.digitalRightsTerm)],
-                ["International Rights", formatTitleRight(content.internationalRightsDuration, content.internationalRightsTerm)],
-                ["YouTube Rights", formatTitleRight(content.youtubeRightsDuration, content.youtubeRightsTerm)],
+                ["Broadcast Rights", formatTitleRight(content.broadcastRightsDuration, content.broadcastRightsTerm, content.broadcastRightsCustomTerm)],
+                ["Digital Rights", formatTitleRight(content.digitalRightsDuration, content.digitalRightsTerm, content.digitalRightsCustomTerm)],
+                ["International Rights", formatTitleRight(content.internationalRightsDuration, content.internationalRightsTerm, content.internationalRightsCustomTerm)],
+                ["YouTube Rights", formatTitleRight(content.youtubeRightsDuration, content.youtubeRightsTerm, content.youtubeRightsCustomTerm)],
               ].map(([label, value]) => (
                 <div key={label}>
                   <span className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</span>

@@ -35,6 +35,11 @@ export interface UpdateContentItemRequest {
   /** @nullable */
   broadcastRightsTerm?: UpdateContentItemRequestBroadcastRightsTerm;
   /**
+     * @maxLength 50
+     * @nullable
+     */
+  broadcastRightsCustomTerm?: string | null;
+  /**
      * @minimum 1
      * @nullable
      */
@@ -42,12 +47,22 @@ export interface UpdateContentItemRequest {
   /** @nullable */
   digitalRightsTerm?: UpdateContentItemRequestDigitalRightsTerm;
   /**
+     * @maxLength 50
+     * @nullable
+     */
+  digitalRightsCustomTerm?: string | null;
+  /**
      * @minimum 1
      * @nullable
      */
   internationalRightsDuration?: number | null;
   /** @nullable */
   internationalRightsTerm?: UpdateContentItemRequestInternationalRightsTerm;
+  /**
+     * @maxLength 50
+     * @nullable
+     */
+  internationalRightsCustomTerm?: string | null;
   /**
      * @minimum 1
      * @nullable
@@ -60,6 +75,11 @@ export interface UpdateContentItemRequest {
   youtubeRightsDuration?: number | null;
   /** @nullable */
   youtubeRightsTerm?: UpdateContentItemRequestYoutubeRightsTerm;
+  /**
+     * @maxLength 50
+     * @nullable
+     */
+  youtubeRightsCustomTerm?: string | null;
   year?: number | null;
   hasCleans?: boolean;
   hasCaptions?: boolean;
