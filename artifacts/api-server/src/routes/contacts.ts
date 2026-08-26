@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, asc, count, desc, eq, ilike, or } from "drizzle-orm";
+import { asc, count, desc, eq, ilike, or, sql } from "drizzle-orm";
 import {
   CreateContactBody,
   CreateContactResponse,
@@ -12,10 +12,14 @@ import {
   UpdateContactBody,
   UpdateContactParams,
   UpdateContactResponse,
+  PreviewContactImportResponse,
+  ApproveContactImportBody,
+  ApproveContactImportResponse,
 } from "@workspace/api-zod";
-import { contactsTable, db } from "@workspace/db";
+import { contactsTable, db, partnersTable } from "@workspace/db";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
+import { extractLegacyContactCandidates, normalizeContactEmail } from "../lib/contactImport";
 
 const router = Router();
 router.use(authenticateToken);
@@ -48,6 +52,7 @@ function normalizeInput(input: {
   for (const field of ["company", "title", "email", "phone", "notes"] as const) {
     if (input[field] !== undefined) normalized[field] = normalizeOptional(input[field]);
   }
+  if (normalized.email) normalized.email = normalizeContactEmail(normalized.email);
   return normalized;
 }
 
@@ -85,6 +90,69 @@ router.get("/", async (req, res): Promise<void> => {
   res.json(ListContactsResponse.parse({ data, total: Number(total), page, pageSize }));
 });
 
+async function getImportCandidates(database: Pick<typeof db, "select"> = db) {
+  const [partners, contacts] = await Promise.all([
+    database.select({ partnerId: partnersTable.id, company: partnersTable.name, notes: partnersTable.notes }).from(partnersTable).orderBy(asc(partnersTable.id)),
+    database.select({ id: contactsTable.id, name: contactsTable.name, email: contactsTable.email, importSourceKey: contactsTable.importSourceKey }).from(contactsTable),
+  ]);
+  return extractLegacyContactCandidates(partners, contacts);
+}
+
+async function lockContactEmail(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  email: string,
+) {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"contact-email:" + normalizeContactEmail(email)}))`);
+}
+
+async function findContactByEmail(
+  database: Pick<typeof db, "select">,
+  email: string,
+) {
+  const normalizedEmail = normalizeContactEmail(email);
+  const [contact] = await database.select({ id: contactsTable.id, name: contactsTable.name })
+    .from(contactsTable)
+    .where(sql`lower(regexp_replace(${contactsTable.email}, '[.,]+$', '')) = ${normalizedEmail}`)
+    .limit(1);
+  return contact;
+}
+
+router.get("/import-candidates", requireRole("admin", "legal"), async (_req, res): Promise<void> => {
+  res.json(PreviewContactImportResponse.parse({ candidates: await getImportCandidates() }));
+});
+
+router.post("/import-candidates", requireRole("admin", "legal"), async (req, res): Promise<void> => {
+  const parsed = ApproveContactImportBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: parsed.error.message });
+    return;
+  }
+  const selected = new Set(parsed.data.candidateIds);
+  const inserted = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('legacy-contact-import'))`);
+    const beforeLocks = (await getImportCandidates(tx)).filter((candidate) => selected.has(candidate.id));
+    const emails = [...new Set(beforeLocks.flatMap((candidate) => candidate.email ? [candidate.email] : []))].sort();
+    for (const email of emails) await lockContactEmail(tx, email);
+    const approved = (await getImportCandidates(tx)).filter((candidate) =>
+      selected.has(candidate.id) && !candidate.duplicateContactId && !candidate.duplicateCandidateId
+    );
+    if (!approved.length) return [];
+    return tx.insert(contactsTable).values(approved.map((candidate) => ({
+      id: crypto.randomUUID(),
+      name: candidate.name,
+      company: candidate.company,
+      email: candidate.email,
+      notes: candidate.notes,
+      importSourceKey: candidate.sourceKey,
+    }))).onConflictDoNothing({ target: contactsTable.importSourceKey }).returning();
+  });
+  await Promise.all(inserted.map((contact) => logAudit({
+    user: req.user, action: "create", entityType: "contact", entityId: contact.id,
+    after: { name: contact.name, company: contact.company, email: contact.email, source: "legacy partner notes" },
+  })));
+  res.json(ApproveContactImportResponse.parse({ created: inserted.length, skipped: selected.size - inserted.length }));
+});
+
 router.post("/", requireRole("admin", "legal"), async (req, res): Promise<void> => {
   const parsed = CreateContactBody.safeParse(req.body);
   if (!parsed.success) {
@@ -97,15 +165,26 @@ router.post("/", requireRole("admin", "legal"), async (req, res): Promise<void> 
     res.status(400).json({ message: data.name ? "email must be valid" : "name is required" });
     return;
   }
-  const [contact] = await db.insert(contactsTable).values({
-    id: crypto.randomUUID(),
-    name: data.name,
-    company: data.company ?? null,
-    title: data.title ?? null,
-    email: data.email ?? null,
-    phone: data.phone ?? null,
-    notes: data.notes ?? null,
-  }).returning();
+  const contact = await db.transaction(async (tx) => {
+    if (data.email) {
+      await lockContactEmail(tx, data.email);
+      if (await findContactByEmail(tx, data.email)) return null;
+    }
+    const [created] = await tx.insert(contactsTable).values({
+      id: crypto.randomUUID(),
+      name: data.name!,
+      company: data.company ?? null,
+      title: data.title ?? null,
+      email: data.email ?? null,
+      phone: data.phone ?? null,
+      notes: data.notes ?? null,
+    }).returning();
+    return created!;
+  });
+  if (!contact) {
+    res.status(409).json({ message: "A contact with this email already exists" });
+    return;
+  }
   await logAudit({
     user: req.user, action: "create", entityType: "contact", entityId: contact.id,
     after: { name: contact.name, company: contact.company, email: contact.email },
@@ -148,8 +227,20 @@ router.patch("/:id", requireRole("admin", "legal"), async (req, res): Promise<vo
     res.status(404).json({ message: "Contact not found" });
     return;
   }
-  const [contact] = await db.update(contactsTable).set({ ...data, updatedAt: new Date() })
-    .where(eq(contactsTable.id, params.data.id)).returning();
+  const contact = await db.transaction(async (tx) => {
+    if (data.email) {
+      await lockContactEmail(tx, data.email);
+      const duplicate = await findContactByEmail(tx, data.email);
+      if (duplicate && duplicate.id !== params.data.id) return null;
+    }
+    const [updated] = await tx.update(contactsTable).set({ ...data, updatedAt: new Date() })
+      .where(eq(contactsTable.id, params.data.id)).returning();
+    return updated!;
+  });
+  if (!contact) {
+    res.status(409).json({ message: "A contact with this email already exists" });
+    return;
+  }
   await logAudit({
     user: req.user, action: "update", entityType: "contact", entityId: contact.id,
     before: { name: before.name, company: before.company, title: before.title, email: before.email },

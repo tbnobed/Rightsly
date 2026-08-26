@@ -242,6 +242,36 @@ export interface ContactUpdate {
   notes?: string | null;
 }
 
+export interface ContactImportCandidate {
+  id: string;
+  sourceKey: string;
+  name: string;
+  company: string;
+  /** @nullable */
+  email: string | null;
+  notes: string;
+  ambiguous: boolean;
+  /** @nullable */
+  duplicateContactId: string | null;
+  /** @nullable */
+  duplicateCandidateId: string | null;
+  warnings: string[];
+}
+
+export interface ContactImportPreview {
+  candidates: ContactImportCandidate[];
+}
+
+export interface ContactImportApproval {
+  /** @maxItems 500 */
+  candidateIds: string[];
+}
+
+export interface ContactImportResult {
+  created: number;
+  skipped: number;
+}
+
 export interface ContactListResponse {
   data: Contact[];
   total: number;

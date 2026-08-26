@@ -1,14 +1,19 @@
 import { useState } from "react";
-import { useListContacts, getListContactsQueryKey, Contact } from "@workspace/api-client-react";
+import { useListContacts, getListContactsQueryKey, Contact, usePreviewContactImport, useApproveContactImport, getPreviewContactImportQueryKey } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Search, Plus, Mail, Phone, SearchX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Plus, Mail, Phone, SearchX, Upload } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
 import { ContactFormDialog } from "@/components/contact-form-dialog";
 import { useDebounce } from "@/hooks/use-debounce";
 import { format, parseISO } from "date-fns";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ContactsList() {
   const { user } = useAuth();
@@ -17,8 +22,23 @@ export default function ContactsList() {
   const debouncedSearch = useDebounce(search, 300);
   const [formOpen, setFormOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | undefined>();
+  const [importOpen, setImportOpen] = useState(false);
+  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const canEdit = user?.role === "admin" || user?.role === "legal";
+  const previewImport = usePreviewContactImport({ query: { enabled: importOpen, queryKey: getPreviewContactImportQueryKey() } });
+  const approveImport = useApproveContactImport({
+    mutation: {
+      onSuccess: (result) => {
+        queryClient.invalidateQueries({ queryKey: getListContactsQueryKey() });
+        previewImport.refetch();
+        setSelectedCandidates([]);
+        toast({ title: "Contact import complete", description: `${result.created} created, ${result.skipped} skipped.` });
+      },
+    },
+  });
 
   const { data, isLoading, isError, refetch } = useListContacts({
     page,
@@ -62,9 +82,14 @@ export default function ContactsList() {
             />
           </div>
           {canEdit && (
+            <>
+            <Button variant="outline" onClick={() => setImportOpen(true)} data-testid="button-import-contacts">
+              <Upload className="w-4 h-4 mr-2" /> Review Legacy
+            </Button>
             <Button className="bg-slate-900 text-white hover:bg-slate-800 shadow-sm shrink-0" onClick={handleCreate} data-testid="button-new-contact">
               <Plus className="w-4 h-4 mr-2" /> Add Contact
             </Button>
+            </>
           )}
         </div>
       </div>
@@ -219,6 +244,42 @@ export default function ContactsList() {
         contact={selectedContact}
         readOnly={!canEdit}
       />
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Review legacy contacts</DialogTitle>
+            <DialogDescription>Select only the people you want added. Partner notes remain unchanged.</DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto space-y-2 pr-2">
+            {previewImport.isLoading ? <Skeleton className="h-32 w-full" /> : previewImport.data?.candidates.length ? previewImport.data.candidates.map((candidate) => {
+              const disabled = Boolean(candidate.duplicateContactId || candidate.duplicateCandidateId);
+              const checked = selectedCandidates.includes(candidate.id);
+              return (
+                <label key={candidate.id} className={`flex gap-3 rounded-lg border p-3 ${disabled ? "bg-slate-50 opacity-70" : "bg-white"}`}>
+                  <Checkbox disabled={disabled} checked={checked} onCheckedChange={(value) => setSelectedCandidates((current) => value ? [...current, candidate.id] : current.filter((id) => id !== candidate.id))} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{candidate.name}</span>
+                      <span className="text-sm text-slate-500">{candidate.company}</span>
+                      {candidate.ambiguous && <Badge variant="outline">Review</Badge>}
+                      {candidate.duplicateContactId && <Badge variant="secondary">Already exists</Badge>}
+                      {candidate.duplicateCandidateId && <Badge variant="secondary">Repeated in legacy notes</Badge>}
+                    </div>
+                    <p className="text-sm text-slate-600">{candidate.email || "No email found"}</p>
+                    {candidate.warnings.length > 0 && <p className="text-xs text-amber-700 mt-1">{candidate.warnings.join(" · ")}</p>}
+                  </div>
+                </label>
+              );
+            }) : <p className="py-10 text-center text-slate-500">No legacy contact candidates remain.</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportOpen(false)}>Close</Button>
+            <Button disabled={!selectedCandidates.length || approveImport.isPending} onClick={() => approveImport.mutate({ data: { candidateIds: selectedCandidates } })}>
+              {approveImport.isPending ? "Importing..." : `Import ${selectedCandidates.length} selected`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

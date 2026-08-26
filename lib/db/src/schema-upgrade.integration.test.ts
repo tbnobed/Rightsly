@@ -91,6 +91,7 @@ test("reconciled schema persists new rights and revenue fields", async () => {
     );
     assert.ok(indexes.rows.some(({ indexname }) => indexname === "contacts_name_idx"));
     assert.ok(indexes.rows.some(({ indexname }) => indexname === "contacts_company_idx"));
+    assert.ok(indexes.rows.some(({ indexname }) => indexname === "contacts_import_source_key_idx"));
 
     await client.query("SAVEPOINT season_delete");
     await assert.rejects(

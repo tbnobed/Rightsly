@@ -17,8 +17,11 @@ test("contacts enforce roles and partner deletion rejects every linked contract"
   const salesId = crypto.randomUUID();
   const linkedPartnerId = crypto.randomUUID();
   const unlinkedPartnerId = crypto.randomUUID();
+  const importPartnerId = crypto.randomUUID();
   const contractId = crypto.randomUUID();
   const contactIds: string[] = [];
+  const importEmail = `legacy-${suffix}@example.invalid`;
+  const importNote = `Unrelated partner note\nImported contacts (legacy:test:${suffix}): Legacy Person | ${importEmail}`;
   const password = crypto.randomBytes(18).toString("base64url");
   const adminEmail = `contacts-admin-${suffix}@example.invalid`;
   const legalEmail = `contacts-legal-${suffix}@example.invalid`;
@@ -46,8 +49,11 @@ test("contacts enforce roles and partner deletion rejects every linked contract"
       [adminId, adminEmail, hash, legalId, legalEmail, financeId, financeEmail, salesId, salesEmail],
     );
     await pool.query(
-      "INSERT INTO partners (id, name, type) VALUES ($1, $2, 'Licensor'), ($3, $4, 'Licensor')",
-      [linkedPartnerId, `Linked ${suffix}`, unlinkedPartnerId, `Unlinked ${suffix}`],
+      `INSERT INTO partners (id, name, type, notes) VALUES
+       ($1, $2, 'Licensor', NULL),
+       ($3, $4, 'Licensor', NULL),
+       ($5, $6, 'Licensee', $7)`,
+      [linkedPartnerId, `Linked ${suffix}`, unlinkedPartnerId, `Unlinked ${suffix}`, importPartnerId, `Import ${suffix}`, importNote],
     );
     // Archived and expired contracts must still block deletion.
     await pool.query(
@@ -60,6 +66,45 @@ test("contacts enforce roles and partner deletion rejects every linked contract"
     const financeToken = await login(financeEmail);
     const salesToken = await login(salesEmail);
     const headers = (token: string) => ({ Authorization: `Bearer ${token}`, "Content-Type": "application/json" });
+
+    const preview = await fetch("http://localhost:8080/api/contacts/import-candidates", {
+      headers: headers(legalToken),
+    });
+    assert.equal(preview.status, 200);
+    const candidate = (await preview.json() as { candidates: { id: string; email: string; duplicateContactId: string | null }[] })
+      .candidates.find(({ email }) => email === importEmail);
+    assert.ok(candidate);
+    assert.equal(candidate.duplicateContactId, null);
+    const [approval, directCreate] = await Promise.all([
+      fetch("http://localhost:8080/api/contacts/import-candidates", {
+        method: "POST",
+        headers: headers(legalToken),
+        body: JSON.stringify({ candidateIds: [candidate.id] }),
+      }),
+      fetch("http://localhost:8080/api/contacts", {
+        method: "POST",
+        headers: headers(adminToken),
+        body: JSON.stringify({ name: "Concurrent Legacy Person", email: `${importEmail},` }),
+      }),
+    ]);
+    assert.equal(approval.status, 200);
+    const approvalResult = await approval.json() as { created: number; skipped: number };
+    assert.ok(
+      (approvalResult.created === 1 && directCreate.status === 409)
+      || (approvalResult.created === 0 && directCreate.status === 201),
+    );
+    const rerun = await fetch("http://localhost:8080/api/contacts/import-candidates", {
+      method: "POST",
+      headers: headers(legalToken),
+      body: JSON.stringify({ candidateIds: [candidate.id] }),
+    });
+    assert.equal(rerun.status, 200);
+    assert.deepEqual(await rerun.json(), { created: 0, skipped: 1 });
+    const imported = await pool.query("SELECT id FROM contacts WHERE email = $1", [importEmail]) as { rowCount: number; rows: { id: string }[] };
+    assert.equal(imported.rowCount, 1);
+    contactIds.push(imported.rows[0]!.id);
+    const source = await pool.query("SELECT notes FROM partners WHERE id = $1", [importPartnerId]) as { rows: { notes: string }[] };
+    assert.equal(source.rows[0]?.notes, importNote);
 
     const missing = await fetch(`http://localhost:8080/api/partners/${crypto.randomUUID()}`, {
       method: "DELETE", headers: headers(adminToken),
@@ -148,7 +193,7 @@ test("contacts enforce roles and partner deletion rejects every linked contract"
       DELETE FROM partners WHERE id = ANY($4);
       DELETE FROM notifications WHERE user_id = ANY($1);
       DELETE FROM users WHERE id = ANY($1);
-    `, [[adminId, legalId, financeId, salesId], contactIds, contractId, [linkedPartnerId, unlinkedPartnerId]]).catch(() => {});
+    `, [[adminId, legalId, financeId, salesId], contactIds, contractId, [linkedPartnerId, unlinkedPartnerId, importPartnerId]]).catch(() => {});
     await pool.end();
   }
 });

@@ -8,3 +8,4 @@
 - [Content-scope integrity](season-scope-integrity.md) — never delete contract-referenced titles/seasons; missing scope records can erase or broaden rights.
 - [Root-mounted Express routers](root-mounted-express-routers.md) — child router middleware can intercept later root mounts; signed/public routes must mount first.
 - [Bulk-import safety](bulk-import-safety.md) — imports are source-key idempotent; review/skip rows never write, and content links require one normalized exact match.
+- [Contact email identity](contact-email-identity.md) — every contact writer and legacy import must share canonical email locking and duplicate checks.

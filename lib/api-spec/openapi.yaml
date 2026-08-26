@@ -296,6 +296,48 @@ components:
           type: [string, "null"]
           maxLength: 5000
 
+    ContactImportCandidate:
+      type: object
+      required: [id, sourceKey, name, company, email, notes, ambiguous, duplicateContactId, duplicateCandidateId, warnings]
+      properties:
+        id: { type: string }
+        sourceKey: { type: string }
+        name: { type: string }
+        company: { type: string }
+        email: { type: [string, "null"] }
+        notes: { type: string }
+        ambiguous: { type: boolean }
+        duplicateContactId: { type: [string, "null"] }
+        duplicateCandidateId: { type: [string, "null"] }
+        warnings:
+          type: array
+          items: { type: string }
+
+    ContactImportPreview:
+      type: object
+      required: [candidates]
+      properties:
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContactImportCandidate'
+
+    ContactImportApproval:
+      type: object
+      required: [candidateIds]
+      properties:
+        candidateIds:
+          type: array
+          maxItems: 500
+          items: { type: string }
+
+    ContactImportResult:
+      type: object
+      required: [created, skipped]
+      properties:
+        created: { type: integer }
+        skipped: { type: integer }
+
     ContactListResponse:
       type: object
       required: [data, total, page, pageSize]
@@ -1819,6 +1861,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /contacts/import-candidates:
+    get:
+      operationId: previewContactImport
+      summary: Preview contact candidates extracted from legacy partner notes
+      responses:
+        '200':
+          description: Contact import candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactImportPreview'
+    post:
+      operationId: approveContactImport
+      summary: Create approved contacts from legacy partner notes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactImportApproval'
+      responses:
+        '200':
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactImportResult'
   /contacts/{id}:
     get:
       operationId: getContact

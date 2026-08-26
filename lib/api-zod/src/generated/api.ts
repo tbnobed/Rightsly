@@ -335,6 +335,42 @@ export const CreateContactResponse = zod.object({
 
 
 /**
+ * @summary Preview contact candidates extracted from legacy partner notes
+ */
+export const PreviewContactImportResponse = zod.object({
+  "candidates": zod.array(zod.object({
+  "id": zod.string(),
+  "sourceKey": zod.string(),
+  "name": zod.string(),
+  "company": zod.string(),
+  "email": zod.string().nullable(),
+  "notes": zod.string(),
+  "ambiguous": zod.boolean(),
+  "duplicateContactId": zod.string().nullable(),
+  "duplicateCandidateId": zod.string().nullable(),
+  "warnings": zod.array(zod.string())
+}))
+})
+
+
+/**
+ * @summary Create approved contacts from legacy partner notes
+ */
+export const approveContactImportBodyCandidateIdsMax = 500;
+
+
+
+export const ApproveContactImportBody = zod.object({
+  "candidateIds": zod.array(zod.string()).max(approveContactImportBodyCandidateIdsMax)
+})
+
+export const ApproveContactImportResponse = zod.object({
+  "created": zod.number(),
+  "skipped": zod.number()
+})
+
+
+/**
  * @summary Get a contact
  */
 export const GetContactParams = zod.object({

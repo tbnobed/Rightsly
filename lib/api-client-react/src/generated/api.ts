@@ -22,6 +22,9 @@ import type {
   AcceptInviteRequest,
   Amendment,
   Contact,
+  ContactImportApproval,
+  ContactImportPreview,
+  ContactImportResult,
   ContactInput,
   ContactListResponse,
   ContactUpdate,
@@ -1246,6 +1249,154 @@ export const useCreateContact = <TError = ErrorType<Error>,
         TContext
       > => {
       return useMutation(getCreateContactMutationOptions(options));
+    }
+
+export const getPreviewContactImportUrl = () => {
+
+
+
+
+  return `/api/contacts/import-candidates`
+}
+
+/**
+ * @summary Preview contact candidates extracted from legacy partner notes
+ */
+export const previewContactImport = async ( options?: RequestInit): Promise<ContactImportPreview> => {
+
+  return customFetch<ContactImportPreview>(getPreviewContactImportUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getPreviewContactImportQueryKey = () => {
+    return [
+    `/api/contacts/import-candidates`
+    ] as const;
+    }
+
+
+export const getPreviewContactImportQueryOptions = <TData = Awaited<ReturnType<typeof previewContactImport>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof previewContactImport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getPreviewContactImportQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof previewContactImport>>> = ({ signal }) => previewContactImport({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof previewContactImport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type PreviewContactImportQueryResult = NonNullable<Awaited<ReturnType<typeof previewContactImport>>>
+export type PreviewContactImportQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Preview contact candidates extracted from legacy partner notes
+ */
+
+export function usePreviewContactImport<TData = Awaited<ReturnType<typeof previewContactImport>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof previewContactImport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getPreviewContactImportQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getApproveContactImportUrl = () => {
+
+
+
+
+  return `/api/contacts/import-candidates`
+}
+
+/**
+ * @summary Create approved contacts from legacy partner notes
+ */
+export const approveContactImport = async (contactImportApproval: ContactImportApproval, options?: RequestInit): Promise<ContactImportResult> => {
+
+  return customFetch<ContactImportResult>(getApproveContactImportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(contactImportApproval)
+  }
+);}
+
+
+
+
+
+export const getApproveContactImportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveContactImport>>, TError,{data: BodyType<ContactImportApproval>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveContactImport>>, TError,{data: BodyType<ContactImportApproval>}, TContext> => {
+
+const mutationKey = ['approveContactImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveContactImport>>, {data: BodyType<ContactImportApproval>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  approveContactImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveContactImportMutationResult = NonNullable<Awaited<ReturnType<typeof approveContactImport>>>
+    export type ApproveContactImportMutationBody = BodyType<ContactImportApproval>
+    export type ApproveContactImportMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create approved contacts from legacy partner notes
+ */
+export const useApproveContactImport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveContactImport>>, TError,{data: BodyType<ContactImportApproval>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveContactImport>>,
+        TError,
+        {data: BodyType<ContactImportApproval>},
+        TContext
+      > => {
+      return useMutation(getApproveContactImportMutationOptions(options));
     }
 
 export const getGetContactUrl = (id: string,) => {
