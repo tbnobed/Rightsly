@@ -27,9 +27,37 @@ import { routeParam, validateHttpUrl } from "../lib/validation";
 import { displayContractStatus } from "../lib/contractStatus";
 import { syncRevenueSchedule } from "../lib/revenueSchedule";
 import { isSalesVisibleContract, salesVisibleContractPredicate } from "../lib/contractVisibility";
+import {
+  CONTRACT_DIRECTIONS, CONTRACT_STATUSES, END_TYPES, PAYMENT_TERMS, REPORTING_FREQUENCIES,
+  RIGHTS_OUT_EXCLUSIVITIES, ROYALTY_TYPES, isEnumValue, normalizeRightsOutExclusivity,
+} from "../lib/rightsValidation";
 
 const router = Router();
 router.use(authenticateToken);
+
+function contractEnumError(values: {
+  direction?: unknown; status?: unknown; endType?: unknown; royaltyType?: unknown;
+  paymentTerms?: unknown; reportingFrequency?: unknown; exclusivity?: unknown;
+}) {
+  const checks: Array<[string, unknown, readonly string[]]> = [
+    ["direction", values.direction, CONTRACT_DIRECTIONS],
+    ["status", values.status, CONTRACT_STATUSES],
+    ["endType", values.endType, END_TYPES],
+    ["royaltyType", values.royaltyType, ROYALTY_TYPES],
+    ["paymentTerms", values.paymentTerms, PAYMENT_TERMS],
+    ["reportingFrequency", values.reportingFrequency, REPORTING_FREQUENCIES],
+  ];
+  for (const [name, value, allowed] of checks) {
+    const nullable = name === "royaltyType" || name === "paymentTerms" ||
+      name === "reportingFrequency";
+    if (value !== undefined && (!nullable || value !== null) && !isEnumValue(value, allowed)) {
+      return `${name} is invalid`;
+    }
+  }
+  if (values.exclusivity !== undefined && values.exclusivity !== null &&
+    !normalizeRightsOutExclusivity(values.exclusivity)) return "exclusivity is invalid";
+  return undefined;
+}
 
 function contractReadGuard(req: any, res: any, next: any) {
   // Sales can only see active contracts
@@ -121,7 +149,19 @@ router.get("/", contractReadGuard, async (req, res) => {
   const today = new Date().toISOString().split("T")[0];
 
   const conditions: any[] = discoverableContractConditions(req, includeArchived);
-  if (direction) conditions.push(eq(contractsTable.direction, direction as any));
+  if (direction && !isEnumValue(direction, CONTRACT_DIRECTIONS)) {
+    res.status(400).json({ error: "direction is invalid" });
+    return;
+  }
+  if (status && status !== "expired" && !isEnumValue(status, CONTRACT_STATUSES)) {
+    res.status(400).json({ error: "status is invalid" });
+    return;
+  }
+  if (territory && !isRecognizedTerritory(territory)) {
+    res.status(400).json({ error: `Unrecognized territory: ${territory}` });
+    return;
+  }
+  if (direction) conditions.push(eq(contractsTable.direction, direction as typeof CONTRACT_DIRECTIONS[number]));
   if (status === "active") {
     conditions.push(
       and(
@@ -301,6 +341,11 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
     res.status(400).json({ message: "direction, partnerId, endType are required" });
     return;
   }
+  const enumError = contractEnumError({
+    direction, status, endType, royaltyType, paymentTerms,
+    reportingFrequency: rightsOutDetails?.reportingFrequency, exclusivity: rightsOutDetails?.exclusivity,
+  });
+  if (enumError) { res.status(400).json({ message: enumError }); return; }
 
   const dateError = validateContractDates({ startDate, endType, endDate });
   if (dateError) {
@@ -365,7 +410,7 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
       // Rights Out
       rightsOutAutoRenew: ro.autoRenew || false,
       rightsOutHasAmendment: ro.hasAmendment || false,
-      rightsOutExclusivity: ro.exclusivity || null,
+      rightsOutExclusivity: normalizeRightsOutExclusivity(ro.exclusivity) ?? null,
       rightsOutReportingFrequency: ro.reportingFrequency || null,
       rightsOutMinPaymentThreshold: ro.minPaymentThreshold?.toString() || null,
       createdBy: req.user!.id,
@@ -463,6 +508,11 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
     res.status(404).json({ message: "Contract not found" });
     return;
   }
+  const enumError = contractEnumError({
+    status, endType, royaltyType, paymentTerms,
+    reportingFrequency: rightsOutDetails?.reportingFrequency, exclusivity: rightsOutDetails?.exclusivity,
+  });
+  if (enumError) { res.status(400).json({ message: enumError }); return; }
   if (seasonIds !== undefined || contentItemIds !== undefined) {
     const [currentContent, currentSeasons] = await Promise.all([
       db.select({ contentItemId: contractContentTable.contentItemId })
@@ -563,7 +613,7 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   if (rightsOutDetails) {
     if (ro.autoRenew !== undefined) updates.rightsOutAutoRenew = ro.autoRenew;
     if (ro.hasAmendment !== undefined) updates.rightsOutHasAmendment = ro.hasAmendment;
-    if (ro.exclusivity !== undefined) updates.rightsOutExclusivity = ro.exclusivity;
+    if (ro.exclusivity !== undefined) updates.rightsOutExclusivity = normalizeRightsOutExclusivity(ro.exclusivity) ?? null;
     if (ro.reportingFrequency !== undefined) updates.rightsOutReportingFrequency = ro.reportingFrequency;
     if (canViewFinancials(req.user?.role) && ro.minPaymentThreshold !== undefined) {
       updates.rightsOutMinPaymentThreshold = ro.minPaymentThreshold?.toString();

@@ -5,6 +5,7 @@ import { eq, ilike, and, count, sql, desc, asc, inArray } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { routeParam, validateContentYear } from "../lib/validation";
+import { normalizeContentType } from "../lib/rightsValidation";
 
 const router = Router();
 router.use(authenticateToken);
@@ -15,6 +16,11 @@ router.get("/", async (req, res) => {
   const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 20));
   const search = req.query.search as string | undefined;
   const type = req.query.type as string | undefined;
+  const normalizedType = type === undefined ? undefined : normalizeContentType(type);
+  if (type !== undefined && !normalizedType) {
+    res.status(400).json({ message: `Unrecognized content type: ${type}` });
+    return;
+  }
   const allowedSorts = new Set(["title", "type", "year", "contractCount", "updatedAt"]);
   const sortBy = allowedSorts.has(req.query.sortBy as string) ? req.query.sortBy as string : "title";
   const sortDirection = req.query.sortDirection === "desc" ? "desc" : "asc";
@@ -32,7 +38,7 @@ router.get("/", async (req, res) => {
 
   const where = and(
     search ? ilike(contentItemsTable.title, `%${search}%`) : undefined,
-    type ? eq(contentItemsTable.type, type as any) : undefined,
+    normalizedType ? eq(contentItemsTable.type, normalizedType) : undefined,
   );
 
   const [items, [{ value: total }]] = await Promise.all([
@@ -98,17 +104,22 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
     res.status(400).json({ message: "type and title are required" });
     return;
   }
+  const normalizedType = normalizeContentType(type);
+  if (!normalizedType) {
+    res.status(400).json({ message: `Unrecognized content type: ${type}` });
+    return;
+  }
   const yearError = validateContentYear(year);
   if (yearError) { res.status(400).json({ message: yearError }); return; }
 
   const id = crypto.randomUUID();
   const [item] = await db
     .insert(contentItemsTable)
-    .values({ id, type, title, description: description || null, year: year || null, hasCleans: !!hasCleans, hasCaptions: !!hasCaptions })
+    .values({ id, type: normalizedType, title, description: description || null, year: year || null, hasCleans: !!hasCleans, hasCaptions: !!hasCaptions })
     .returning();
 
   let createdSeasons: any[] = [];
-  if (seasons?.length && type === "TVSeries") {
+  if (seasons?.length && normalizedType === "TVSeries") {
     createdSeasons = await db
       .insert(seasonsTable)
       .values(
@@ -124,7 +135,7 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
       .returning();
   }
 
-  await logAudit({ user: req.user, action: "create", entityType: "content", entityId: id, after: { type, title } });
+  await logAudit({ user: req.user, action: "create", entityType: "content", entityId: id, after: { type: normalizedType, title } });
   res.status(201).json({ ...item, seasons: createdSeasons, contractCount: 0 });
 });
 
@@ -153,6 +164,11 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   const id = routeParam(req.params.id);
   const { type, title, description, year, seasons, hasCleans, hasCaptions } = req.body;
+  const normalizedType = normalizeContentType(type);
+  if (!normalizedType) {
+    res.status(400).json({ message: `Unrecognized content type: ${type}` });
+    return;
+  }
   const yearError = validateContentYear(year);
   if (yearError) { res.status(400).json({ message: yearError }); return; }
   try {
@@ -181,7 +197,7 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
       }
 
       const [item] = await tx.update(contentItemsTable).set({
-        type,
+        type: normalizedType,
         title,
         description: description || null,
         year: year || null,

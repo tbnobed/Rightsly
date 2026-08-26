@@ -3,10 +3,13 @@ import { db } from "@workspace/db";
 import { contractsTable, contractContentTable, contractSeasonsTable, contentItemsTable, seasonsTable, partnersTable } from "@workspace/db";
 import { eq, and, or, inArray } from "drizzle-orm";
 import { authenticateToken } from "../lib/auth";
-import { territoriesOverlap } from "../lib/rightsMatching";
+import { territoriesCover, territoriesOverlap } from "../lib/rightsMatching";
 import {
   DISTRIBUTION_TYPES,
   TERRITORIES,
+  canonicalDistributionType,
+  canonicalTerritory,
+  distributionTypeContains,
   distributionTypesIntersect,
   isRecognizedDistributionType,
   isRecognizedTerritory,
@@ -29,12 +32,12 @@ router.get("/", async (req, res) => {
     return;
   }
   const contentItemId = req.query.contentItemId as string | undefined;
-  const territory = req.query.territory as string | undefined;
-  const distributionType = req.query.distributionType as string | undefined;
+  const rawTerritory = req.query.territory as string | undefined;
+  const rawDistributionType = req.query.distributionType as string | undefined;
   const date = req.query.date as string | undefined;
   const seasonId = req.query.seasonId as string | undefined;
 
-  if (!contentItemId || !territory || !distributionType || !date) {
+  if (!contentItemId || !rawTerritory || !rawDistributionType || !date) {
     res.status(400).json({ message: "contentItemId, territory, distributionType, date are all required" });
     return;
   }
@@ -55,14 +58,16 @@ router.get("/", async (req, res) => {
     res.status(400).json({ message: "date must be a valid YYYY-MM-DD value" });
     return;
   }
-  if (!isRecognizedTerritory(territory)) {
-    res.status(400).json({ message: `Unrecognized territory: ${territory}` });
+  if (!isRecognizedTerritory(rawTerritory)) {
+    res.status(400).json({ message: `Unrecognized territory: ${rawTerritory}` });
     return;
   }
-  if (!isRecognizedDistributionType(distributionType)) {
-    res.status(400).json({ message: `Unrecognized distribution type: ${distributionType}` });
+  if (!isRecognizedDistributionType(rawDistributionType)) {
+    res.status(400).json({ message: `Unrecognized distribution type: ${rawDistributionType}` });
     return;
   }
+  const territory = canonicalTerritory(rawTerritory);
+  const distributionType = canonicalDistributionType(rawDistributionType);
   const [contentItem] = await db
     .select({ id: contentItemsTable.id })
     .from(contentItemsTable)
@@ -80,7 +85,7 @@ router.get("/", async (req, res) => {
     }
   }
 
-  // Find all active rights-out contracts for this content item
+  // Consider both outgoing grants and incoming acquisition coverage.
   const linkedContracts = await db
     .select({
       id: contractsTable.id,
@@ -101,7 +106,7 @@ router.get("/", async (req, res) => {
     .where(
       and(
         eq(contractContentTable.contentItemId, contentItemId),
-        eq(contractsTable.direction, "rights_out"),
+        inArray(contractsTable.direction, ["rights_out", "rights_in"]),
         eq(contractsTable.archived, false),
         or(
           eq(contractsTable.status, "active"),
@@ -122,19 +127,11 @@ router.get("/", async (req, res) => {
 
   // A title-level contract applies to every season. A season-scoped contract
   // applies only to its explicitly selected seasons.
-  const matchingContracts = linkedContracts.filter((c) => {
+  const scopeAndDateMatches = linkedContracts.filter((c) => {
     const scope = seasonScopes.get(c.id);
     // A whole-title query includes every season, so any scoped grant matters.
     // A season query excludes grants scoped only to different seasons.
     if (scope?.length && seasonId && !scope.includes(seasonId)) return false;
-    const territoriesMatch = territoriesOverlap(
-      territory,
-      c.territories as string[],
-      c.otherTerritories,
-    );
-    const distMatch = (c.distributionTypes as string[]).some((value) =>
-      distributionTypesIntersect(distributionType, value));
-
     let dateMatch = true;
     if (c.endType === "date" && c.endDate) {
       dateMatch = checkDate <= new Date(c.endDate);
@@ -143,11 +140,31 @@ router.get("/", async (req, res) => {
       dateMatch = dateMatch && checkDate >= new Date(c.startDate);
     }
 
-    return territoriesMatch && distMatch && dateMatch;
+    return dateMatch;
   });
 
-  // Find conflicts: exclusive Rights Out deals
-  const conflicts = matchingContracts
+  // Rights Out conflicts use overlap. Rights In acquisition coverage is
+  // directional: the inbound grant must contain the entire requested scope.
+  const rightsOutMatches = scopeAndDateMatches.filter((c) =>
+    c.direction === "rights_out" &&
+    territoriesOverlap(territory, c.territories as string[], c.otherTerritories) &&
+    (c.distributionTypes as string[]).some((value) =>
+      distributionTypesIntersect(distributionType, value)));
+  const acquisitionMatches = scopeAndDateMatches.filter((c) =>
+    c.direction === "rights_in" &&
+    territoriesCover(territory, c.territories as string[], c.otherTerritories) &&
+    (c.distributionTypes as string[]).some((value) =>
+      distributionTypeContains(value, distributionType)));
+  const matchingContracts = [...rightsOutMatches, ...acquisitionMatches];
+  // Rightsly must never approve an outbound license without evidence that TBN
+  // acquired the requested rights, including when no Rights In grant exists.
+  const acquisitionRequired = true;
+  const acquisitionCovered = acquisitionMatches.length > 0;
+  const acquisitionWarning = acquisitionRequired && !acquisitionCovered
+    ? `No active Rights In acquisition coverage matches ${territory} / ${distributionType} on ${date}`
+    : undefined;
+
+  const conflicts = rightsOutMatches
     .filter((c) => c.rightsOutExclusivity === "exclusive")
     .map((c) => ({
       contractId: c.id,
@@ -171,7 +188,7 @@ router.get("/", async (req, res) => {
 
   const candidateIsAvailable = (candidateTerritory: string, candidateDistribution: string) =>
     !linkedContracts.some((contract) => {
-      if (contract.rightsOutExclusivity !== "exclusive") return false;
+      if (contract.direction !== "rights_out" || contract.rightsOutExclusivity !== "exclusive") return false;
       const scope = seasonScopes.get(contract.id);
       if (scope?.length && seasonId && !scope.includes(seasonId)) return false;
       const dateMatches =
@@ -184,9 +201,14 @@ router.get("/", async (req, res) => {
     });
 
   res.json({
-    available: conflicts.length === 0,
+    available: conflicts.length === 0 && !acquisitionWarning,
     conflicts,
     grants,
+    acquisition: {
+      required: acquisitionRequired,
+      covered: acquisitionCovered,
+      warning: acquisitionWarning ?? null,
+    },
     // Suggestions only exclude scopes already covered by a matching active
     // grant. They are deliberately advisory: "Other" territory and bespoke
     // distribution wording cannot be inferred safely.

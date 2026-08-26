@@ -9,6 +9,13 @@ import { salesVisibleContractPredicate } from "../lib/contractVisibility";
 const router = Router();
 router.use(authenticateToken);
 
+function calendarPlatforms(platforms: string[] | null, platform: string | null) {
+  return [...new Set([
+    ...(platforms ?? []),
+    ...(platform ? platform.split(",").map((value) => value.trim()).filter(Boolean) : []),
+  ])];
+}
+
 // GET /api/dashboard
 router.get("/", async (req, res) => {
   const period = (req.query.period as string) || "month";
@@ -82,6 +89,8 @@ router.get("/", async (req, res) => {
         partnerName: partnersTable.name,
         status: contractsTable.status,
         startDate: contractsTable.startDate,
+        platform: contractsTable.platform,
+        rightsInPlatforms: contractsTable.rightsInPlatforms,
       })
       .from(contractsTable)
       .leftJoin(partnersTable, eq(contractsTable.partnerId, partnersTable.id))
@@ -108,6 +117,8 @@ router.get("/", async (req, res) => {
         endDate: contractsTable.endDate,
         territories: contractsTable.territories,
         distributionTypes: contractsTable.distributionTypes,
+        platform: contractsTable.platform,
+        rightsInPlatforms: contractsTable.rightsInPlatforms,
         royaltyType: contractsTable.royaltyType,
         contentCount: sql<number>`0`.mapWith(Number),
         createdAt: contractsTable.createdAt,
@@ -200,6 +211,7 @@ router.get("/", async (req, res) => {
       contractId: c.id,
       partnerName: c.partnerName,
       status: c.status,
+      platforms: calendarPlatforms(c.rightsInPlatforms, c.platform),
     })),
     ...expiringContracts.map((c) => ({
       id: `exp-${c.id}`,
@@ -209,6 +221,7 @@ router.get("/", async (req, res) => {
       contractId: c.id,
       partnerName: c.partnerName,
       status: c.status,
+      platforms: calendarPlatforms(c.rightsInPlatforms, c.platform),
     })),
     ...periodReports.map((r) => ({
       id: `rev-${r.revenue_reports.id}`,
@@ -218,6 +231,7 @@ router.get("/", async (req, res) => {
       contractId: r.revenue_reports.contractId,
       partnerName: r.partners?.name ?? null,
       status: r.revenue_reports.status,
+      platforms: calendarPlatforms(r.contracts?.rightsInPlatforms ?? null, r.contracts?.platform ?? null),
     })),
   ];
 

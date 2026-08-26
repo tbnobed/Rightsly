@@ -4,6 +4,7 @@
  * Api
  * OpenAPI spec version: 0.1.0
  */
+import type { RightsCheckResultAcquisition } from './rightsCheckResultAcquisition';
 import type { RightsCheckResultConflictsItem } from './rightsCheckResultConflictsItem';
 import type { RightsCheckResultGrantsItem } from './rightsCheckResultGrantsItem';
 import type { RightsCheckResultSuggestions } from './rightsCheckResultSuggestions';
@@ -12,5 +13,6 @@ export interface RightsCheckResult {
   available: boolean;
   conflicts: RightsCheckResultConflictsItem[];
   grants: RightsCheckResultGrantsItem[];
+  acquisition: RightsCheckResultAcquisition;
   suggestions: RightsCheckResultSuggestions;
 }

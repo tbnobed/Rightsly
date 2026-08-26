@@ -71,6 +71,13 @@ export function territoriesIntersect(a: string, b: string) {
   return (regionCountries[left]?.includes(right) ?? false) || (regionCountries[right]?.includes(left) ?? false);
 }
 
+export function territoryContains(grantedTerritory: string, requestedTerritory: string) {
+  const granted = canonicalTerritory(grantedTerritory);
+  const requested = canonicalTerritory(requestedTerritory);
+  return granted === "Global" || granted === requested ||
+    (regionCountries[granted]?.includes(requested) ?? false);
+}
+
 export function distributionTypesIntersect(a: string, b: string) {
   const left = canonicalDistributionType(a), right = canonicalDistributionType(b);
   // VOD is a parent grouping; Broadcast contains Linear Broadcast.
@@ -78,4 +85,12 @@ export function distributionTypesIntersect(a: string, b: string) {
     (right === "VOD" && ["SVOD", "AVOD", "TVOD"].includes(left)) ||
     (left === "Broadcast" && right === "Linear Broadcast") ||
     (right === "Broadcast" && left === "Linear Broadcast");
+}
+
+export function distributionTypeContains(grantedType: string, requestedType: string) {
+  const granted = canonicalDistributionType(grantedType);
+  const requested = canonicalDistributionType(requestedType);
+  return granted === requested ||
+    (granted === "VOD" && ["SVOD", "AVOD", "TVOD"].includes(requested)) ||
+    (granted === "Broadcast" && requested === "Linear Broadcast");
 }

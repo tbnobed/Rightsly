@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeRightValue, territoriesOverlap } from "./rightsMatching.ts";
+import { normalizeRightValue, territoriesCover, territoriesOverlap } from "./rightsMatching.ts";
 import {
+  distributionTypeContains,
   distributionTypesIntersect,
   isRecognizedDistributionType,
   isRecognizedTerritory,
@@ -9,6 +10,10 @@ import {
   unrecognizedDistributionTypes,
   unrecognizedTerritories,
 } from "./rightsVocabulary.ts";
+import {
+  normalizeContentType,
+  normalizeRightsOutExclusivity,
+} from "./rightsValidation.ts";
 
 test("Global request overlaps a specific territorial grant", () => {
   assert.equal(territoriesOverlap("Global", ["US"]), true);
@@ -44,6 +49,17 @@ test("regional hierarchy and distribution groupings match conservatively both wa
   assert.equal(distributionTypesIntersect("FAST", "SVOD"), false);
 });
 
+test("Rights In coverage is directional rather than a symmetric overlap", () => {
+  assert.equal(territoriesCover("Global", ["United States"]), false);
+  assert.equal(territoriesCover("United States", ["Global"]), true);
+  assert.equal(territoriesCover("Europe", ["France"]), false);
+  assert.equal(territoriesCover("France", ["Europe"]), true);
+  assert.equal(distributionTypeContains("SVOD", "VOD"), false);
+  assert.equal(distributionTypeContains("VOD", "SVOD"), true);
+  assert.equal(distributionTypeContains("Linear Broadcast", "Broadcast"), false);
+  assert.equal(distributionTypeContains("Broadcast", "Linear Broadcast"), true);
+});
+
 test("canonical rights values and documented aliases are recognized", () => {
   assert.equal(isRecognizedTerritory("United States"), true);
   assert.equal(isRecognizedTerritory("us"), true);
@@ -63,4 +79,13 @@ test("territory filter storage keys include canonical and legacy aliases", () =>
 test("unknown rights values are rejected by boundary validators", () => {
   assert.deepEqual(unrecognizedTerritories(["US", "Atlantis"]), ["Atlantis"]);
   assert.deepEqual(unrecognizedDistributionTypes(["SVOD", "Hologram"]), ["Hologram"]);
+});
+
+test("display-only content and exclusivity aliases normalize safely", () => {
+  assert.equal(normalizeContentType("TV Series"), "TVSeries");
+  assert.equal(normalizeContentType("tvseries"), undefined);
+  assert.equal(normalizeContentType("Documentary"), undefined);
+  assert.equal(normalizeRightsOutExclusivity("non-exclusive"), "non_exclusive");
+  assert.equal(normalizeRightsOutExclusivity("non exclusive"), undefined);
+  assert.equal(normalizeRightsOutExclusivity("exclusive"), "exclusive");
 });

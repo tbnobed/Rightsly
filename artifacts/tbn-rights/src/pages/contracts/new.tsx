@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth";
 import { DISTRIBUTION_OPTIONS, TERRITORY_OPTIONS } from "@/lib/rights-options";
+import { uploadFile } from "@/lib/upload-file";
 
 const DEPARTMENT_OPTIONS = ["Acquisition", "Distribution"] as const;
 const RIGHTS_IN_PLATFORMS = ["TBN Broadcast", "TBN+", "YouTube", "Socials", "Yippee", "L&D"] as const;
@@ -240,21 +241,13 @@ export default function NewContractWizard() {
   };
 
   const uploadDocument = async (contractId: string, file: File) => {
-    const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
-      data: { name: file.name, size: file.size, contentType: file.type || "application/pdf" },
-    });
-    const putRes = await fetch(uploadURL, {
-      method: "PUT",
-      headers: { "Content-Type": file.type || "application/pdf" },
-      body: file,
-    });
-    if (!putRes.ok) throw new Error("Upload to storage failed");
+    const { objectPath, contentType } = await uploadFile(requestUploadUrl, file);
     await createAttachment.mutateAsync({
       id: contractId,
       data: {
         fileName: file.name,
         objectPath,
-        contentType: file.type || "application/pdf",
+        contentType,
         size: file.size,
       },
     });

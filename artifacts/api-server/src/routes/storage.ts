@@ -52,7 +52,7 @@ router.post(
       const { name, size, contentType } = parsed.data;
 
       if (!ALLOWED_CONTENT_TYPES.has(contentType)) {
-        res.status(400).json({ error: 'Only PDF and Word documents are allowed' });
+        res.status(400).json({ error: 'Only PDF, Word, Excel, and CSV files are allowed' });
         return;
       }
       if (size > MAX_UPLOAD_SIZE) {
@@ -60,7 +60,7 @@ router.post(
         return;
       }
 
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL(contentType);
       const objectPath =
         objectStorageService.normalizeObjectEntityPath(uploadURL);
 
@@ -77,6 +77,43 @@ router.post(
     }
   },
 );
+
+/**
+ * PUT /storage/uploads/local/:id
+ *
+ * Docker fallback for direct browser uploads. The URL is HMAC signed, expires
+ * quickly, and binds the permitted content type. It intentionally has no JWT
+ * middleware because the signed URL is the write credential.
+ */
+router.put('/storage/uploads/local/:id', async (req: Request, res: Response) => {
+  try {
+    const contentType = typeof req.query.contentType === 'string' ? req.query.contentType : '';
+    const expires = typeof req.query.expires === 'string' ? req.query.expires : '';
+    const signature = typeof req.query.signature === 'string' ? req.query.signature : '';
+    if (!ALLOWED_CONTENT_TYPES.has(contentType) || req.headers['content-type']?.split(';')[0].trim() !== contentType) {
+      res.status(400).json({ error: 'Unsupported file type' });
+      return;
+    }
+    const contentLength = Number(req.headers['content-length']);
+    if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_SIZE) {
+      res.status(413).json({ error: 'File exceeds the 50 MB size limit' });
+      return;
+    }
+    await objectStorageService.writeLocalUpload(
+      Array.isArray(req.params.id) ? req.params.id[0] : req.params.id,
+      expires,
+      contentType,
+      signature,
+      req as unknown as AsyncIterable<Buffer>,
+      MAX_UPLOAD_SIZE,
+    );
+    res.status(201).end();
+  } catch (error) {
+    req.log.warn({ err: error }, 'Rejected local object upload');
+    // Do not disclose signature, filesystem, or streaming details.
+    res.status(400).json({ error: 'Upload could not be completed' });
+  }
+});
 
 /**
  * GET /storage/public-objects/*

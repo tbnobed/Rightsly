@@ -1,27 +1,23 @@
 ---
-name: Rights Check territory overlap
-description: Conservative overlap semantics and canonical end-to-end rights vocabulary
+name: Rights Check scope semantics
+description: Directional acquisition containment, conflict overlap, and canonical end-to-end rights vocabulary
 ---
 Rights Check must interpret territory questions conservatively.
 
-**Rule:** A Global request overlaps every territorial grant; a Global or empty
-grant overlaps every request; specific territory matching is case-insensitive
-and whitespace-normalized. Custom territory text participates after splitting
-common separators. Distribution types are normalized the same way. UI controls,
-API writes, and API reads must use the same canonical values; legacy aliases
-must be normalized before an edit form hydrates. Structured territory and
-distribution fields, plus Rights Check queries, must reject unknown values
-rather than treating them as custom vocabulary.
+**Rule:** Exclusive Rights Out conflict checks use symmetric overlap: a Global
+request overlaps every grant, and a Global or empty grant overlaps every
+request. Rights In acquisition checks are directional: the incoming grant must
+contain the complete requested territory and distribution scope. A country or
+distribution subtype cannot cover a region, Global, or a parent distribution
+request. Specific matching is normalized, and structured territory and
+distribution fields must reject unknown values.
 
-**Why:** Exact string matching returned a false all-clear for Global and
-lowercase requests even when an active exclusive US grant existed. Alias values
-that differed between UI and API storage also made saved rights look unchecked
-on edit, risking accidental changes. Accepting unknown structured values can
-also create grants that no valid Rights Check query can find, producing a false
-clearance.
+**Why:** Exact string matching returned false all-clears for conflicting Global
+and lowercase requests. Reusing overlap for acquisition also creates false
+approvals: a US-only inbound grant overlaps a Global request but does not cover
+it. Alias drift can also make stored rights disappear from edit forms.
 
-**How to apply:** Any new Rights Check matching path must use the shared
-normalization/overlap helper and preserve regression tests for Global and
-case-insensitive requests. When adding vocabulary entries, keep canonical values
-identical end to end; labels may differ, stored values may not. Keep free-form
-legacy territory notes separate from the validated structured vocabulary.
+**How to apply:** Choose the matcher by direction: overlap for Rights Out
+conflicts, containment for Rights In coverage. Preserve regression tests for
+Global, regions, distribution parents, and case normalization. Keep canonical
+stored values identical end to end; labels may differ, stored values may not.

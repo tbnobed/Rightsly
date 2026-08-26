@@ -3,6 +3,7 @@
 - [Notifications generation design](notifications-design.md) — on-demand generation with dedupe keys; clear must soft-dismiss, unique (user_id,dedupe_key) index required.
 - [SSO + email design](sso-email-design.md) — env-driven Authentik OIDC + SendGrid; JWT never in URLs (one-time code exchange), auto-provisioning fails closed.
 - [api-server bundling quirks](api-server-bundling.md) — pdfkit must stay externalized in esbuild (reads .afm via __dirname); build success doesn't prove runtime works, curl-verify.
-- [Rights Check territory overlap](rights-check-territory-overlap.md) — Global requests overlap every grant; Global/empty grants overlap every request; comparisons are normalized.
+- [Rights Check scope semantics](rights-check-territory-overlap.md) — Rights Out uses symmetric overlap; Rights In requires directional containment of the full requested scope.
 - [Contract date validation](contract-date-validation.md) — date-bounded terms require end >= start across create, partial update, UI, and CSV import.
 - [Content-scope integrity](season-scope-integrity.md) — never delete contract-referenced titles/seasons; missing scope records can erase or broaden rights.
+- [Root-mounted Express routers](root-mounted-express-routers.md) — child router middleware can intercept later root mounts; signed/public routes must mount first.

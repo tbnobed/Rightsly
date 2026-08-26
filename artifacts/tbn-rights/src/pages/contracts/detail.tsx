@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadFile } from "@/lib/upload-file";
 
 export default function ContractDetail() {
   const { id } = useParams<{ id: string }>();
@@ -59,16 +60,7 @@ export default function ContractDetail() {
     try {
       let documentUrl: string | undefined;
       if (amendmentFile) {
-        const contentType = amendmentFile.type || "application/octet-stream";
-        const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
-          data: { name: amendmentFile.name, size: amendmentFile.size, contentType },
-        });
-        const uploadResponse = await fetch(uploadURL, {
-          method: "PUT",
-          headers: { "Content-Type": contentType },
-          body: amendmentFile,
-        });
-        if (!uploadResponse.ok) throw new Error("Document upload failed");
+        const { objectPath } = await uploadFile(requestUploadUrl, amendmentFile);
         documentUrl = objectPath;
       }
       await createAmendment.mutateAsync({
@@ -82,10 +74,10 @@ export default function ContractDetail() {
       await queryClient.invalidateQueries({ queryKey: getGetContractQueryKey(contract.id) });
       handleAmendmentOpenChange(false);
       toast({ title: "Amendment added", description: "The contract amendment is now recorded." });
-    } catch (err) {
+    } catch {
       toast({
         title: "Could not add amendment",
-        description: err instanceof Error ? err.message : "Please try again.",
+        description: "We couldn't upload that file. Please confirm it is an allowed document under 50 MB and try again.",
         variant: "destructive",
       });
     }

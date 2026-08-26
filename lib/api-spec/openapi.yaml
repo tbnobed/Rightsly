@@ -65,7 +65,7 @@ components:
       properties:
         uploadURL:
           type: string
-          description: Presigned GCS URL for PUT upload.
+          description: Short-lived URL for an authenticated PUT upload using the configured storage backend.
         objectPath:
           type: string
           description: Normalized object path (e.g. `/objects/uploads/uuid`).
@@ -970,7 +970,7 @@ components:
 
     RightsCheckResult:
       type: object
-      required: [available, conflicts, grants, suggestions]
+      required: [available, conflicts, grants, acquisition, suggestions]
       properties:
         available:
           type: boolean
@@ -1027,6 +1027,20 @@ components:
                 type: array
                 items:
                   type: string
+        acquisition:
+          type: object
+          required: [required, covered, warning]
+          properties:
+            required:
+              type: boolean
+              description: Whether Rights In acquisition coverage is required before outbound licensing.
+            covered:
+              type: boolean
+              description: Whether an active Rights In grant covers the requested season, date, territory, and distribution type.
+            warning:
+              type: string
+              nullable: true
+              description: Clear reason the request lacks required acquisition coverage.
         suggestions:
           type: object
           required: [availableTerritories, availableDistributionTypes]
@@ -1116,6 +1130,10 @@ components:
         status:
           type: string
           nullable: true
+        platforms:
+          type: array
+          items:
+            type: string
 
     Notification:
       type: object

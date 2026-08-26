@@ -37,7 +37,7 @@ export interface UploadUrlRequest {
 }
 
 export interface UploadUrlResponse {
-  /** Presigned GCS URL for PUT upload. */
+  /** Short-lived URL for an authenticated PUT upload using the configured storage backend. */
   uploadURL: string;
   /** Normalized object path (e.g. `/objects/uploads/uuid`). */
   objectPath: string;
@@ -740,6 +740,15 @@ export type RightsCheckResultGrantsItem = {
   seasonIds?: string[];
 };
 
+export type RightsCheckResultAcquisition = {
+  /** Whether Rights In acquisition coverage is required before outbound licensing. */
+  required: boolean;
+  /** Whether an active Rights In grant covers the requested season, date, territory, and distribution type. */
+  covered: boolean;
+  /** Clear reason the request lacks required acquisition coverage. */
+  warning: string | null;
+};
+
 export type RightsCheckResultSuggestions = {
   availableTerritories: string[];
   availableDistributionTypes: string[];
@@ -749,6 +758,7 @@ export interface RightsCheckResult {
   available: boolean;
   conflicts: RightsCheckResultConflictsItem[];
   grants: RightsCheckResultGrantsItem[];
+  acquisition: RightsCheckResultAcquisition;
   suggestions: RightsCheckResultSuggestions;
 }
 
@@ -770,6 +780,7 @@ export interface CalendarEvent {
   contractId?: string | null;
   partnerName?: string | null;
   status?: string | null;
+  platforms?: string[];
 }
 
 export interface RightsInSpan {

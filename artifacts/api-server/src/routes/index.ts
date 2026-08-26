@@ -22,6 +22,9 @@ router.use("/auth", authRouter);
 router.use("/users", usersRouter);
 router.use("/partners", partnersRouter);
 router.use("/contracts", contractsRouter);
+// Signed local upload PUTs authenticate with their short-lived HMAC signature.
+// Mount storage before root-mounted authenticated routers so those PUTs remain reachable.
+router.use("/", storageRouter);
 // Revenue routes mount at /contracts and /revenue-reports
 router.use("/", revenueRouter);
 router.use("/royalties", royaltiesRouter);
@@ -31,7 +34,6 @@ router.use("/dashboard", dashboardRouter);
 router.use("/audit-logs", auditLogsRouter);
 router.use("/import", importRouter);
 router.use("/reports", reportsRouter);
-router.use("/", storageRouter);
 router.use("/notifications", notificationsRouter);
 
 export default router;

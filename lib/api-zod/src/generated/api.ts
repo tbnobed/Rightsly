@@ -324,6 +324,7 @@ export const listContractsQueryPageSizeDefault = 20;
 export const listContractsQueryPageSizeMax = 100;
 
 
+
 export const ListContractsQueryParams = zod.object({
   "page": zod.coerce.number().min(1).default(listContractsQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(listContractsQueryPageSizeMax).default(listContractsQueryPageSizeDefault),
@@ -831,6 +832,9 @@ export const CreateContractAttachmentParams = zod.object({
 })
 
 
+
+
+
 export const CreateContractAttachmentBody = zod.object({
   "fileName": zod.string().min(1),
   "objectPath": zod.string().min(1),
@@ -866,6 +870,9 @@ export const DeleteContractAttachmentResponse = zod.void()
  */
 
 
+
+
+
 export const RequestUploadUrlBody = zod.object({
   "name": zod.string().min(1).describe('Original file name.'),
   "size": zod.number().min(1).describe('File size in bytes.'),
@@ -873,8 +880,12 @@ export const RequestUploadUrlBody = zod.object({
 })
 
 
+
+
+
+
 export const RequestUploadUrlResponse = zod.object({
-  "uploadURL": zod.string().describe('Presigned GCS URL for PUT upload.'),
+  "uploadURL": zod.string().describe('Short-lived URL for an authenticated PUT upload using the configured storage backend.'),
   "objectPath": zod.string().describe('Normalized object path (e.g. `\/objects\/uploads\/uuid`).'),
   "metadata": zod.object({
   "name": zod.string().min(1).describe('Original file name.'),
@@ -931,6 +942,7 @@ export const CreateRevenueReportParams = zod.object({
 export const createRevenueReportBodyAmountReceivedMin = 0;
 
 export const createRevenueReportBodyCostAmountMin = 0;
+
 
 
 export const CreateRevenueReportBody = zod.object({
@@ -1011,6 +1023,7 @@ export const UpdateRevenueReportParams = zod.object({
 export const updateRevenueReportBodyAmountReceivedMin = 0;
 
 export const updateRevenueReportBodyCostAmountMin = 0;
+
 
 
 export const UpdateRevenueReportBody = zod.object({
@@ -1344,6 +1357,11 @@ export const RightsCheckResponse = zod.object({
   "endDate": zod.coerce.date().nullish(),
   "seasonIds": zod.array(zod.string()).optional()
 })),
+  "acquisition": zod.object({
+  "required": zod.boolean().describe('Whether Rights In acquisition coverage is required before outbound licensing.'),
+  "covered": zod.boolean().describe('Whether an active Rights In grant covers the requested season, date, territory, and distribution type.'),
+  "warning": zod.string().nullable().describe('Clear reason the request lacks required acquisition coverage.')
+}),
   "suggestions": zod.object({
   "availableTerritories": zod.array(zod.string()),
   "availableDistributionTypes": zod.array(zod.string())
@@ -1375,7 +1393,8 @@ export const GetDashboardResponse = zod.object({
   "date": zod.coerce.date(),
   "contractId": zod.string().nullish(),
   "partnerName": zod.string().nullish(),
-  "status": zod.string().nullish()
+  "status": zod.string().nullish(),
+  "platforms": zod.array(zod.string()).optional()
 })).optional(),
   "expiringSoonContracts": zod.array(zod.object({
   "id": zod.string(),

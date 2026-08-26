@@ -9,6 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle, FileText, Paperclip, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { uploadFile } from "@/lib/upload-file";
+
+function formatCurrency(value: number) {
+  return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 type Report = {
   id: string; period: string; expectedDate: string | null; receivedDate: string | null;
@@ -87,13 +92,10 @@ export default function Royalties() {
   const upload = async (file: File) => {
     if (!pendingReportId) return;
     try {
-      const contentType = file.type || "application/pdf";
-      const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({ data: { name: file.name, size: file.size, contentType } });
-      const put = await fetch(uploadURL, { method: "PUT", headers: { "Content-Type": contentType }, body: file });
-      if (!put.ok) throw new Error("Upload to storage failed");
+      const { objectPath } = await uploadFile(requestUploadUrl, file);
       await api(`/revenue-reports/${pendingReportId}`, { method: "PUT", body: JSON.stringify({ documentPath: objectPath, documentName: file.name }) });
       toast({ title: "Document attached", description: file.name }); await load();
-    } catch (error) { toast({ variant: "destructive", title: "Upload failed", description: error instanceof Error ? error.message : undefined }); }
+    } catch { toast({ variant: "destructive", title: "Upload failed", description: "We couldn't upload that file. Please confirm it is an allowed document under 50 MB and try again." }); }
     finally { setPendingReportId(null); if (fileInputRef.current) fileInputRef.current.value = ""; }
   };
   const download = async (report: Report) => {
@@ -122,7 +124,7 @@ export default function Royalties() {
       <div className="md:col-span-3 flex gap-2"><Button disabled={saving}>{editingId ? "Save changes" : "Create report"}</Button>{editingId && <Button type="button" variant="outline" onClick={() => { setEditingId(null); setForm(emptyForm); }}>Cancel</Button>}</div>
     </form></CardContent></Card>
     <Card><CardHeader><CardTitle>Reports and approvals</CardTitle></CardHeader><CardContent className="p-0"><table className="w-full text-sm"><thead className="bg-slate-50 text-left"><tr><th className="p-4">Period</th><th className="p-4 text-right">Received</th><th className="p-4 text-right">Costs</th><th className="p-4">Review</th><th className="p-4">Document</th><th className="p-4" /></tr></thead><tbody>
-      {reports.map((report) => <tr key={report.id} className="border-t"><td className="p-4">{report.period}<div className="text-xs text-slate-500">{report.status}</div></td><td className="p-4 text-right">{report.amountReceived == null ? "—" : `$${report.amountReceived.toLocaleString()}`}</td><td className="p-4 text-right">{report.costAmount == null ? "—" : `$${report.costAmount.toLocaleString()}`}</td><td className="p-4"><Badge>{report.reviewStatus}</Badge><div className="mt-2 flex gap-1">{report.reviewStatus === "pending" && <Button size="sm" variant="outline" onClick={() => void review(report.id, "reviewed")}>Mark reviewed</Button>}{report.reviewStatus !== "approved" && <Button size="sm" onClick={() => void review(report.id, "approved")}><CheckCircle className="w-3 h-3 mr-1" />Approve</Button>}</div></td><td className="p-4"><div className="flex gap-1">{report.documentPath && <Button variant="ghost" size="sm" onClick={() => void download(report)}><FileText className="w-4 h-4" /></Button>}<Button variant="ghost" size="sm" onClick={() => { setPendingReportId(report.id); fileInputRef.current?.click(); }} disabled={requestUploadUrl.isPending}><Paperclip className="w-4 h-4" /></Button></div></td><td className="p-4 text-right"><Button variant="ghost" size="sm" onClick={() => edit(report)}><Pencil className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => void remove(report.id)}><Trash2 className="w-4 h-4 text-red-500" /></Button></td></tr>)}
+      {reports.map((report) => <tr key={report.id} className="border-t"><td className="p-4">{report.period}<div className="text-xs text-slate-500">{report.status}</div></td><td className="p-4 text-right">{report.amountReceived == null ? "—" : formatCurrency(report.amountReceived)}</td><td className="p-4 text-right">{report.costAmount == null ? "—" : formatCurrency(report.costAmount)}</td><td className="p-4"><Badge>{report.reviewStatus}</Badge><div className="mt-2 flex gap-1">{report.reviewStatus === "pending" && <Button size="sm" variant="outline" onClick={() => void review(report.id, "reviewed")}>Mark reviewed</Button>}{report.reviewStatus !== "approved" && <Button size="sm" onClick={() => void review(report.id, "approved")}><CheckCircle className="w-3 h-3 mr-1" />Approve</Button>}</div></td><td className="p-4"><div className="flex gap-1">{report.documentPath && <Button variant="ghost" size="sm" onClick={() => void download(report)}><FileText className="w-4 h-4" /></Button>}<Button variant="ghost" size="sm" onClick={() => { setPendingReportId(report.id); fileInputRef.current?.click(); }} disabled={requestUploadUrl.isPending}><Paperclip className="w-4 h-4" /></Button></div></td><td className="p-4 text-right"><Button variant="ghost" size="sm" onClick={() => edit(report)}><Pencil className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => void remove(report.id)}><Trash2 className="w-4 h-4 text-red-500" /></Button></td></tr>)}
       {!loading && reports.length === 0 && <tr><td colSpan={6} className="p-10 text-center text-slate-500">No reports yet. Create the first report above.</td></tr>}
     </tbody></table></CardContent></Card></>}
   </div>;

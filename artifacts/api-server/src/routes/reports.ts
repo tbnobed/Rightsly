@@ -5,6 +5,7 @@ import { eq, and, or, lte, gte, desc, sql } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { sendPdfReport } from "../lib/pdfReport";
 import { displayContractStatus } from "../lib/contractStatus";
+import { formatRevenueAmount } from "../lib/revenueCore";
 
 const router = Router();
 router.use(authenticateToken);
@@ -277,9 +278,11 @@ router.get("/royalties", requireRole("admin", "finance"), async (req, res) => {
     ];
     data.forEach((row) => ws.addRow({
       ...row,
-      amountReceived: row.amountReceived ? Number(row.amountReceived) : null,
-      costAmount: row.costAmount ? Number(row.costAmount) : null,
+      amountReceived: row.amountReceived === null || row.amountReceived === undefined ? null : Number(row.amountReceived),
+      costAmount: row.costAmount === null || row.costAmount === undefined ? null : Number(row.costAmount),
     }));
+    ws.getColumn("amountReceived").numFmt = '$#,##0.00;[Red]-$#,##0.00';
+    ws.getColumn("costAmount").numFmt = '$#,##0.00;[Red]-$#,##0.00';
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename=royalty-statements-${new Date().toISOString().split("T")[0]}.xlsx`);
     await wb.xlsx.write(res);
@@ -301,8 +304,8 @@ router.get("/royalties", requireRole("admin", "finance"), async (req, res) => {
       ],
       rows: data.map(r => ({
         ...r,
-        amountReceived: r.amountReceived ? `${Number(r.amountReceived).toLocaleString()}` : "",
-        costAmount: r.costAmount ? `${Number(r.costAmount).toLocaleString()}` : "",
+        amountReceived: formatRevenueAmount(r.amountReceived),
+        costAmount: formatRevenueAmount(r.costAmount),
       })),
     });
     return;

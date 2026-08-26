@@ -1,4 +1,4 @@
-import { canonicalTerritory, territoriesIntersect } from "./rightsVocabulary.ts";
+import { canonicalTerritory, territoriesIntersect, territoryContains } from "./rightsVocabulary.ts";
 export const normalizeRightValue = (value: string) => canonicalTerritory(value).toLocaleLowerCase("en-US");
 
 /**
@@ -24,4 +24,26 @@ export function territoriesOverlap(
     granted.length === 0 ||
     granted.some((territory) => territoriesIntersect(requested, territory))
   );
+}
+
+/**
+ * Returns true only when the contract grant contains the entire requested
+ * territory. This directional check is required for Rights In acquisition
+ * coverage; a country-level grant cannot cover a regional or Global request.
+ */
+export function territoriesCover(
+  requestedTerritory: string,
+  contractTerritories: string[] | null | undefined,
+  otherTerritories?: string | null,
+) {
+  const requested = canonicalTerritory(requestedTerritory);
+  const explicit = (contractTerritories ?? []).map(canonicalTerritory).filter(Boolean);
+  const other = (otherTerritories ?? "")
+    .split(/[,;|]/)
+    .map(canonicalTerritory)
+    .filter(Boolean);
+  const granted = [...explicit, ...other];
+
+  return granted.length === 0 ||
+    granted.some((territory) => territoryContains(territory, requested));
 }

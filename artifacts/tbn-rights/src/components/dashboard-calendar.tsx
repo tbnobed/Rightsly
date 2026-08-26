@@ -27,32 +27,18 @@ const TYPE_STYLES: Record<string, { dot: string; label: string }> = {
   [CalendarEventType.revenue_report_overdue]: { dot: "bg-amber-500", label: "Report overdue" },
 };
 
-// Rights In platform color coding (bars shown across contract duration)
-const PLATFORM_STYLES: Record<string, { bar: string; label: string }> = {
-  "TBN Broadcast": { bar: "bg-indigo-500", label: "TBN Broadcast" },
-  "TBN+": { bar: "bg-emerald-500", label: "TBN+" },
-  "YouTube": { bar: "bg-red-500", label: "YouTube" },
-  "Socials": { bar: "bg-pink-500", label: "Socials" },
-  "Yippee": { bar: "bg-amber-500", label: "Yippee" },
-};
+const PLATFORM_COLORS = [
+  "bg-indigo-500", "bg-emerald-500", "bg-red-500", "bg-pink-500",
+  "bg-amber-500", "bg-violet-500", "bg-cyan-500", "bg-orange-500",
+] as const;
 const OTHER_PLATFORM_STYLE = { bar: "bg-slate-400", label: "Other" };
 
-const PLATFORM_GROUPS = {
-  youtube: { label: "YouTube", style: PLATFORM_STYLES.YouTube, matches: (platform: string) => platform.toLowerCase().includes("youtube") },
-  tbn_plus: { label: "TBN+", style: PLATFORM_STYLES["TBN+"], matches: (platform: string) => platform.toLowerCase() === "tbn+" },
-  learning_development: { label: "L&D", style: { bar: "bg-violet-500", label: "L&D" }, matches: (platform: string) => /(^|[\s/&-])(l&d|learning|development)([\s/&-]|$)/i.test(platform) },
-  broadcast: { label: "Broadcast", style: PLATFORM_STYLES["TBN Broadcast"], matches: (platform: string) => platform.toLowerCase().includes("broadcast") },
-} as const;
-
-type PlatformGroup = keyof typeof PLATFORM_GROUPS;
-
-function platformGroup(platform: string): PlatformGroup | "other" {
-  return (Object.keys(PLATFORM_GROUPS) as PlatformGroup[]).find((key) => PLATFORM_GROUPS[key].matches(platform)) ?? "other";
-}
-
+/** Stable hash means a platform keeps its color across calendar modes and reloads. */
 function platformStyle(platform: string) {
-  const group = platformGroup(platform);
-  return group === "other" ? OTHER_PLATFORM_STYLE : PLATFORM_GROUPS[group].style;
+  if (platform === "Other") return OTHER_PLATFORM_STYLE;
+  let hash = 0;
+  for (let i = 0; i < platform.length; i += 1) hash = ((hash << 5) - hash + platform.charCodeAt(i)) | 0;
+  return { bar: PLATFORM_COLORS[Math.abs(hash) % PLATFORM_COLORS.length], label: platform };
 }
 
 function spanCoversDay(span: RightsInSpan, dayKey: string) {
@@ -65,7 +51,7 @@ export function DashboardCalendar({ period = "month" }: { period?: "month" | "qu
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<Date>(() => new Date());
   const [mode, setMode] = useState<"events" | "rights_in">("events");
-  const [platformFilter, setPlatformFilter] = useState<PlatformGroup | "all">("all");
+  const [platformFilter, setPlatformFilter] = useState("all");
 
   const params = { period, referenceDate: format(month, "yyyy-MM-dd") };
   const { data, isLoading } = useGetDashboard(params, {
@@ -74,6 +60,10 @@ export function DashboardCalendar({ period = "month" }: { period?: "month" | "qu
 
   const events = data?.calendarEvents ?? [];
   const spans = data?.rightsInSpans ?? [];
+  const platforms = useMemo(() => [...new Set([
+    ...events.flatMap((event) => event.platforms ?? []),
+    ...spans.flatMap((span) => span.platforms),
+  ])].sort((a, b) => a.localeCompare(b)), [events, spans]);
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
@@ -93,9 +83,10 @@ export function DashboardCalendar({ period = "month" }: { period?: "month" | "qu
     [month]
   );
 
-  const selectedEvents = eventsByDay.get(format(selectedDay, "yyyy-MM-dd")) ?? [];
-  const matchesPlatformFilter = (platform: string) =>
-    platformFilter === "all" || platformGroup(platform) === platformFilter;
+  const matchesPlatformFilter = (platform: string) => platformFilter === "all" || platform === platformFilter;
+  const selectedEvents = (eventsByDay.get(format(selectedDay, "yyyy-MM-dd")) ?? []).filter((event) =>
+    platformFilter === "all" || (event.platforms ?? []).some(matchesPlatformFilter)
+  );
   const filteredSpans = (dayKey: string) => spans.filter((span) =>
     spanCoversDay(span, dayKey) &&
     (platformFilter === "all" || span.platforms.some(matchesPlatformFilter))
@@ -117,19 +108,17 @@ export function DashboardCalendar({ period = "month" }: { period?: "month" | "qu
               <SelectItem value="rights_in">Rights In by platform</SelectItem>
             </SelectContent>
           </Select>
-          {mode === "rights_in" && (
-            <Select value={platformFilter} onValueChange={(v) => setPlatformFilter(v as PlatformGroup | "all")}>
+          <Select value={platformFilter} onValueChange={setPlatformFilter}>
               <SelectTrigger className="h-8 w-32 text-xs bg-white" data-testid="select-calendar-platform">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All platforms</SelectItem>
-                {(Object.keys(PLATFORM_GROUPS) as PlatformGroup[]).map((key) => (
-                  <SelectItem key={key} value={key}>{PLATFORM_GROUPS[key].label}</SelectItem>
+                {platforms.map((platform) => (
+                  <SelectItem key={platform} value={platform}>{platform}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          )}
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonth((m) => { const next = addMonths(m, -1); setSelectedDay(next); return next; })} data-testid="button-calendar-prev">
             <ChevronLeft className="w-4 h-4" />
           </Button>
@@ -154,7 +143,9 @@ export function DashboardCalendar({ period = "month" }: { period?: "month" | "qu
           <div className="grid grid-cols-7 gap-px rounded-lg overflow-hidden border border-slate-200 bg-slate-200">
             {days.map((day) => {
               const key = format(day, "yyyy-MM-dd");
-              const dayEvents = eventsByDay.get(key) ?? [];
+               const dayEvents = (eventsByDay.get(key) ?? []).filter((event) =>
+                 platformFilter === "all" || (event.platforms ?? []).some(matchesPlatformFilter)
+               );
               const inMonth = isSameMonth(day, month);
               const selected = isSameDay(day, selectedDay);
               return (
@@ -180,8 +171,8 @@ export function DashboardCalendar({ period = "month" }: { period?: "month" | "qu
                   </span>
                   {mode === "events" && dayEvents.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {dayEvents.slice(0, 3).map((e) => (
-                        <span key={e.id} className={`w-2 h-2 rounded-full ${TYPE_STYLES[e.type]?.dot ?? "bg-slate-400"}`} title={e.title} />
+                       {dayEvents.slice(0, 3).map((e) => (
+                         <span key={e.id} className={`w-2 h-2 rounded-full ${e.platforms?.[0] ? platformStyle(e.platforms[0]).bar : TYPE_STYLES[e.type]?.dot ?? "bg-slate-400"}`} title={e.title} />
                       ))}
                       {dayEvents.length > 3 && (
                         <span className="text-[10px] text-slate-500 leading-none">+{dayEvents.length - 3}</span>
@@ -210,17 +201,11 @@ export function DashboardCalendar({ period = "month" }: { period?: "month" | "qu
           </div>
 
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-            {mode === "events"
-              ? Object.values(TYPE_STYLES).map(({ dot, label }) => (
-                  <span key={label} className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${dot}`} /> {label}
-                  </span>
-                ))
-              : [...Object.values(PLATFORM_GROUPS).map(({ style }) => style), OTHER_PLATFORM_STYLE].map(({ bar, label }) => (
-                  <span key={label} className="flex items-center gap-1.5">
-                    <span className={`w-4 h-1 rounded-full ${bar}`} /> {label}
-                  </span>
-                ))}
+            {[...platforms.map(platformStyle), ...(mode === "rights_in" ? [OTHER_PLATFORM_STYLE] : [])].map(({ bar, label }) => (
+              <span key={label} className="flex items-center gap-1.5">
+                <span className={`w-4 h-1 rounded-full ${bar}`} /> {label}
+              </span>
+            ))}
           </div>
 
           <div className="pt-2 border-t border-slate-100">
@@ -242,7 +227,7 @@ export function DashboardCalendar({ period = "month" }: { period?: "month" | "qu
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-1 justify-end max-w-48">
-                          {(span.platforms.length ? span.platforms.filter(matchesPlatformFilter) : ["Other"]).map((p) => (
+                           {(span.platforms.length ? span.platforms.filter(matchesPlatformFilter) : platformFilter === "all" ? ["Other"] : []).map((p) => (
                             <Badge key={p} variant="outline" className="text-[10px] shrink-0 flex items-center gap-1">
                               <span className={`w-2 h-2 rounded-full ${platformStyle(p).bar}`} /> {p}
                             </Badge>
@@ -262,10 +247,11 @@ export function DashboardCalendar({ period = "month" }: { period?: "month" | "qu
               <div className="space-y-2">
                 {selectedEvents.map((event) => (
                   <div key={event.id} className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-100 bg-slate-50/50" data-testid={`calendar-event-${event.id}`}>
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${TYPE_STYLES[event.type]?.dot ?? "bg-slate-400"}`} />
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${event.platforms?.[0] ? platformStyle(event.platforms[0]).bar : TYPE_STYLES[event.type]?.dot ?? "bg-slate-400"}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-900 truncate">{event.title}</p>
                       {event.partnerName && <p className="text-xs text-slate-500 truncate">{event.partnerName}</p>}
+                       {event.platforms?.length ? <p className="text-xs text-slate-500 truncate">{event.platforms.join(", ")}</p> : null}
                     </div>
                     <Badge variant="outline" className="text-[10px] text-slate-500 shrink-0">
                       {TYPE_STYLES[event.type]?.label ?? event.type.replace(/_/g, " ")}

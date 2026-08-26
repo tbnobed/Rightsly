@@ -112,6 +112,7 @@ export * from './reviewRevenueReportRequest';
 export * from './reviewRevenueReportRequestStatus';
 export * from './rightsCheckParams';
 export * from './rightsCheckResult';
+export * from './rightsCheckResultAcquisition';
 export * from './rightsCheckResultConflictsItem';
 export * from './rightsCheckResultGrantsItem';
 export * from './rightsCheckResultSuggestions';

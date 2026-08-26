@@ -7,6 +7,9 @@ import {
   unrecognizedTerritories,
 } from "./rightsVocabulary.ts";
 import { validateHttpUrl } from "./validation.ts";
+import {
+  CONTRACT_DIRECTIONS, CONTRACT_STATUSES, END_TYPES, PAYMENT_TERMS, ROYALTY_TYPES, isEnumValue,
+} from "./rightsValidation.ts";
 
 export const IMPORT_HEADERS = [
   "direction", "partner_name", "licensor", "licensee", "status", "start_date",
@@ -45,20 +48,20 @@ export function parseContractImportCsv(source: string): ContractImportRecord[] {
 }
 
 export function normalizeContractImportRecord(row: ContractImportRecord) {
-  if (!row.direction || !["rights_in", "rights_out"].includes(row.direction)) {
+  if (!isEnumValue(row.direction, CONTRACT_DIRECTIONS)) {
     throw new Error('direction must be "rights_in" or "rights_out"');
   }
   if (!row.partner_name) throw new Error("partner_name is required");
-  if (!row.end_type || !["date", "perpetuity", "auto_renew"].includes(row.end_type)) {
+  if (!isEnumValue(row.end_type, END_TYPES)) {
     throw new Error('end_type must be "date", "perpetuity", or "auto_renew"');
   }
-  if (row.status && !["draft", "active", "expired", "in_perpetuity", "terminated"].includes(row.status)) {
+  if (row.status && !isEnumValue(row.status, CONTRACT_STATUSES)) {
     throw new Error("status is invalid");
   }
-  if (row.royalty_type && !["revenue_share", "flat_fee", "other"].includes(row.royalty_type)) {
+  if (row.royalty_type && !isEnumValue(row.royalty_type, ROYALTY_TYPES)) {
     throw new Error("royalty_type is invalid");
   }
-  if (row.payment_terms && !["net_30", "net_60", "net_90"].includes(row.payment_terms)) {
+  if (row.payment_terms && !isEnumValue(row.payment_terms, PAYMENT_TERMS)) {
     throw new Error("payment_terms is invalid");
   }
 

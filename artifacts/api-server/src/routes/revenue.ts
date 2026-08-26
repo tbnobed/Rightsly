@@ -5,6 +5,7 @@ import { and, count, desc, eq } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { routeParam } from "../lib/validation";
+import { deriveRevenueStatus } from "../lib/revenueCore";
 
 const router = Router();
 router.use(authenticateToken);
@@ -100,14 +101,15 @@ router.post("/contracts/:id/revenue-reports", requireRole("admin", "finance"), a
     res.status(400).json({ message: "Dates must be YYYY-MM-DD and amounts must be non-negative numbers" });
     return;
   }
-  if (status === "received" && !normalizedReceivedDate) {
-    res.status(400).json({ message: "receivedDate is required when status is received" });
+  if (status === "received" && (!normalizedReceivedDate || normalizedReceived === null || normalizedReceived === undefined)) {
+    res.status(400).json({ message: "receivedDate and amountReceived are required when status is received" });
     return;
   }
   const id = crypto.randomUUID();
+  const effectiveStatus = deriveRevenueStatus(status, normalizedReceivedDate ?? null, normalizedReceived ?? null);
   const [report] = await db.insert(revenueReportsTable).values({
     id, contractId, period: period.trim(), expectedDate: normalizedExpectedDate ?? null, receivedDate: normalizedReceivedDate ?? null,
-    amountReceived: normalizedReceived ?? null, costAmount: normalizedCost ?? null, status,
+    amountReceived: normalizedReceived ?? null, costAmount: normalizedCost ?? null, status: effectiveStatus,
   }).returning();
   await db.insert(royaltyApprovalsTable).values({ id: crypto.randomUUID(), reportId: id, status: "pending" });
   await logAudit({ user: req.user, action: "create", entityType: "revenue_report", entityId: id, after: { contractId, period: report.period } });
@@ -143,12 +145,18 @@ router.put("/revenue-reports/:id", requireRole("admin", "finance"), async (req, 
   }
   const [current] = await db.select().from(revenueReportsTable).where(eq(revenueReportsTable.id, id)).limit(1);
   if (!current) { res.status(404).json({ message: "Revenue report not found" }); return; }
-  const effectiveStatus = body.status ?? current.status;
+  const requestedStatus = body.status ?? current.status;
   const effectiveReceivedDate = body.receivedDate === undefined ? current.receivedDate : receivedDate;
-  if (effectiveStatus === "received" && !effectiveReceivedDate) { res.status(400).json({ message: "receivedDate is required when status is received" }); return; }
+  const effectiveAmountReceived = body.amountReceived === undefined
+    ? (current.amountReceived ?? current.amount)
+    : amountReceived;
+  if (body.status === "received" && (!effectiveReceivedDate || effectiveAmountReceived === null || effectiveAmountReceived === undefined)) {
+    res.status(400).json({ message: "receivedDate and amountReceived are required when status is received" }); return;
+  }
+  const effectiveStatus = deriveRevenueStatus(requestedStatus, effectiveReceivedDate ?? null, effectiveAmountReceived ?? null);
   const updates = {
     ...(body.period !== undefined ? { period: body.period.trim() } : {}),
-    ...(body.status !== undefined ? { status: body.status } : {}),
+    ...(body.status !== undefined || effectiveStatus !== current.status ? { status: effectiveStatus } : {}),
     ...(body.expectedDate !== undefined ? { expectedDate } : {}),
     ...(body.receivedDate !== undefined ? { receivedDate } : {}),
     ...(body.amountReceived !== undefined ? { amountReceived } : {}),
@@ -158,7 +166,8 @@ router.put("/revenue-reports/:id", requireRole("admin", "finance"), async (req, 
   };
   if (body.documentPath !== undefined && body.documentPath !== null && (!updates.documentPath || body.documentName === undefined)) { res.status(400).json({ message: "A valid object path and document name are required" }); return; }
   const [report] = await db.update(revenueReportsTable).set(updates).where(eq(revenueReportsTable.id, id)).returning();
-  const financialChange = ["period", "expectedDate", "receivedDate", "amountReceived", "costAmount", "status"].some((field) => body[field] !== undefined);
+  const financialChange = effectiveStatus !== current.status ||
+    ["period", "expectedDate", "receivedDate", "amountReceived", "costAmount", "status"].some((field) => body[field] !== undefined);
   if (financialChange) await db.update(royaltyApprovalsTable).set({ status: "pending", reviewedBy: null, reviewedAt: null }).where(eq(royaltyApprovalsTable.reportId, id));
   await logAudit({ user: req.user, action: "update", entityType: "revenue_report", entityId: id });
   res.json(serialize({ ...report, legacyAmount: report.amount, partnerName: null }));

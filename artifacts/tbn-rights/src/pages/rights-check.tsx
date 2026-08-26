@@ -195,7 +195,11 @@ export default function RightsCheck() {
                     )}
                     <div>
                       <h2 className="text-2xl font-bold tracking-tight">
-                        {checkResult.available ? 'Rights Available' : 'Rights Conflict'}
+                        {checkResult.available
+                          ? "Rights Available"
+                          : checkResult.conflicts.length > 0
+                            ? "Rights Conflict"
+                            : "Rights Not Covered"}
                       </h2>
                       <p className="text-white/80 font-medium">
                           For {form.getValues('territory')} / {form.getValues('distributionType')}{form.getValues("seasonId") ? " / selected season" : ""} on {format(parseISO(form.getValues('date')), 'MMM d, yyyy')}
@@ -226,7 +230,19 @@ export default function RightsCheck() {
                       </div>
                     </div>
                   )}
-                  {!checkResult.available && checkResult.suggestions && (
+                  {checkResult.acquisition.warning && (
+                    <div className="p-6 bg-amber-50/60 border-b border-amber-200">
+                      <h3 className="font-bold text-amber-950 mb-2 flex items-center">
+                        <AlertTriangle className="w-5 h-5 mr-2 text-amber-600" />
+                        Acquisition coverage required
+                      </h3>
+                      <p className="text-sm text-amber-900">{checkResult.acquisition.warning}</p>
+                      <p className="text-xs text-amber-800 mt-2">
+                        Confirm or extend TBN&apos;s Rights In agreement before drafting an outbound license.
+                      </p>
+                    </div>
+                  )}
+                  {checkResult.conflicts.length > 0 && checkResult.suggestions && (
                     <div className="p-6 border-t border-slate-100 bg-amber-50/40">
                       <h3 className="font-bold text-slate-900 mb-1 flex items-center"><AlertTriangle className="w-5 h-5 mr-2 text-amber-500" /> Conservative suggestions</h3>
                       <p className="text-sm text-slate-600 mb-3">The requested combination is blocked. These canonical alternatives have no matching exclusive conflict for the same title, season, and date.</p>

@@ -14,4 +14,5 @@ export interface CalendarEvent {
   contractId?: string | null;
   partnerName?: string | null;
   status?: string | null;
+  platforms?: string[];
 }

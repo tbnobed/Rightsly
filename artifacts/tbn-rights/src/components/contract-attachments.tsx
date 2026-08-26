@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { FileText, Trash2, Upload, Loader2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { uploadFile } from "@/lib/upload-file";
 
 function formatSize(bytes?: number | null) {
   if (!bytes) return "";
@@ -51,33 +52,24 @@ export function ContractAttachments({ contractId, canEdit }: { contractId: strin
   async function handleFile(file: File) {
     setUploading(true);
     try {
-      const { uploadURL, objectPath } = await requestUploadUrl.mutateAsync({
-        data: { name: file.name, size: file.size, contentType: file.type || "application/pdf" },
-      });
-
-      const putRes = await fetch(uploadURL, {
-        method: "PUT",
-        headers: { "Content-Type": file.type || "application/pdf" },
-        body: file,
-      });
-      if (!putRes.ok) throw new Error("Upload to storage failed");
+      const { objectPath, contentType } = await uploadFile(requestUploadUrl, file);
 
       await createAttachment.mutateAsync({
         id: contractId,
         data: {
           fileName: file.name,
           objectPath,
-          contentType: file.type || "application/pdf",
+          contentType,
           size: file.size,
         },
       });
 
       await invalidate();
       toast({ title: "Document attached", description: file.name });
-    } catch (err) {
+    } catch {
       toast({
         title: "Upload failed",
-        description: err instanceof Error ? err.message : "Unknown error",
+        description: "We couldn't upload that file. Please confirm it is an allowed document under 50 MB and try again.",
         variant: "destructive",
       });
     } finally {

@@ -44,7 +44,9 @@ COPY --from=build /out/api/node_modules ./node_modules
 COPY --from=build /out/api/package.json ./package.json
 COPY --from=build /app/artifacts/api-server/dist ./dist
 
-RUN useradd -m app && chown -R app /app
+RUN useradd -m app \
+  && mkdir -p /var/lib/rightsly/objects \
+  && chown -R app:app /app /var/lib/rightsly
 USER app
 
 EXPOSE 8080

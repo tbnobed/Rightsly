@@ -101,7 +101,14 @@ docker exec rightsly-db-1 pg_dump -U rightsly rightsly | gzip > backup-$(date +%
 - Authentik SSO and SendGrid email are optional; they stay dormant while their
   env vars are blank. To enable SSO, set the three `AUTHENTIK_*` vars and add
   `${APP_BASE_URL}/api/auth/sso/callback` as the redirect URI in Authentik.
-- File uploads use Replit object storage in the cloud environment; on a
-  self-hosted server that feature requires alternative storage configuration.
+- In Docker, uploads are stored in the persistent `rightsly_objectdata` volume
+  at `/var/lib/rightsly/objects` in the API container. `LOCAL_OBJECT_STORAGE_DIR`
+  selects this filesystem fallback and `JWT_SECRET` (or `SESSION_SECRET`) is
+  required to HMAC its short-lived, upload-only URLs. Back up this volume along
+  with `rightsly_pgdata`; never expose or mount its files through the web
+  server. Without `LOCAL_OBJECT_STORAGE_DIR`, development continues to use
+  Replit App Storage and its existing `PRIVATE_OBJECT_DIR` configuration.
+  Keep `LOCAL_OBJECT_STORAGE_DIR` set to the default unless changing the API
+  container mount target in `docker-compose.yml` as well.
 - The frontend is built with `BASE_PATH=/` (a Docker build arg) — it must be
   served at the domain root, which the nginx config does.
