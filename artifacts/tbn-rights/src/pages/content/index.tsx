@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useListContent, getListContentQueryKey, ListContentType } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,25 +6,66 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Film, Tv, PlaySquare, MonitorPlay, ChevronRight, Sparkles, Captions } from "lucide-react";
+import { Search, Plus, Film, Tv, PlaySquare, MonitorPlay, ChevronRight, ChevronLeft, ChevronsLeft, ChevronsRight, Sparkles, Captions, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { ContentFormDialog } from "@/components/content-form-dialog";
+
+type ContentSortBy = "title" | "type" | "year" | "contractCount" | "updatedAt";
+type SortDirection = "asc" | "desc";
 
 export default function ContentList() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [type, setType] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortBy, setSortBy] = useState<ContentSortBy>("title");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const params = {
+    page,
+    pageSize,
     search: debouncedSearch || undefined,
     type: type !== "all" ? type as ListContentType : undefined,
+    sortBy,
+    sortDirection,
   };
   const { data: result, isLoading } = useListContent(params, {
     query: {
       queryKey: getListContentQueryKey(params),
     }
   });
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / pageSize));
+
+  useEffect(() => {
+    if (result && page > totalPages) setPage(totalPages);
+  }, [page, result, totalPages]);
+
+  const changeSort = (field: ContentSortBy) => {
+    if (sortBy === field) {
+      setSortDirection((current) => current === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortDirection(field === "contractCount" || field === "updatedAt" ? "desc" : "asc");
+    }
+    setPage(1);
+  };
+
+  const SortIcon = ({ field }: { field: ContentSortBy }) => {
+    if (sortBy !== field) return <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />;
+    return sortDirection === "asc"
+      ? <ArrowUp className="h-3.5 w-3.5 text-amber-700" />
+      : <ArrowDown className="h-3.5 w-3.5 text-amber-700" />;
+  };
+
+  const SortHeader = ({ field, label }: { field: ContentSortBy; label: string }) => (
+    <th className="px-6 py-4 font-medium">
+      <button type="button" className="inline-flex items-center gap-1.5 hover:text-slate-900" onClick={() => changeSort(field)} data-testid={`button-sort-content-${field}`}>
+        {label}<SortIcon field={field} />
+      </button>
+    </th>
+  );
 
   const getTypeIcon = (contentType: string) => {
     switch (contentType) {
@@ -51,17 +92,23 @@ export default function ContentList() {
       </div>
 
       <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 bg-slate-50/50">
+        <div className="p-4 border-b border-slate-100 flex flex-col lg:flex-row gap-3 bg-slate-50/50">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input 
               placeholder="Search titles..." 
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               className="pl-9 bg-white border-slate-200"
             />
           </div>
-          <Select value={type} onValueChange={setType}>
+          <Select value={type} onValueChange={(value) => {
+            setType(value);
+            setPage(1);
+          }}>
             <SelectTrigger className="w-[180px] bg-white border-slate-200">
               <SelectValue placeholder="Content Type" />
             </SelectTrigger>
@@ -74,16 +121,45 @@ export default function ContentList() {
               <SelectItem value="WoF_FAST">WoF FAST</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={sortBy} onValueChange={(value) => {
+            setSortBy(value as ContentSortBy);
+            setSortDirection(value === "contractCount" || value === "updatedAt" ? "desc" : "asc");
+            setPage(1);
+          }}>
+            <SelectTrigger className="w-[180px] bg-white border-slate-200" data-testid="select-content-sort">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="title">Title</SelectItem>
+              <SelectItem value="type">Content type</SelectItem>
+              <SelectItem value="year">Release year</SelectItem>
+              <SelectItem value="contractCount">Active contract count</SelectItem>
+              <SelectItem value="updatedAt">Recently updated</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              setSortDirection((current) => current === "asc" ? "desc" : "asc");
+              setPage(1);
+            }}
+            aria-label={`Sort ${sortDirection === "asc" ? "descending" : "ascending"}`}
+            data-testid="button-content-sort-direction"
+          >
+            {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+          </Button>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 bg-slate-50 uppercase border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4 font-medium">Title</th>
-                <th className="px-6 py-4 font-medium">Type</th>
-                <th className="px-6 py-4 font-medium">Year</th>
-                <th className="px-6 py-4 font-medium">Active Contracts</th>
+                <SortHeader field="title" label="Title" />
+                <SortHeader field="type" label="Type" />
+                <SortHeader field="year" label="Year" />
+                <SortHeader field="contractCount" label="Active Contracts" />
                 <th className="px-6 py-4"></th>
               </tr>
             </thead>
@@ -153,6 +229,47 @@ export default function ContentList() {
             </tbody>
           </table>
         </div>
+        {result && result.total > 0 && (
+          <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-slate-600" aria-live="polite">
+              Showing <span className="font-medium text-slate-900">{(result.page - 1) * result.pageSize + 1}</span>
+              {"–"}
+              <span className="font-medium text-slate-900">{Math.min(result.page * result.pageSize, result.total)}</span>
+              {" of "}
+              <span className="font-medium text-slate-900">{result.total}</span> titles
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-slate-600">Rows</span>
+              <Select value={String(pageSize)} onValueChange={(value) => {
+                setPageSize(Number(value));
+                setPage(1);
+              }}>
+                <SelectTrigger className="h-9 w-[72px] bg-white" data-testid="select-content-page-size">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="min-w-[92px] text-center text-sm text-slate-600">Page {result.page} of {totalPages}</span>
+              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage(1)} aria-label="First page" data-testid="button-content-first-page">
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} aria-label="Previous page" data-testid="button-content-previous-page">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} aria-label="Next page" data-testid="button-content-next-page">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Last page" data-testid="button-content-last-page">
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       <ContentFormDialog open={addOpen} onOpenChange={setAddOpen} />

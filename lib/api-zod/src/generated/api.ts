@@ -287,9 +287,12 @@ export const DeletePartnerResponse = zod.object({
  * @summary List contracts with filters
  */
 export const listContractsQueryPageDefault = 1;
-export const listContractsQueryPageSizeDefault = 20;
 
+export const listContractsQueryPageSizeDefault = 20;
 export const listContractsQueryPageSizeMax = 100;
+
+
+
 export const ListContractsQueryParams = zod.object({
   "page": zod.coerce.number().min(1).default(listContractsQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(listContractsQueryPageSizeMax).default(listContractsQueryPageSizeDefault),
@@ -301,8 +304,8 @@ export const ListContractsQueryParams = zod.object({
   "departmentTag": zod.coerce.string().optional(),
   "territory": zod.coerce.string().optional(),
   "licensor": zod.coerce.string().optional(),
-  "sortBy": zod.enum(['partnerName', 'licensor', 'direction', 'status', 'territories', 'contentCount', 'endDate', 'createdAt']).default(listContractsQuerySortByDefault),
-  "sortDirection": zod.enum(['asc', 'desc']).default(listContractsQuerySortDirectionDefault),
+  "sortBy": zod.enum(['partnerName', 'licensor', 'direction', 'status', 'territories', 'contentCount', 'endDate', 'createdAt']).optional(),
+  "sortDirection": zod.enum(['asc', 'desc']).optional(),
   "includeArchived": zod.coerce.boolean().optional(),
   "expiringWithinDays": zod.coerce.number().optional()
 })
@@ -461,12 +464,20 @@ export const CreateContractResponse = zod.object({
   "createdByName": zod.string().nullish()
 })
 
+
 /**
  * @summary List contract-derived filter options visible to the signed-in user
  */
 export const GetContractFilterOptionsQueryParams = zod.object({
   "includeArchived": zod.coerce.boolean().optional()
 })
+
+export const GetContractFilterOptionsResponse = zod.object({
+  "territories": zod.array(zod.string()),
+  "licensors": zod.array(zod.string())
+})
+
+
 /**
  * @summary Get contract by ID
  */
@@ -789,6 +800,9 @@ export const CreateContractAttachmentParams = zod.object({
 })
 
 
+
+
+
 export const CreateContractAttachmentBody = zod.object({
   "fileName": zod.string().min(1),
   "objectPath": zod.string().min(1),
@@ -824,11 +838,18 @@ export const DeleteContractAttachmentResponse = zod.void()
  */
 
 
+
+
+
 export const RequestUploadUrlBody = zod.object({
   "name": zod.string().min(1).describe('Original file name.'),
   "size": zod.number().min(1).describe('File size in bytes.'),
   "contentType": zod.string().min(1).describe('MIME type of the file (e.g. `application\/pdf`).')
 })
+
+
+
+
 
 
 export const RequestUploadUrlResponse = zod.object({
@@ -889,6 +910,7 @@ export const CreateRevenueReportParams = zod.object({
 export const createRevenueReportBodyAmountReceivedMin = 0;
 
 export const createRevenueReportBodyCostAmountMin = 0;
+
 
 
 export const CreateRevenueReportBody = zod.object({
@@ -969,6 +991,7 @@ export const UpdateRevenueReportParams = zod.object({
 export const updateRevenueReportBodyAmountReceivedMin = 0;
 
 export const updateRevenueReportBodyCostAmountMin = 0;
+
 
 
 export const UpdateRevenueReportBody = zod.object({
@@ -1077,12 +1100,16 @@ export const ReviewRevenueReportResponse = zod.object({
  */
 export const listContentQueryPageDefault = 1;
 export const listContentQueryPageSizeDefault = 20;
+export const listContentQuerySortByDefault = `title`;
+export const listContentQuerySortDirectionDefault = `asc`;
 
 export const ListContentQueryParams = zod.object({
   "page": zod.coerce.number().default(listContentQueryPageDefault),
   "pageSize": zod.coerce.number().default(listContentQueryPageSizeDefault),
   "search": zod.coerce.string().optional(),
-  "type": zod.enum(['Film', 'TVSeries', 'TBN_FAST', 'TBN_Linear', 'WoF_FAST']).optional()
+  "type": zod.enum(['Film', 'TVSeries', 'TBN_FAST', 'TBN_Linear', 'WoF_FAST']).optional(),
+  "sortBy": zod.enum(['title', 'type', 'year', 'contractCount', 'updatedAt']).default(listContentQuerySortByDefault),
+  "sortDirection": zod.enum(['asc', 'desc']).default(listContentQuerySortDirectionDefault)
 })
 
 export const ListContentResponse = zod.object({
@@ -1568,12 +1595,3 @@ export const MarkAllNotificationsReadResponse = zod.void()
  * @summary Clear (delete) all notifications for the current user
  */
 export const ClearNotificationsResponse = zod.void()
-
-export const GetContractFilterOptionsResponse = zod.object({
-  "territories": zod.array(zod.string()),
-  "licensors": zod.array(zod.string())
-})
-
-export const listContractsQuerySortByDefault = `createdAt`;
-
-export const listContractsQuerySortDirectionDefault = `desc`;

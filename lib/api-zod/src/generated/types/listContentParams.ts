@@ -4,6 +4,8 @@
  * Api
  * OpenAPI spec version: 0.1.0
  */
+import type { ListContentSortBy } from './listContentSortBy';
+import type { ListContentSortDirection } from './listContentSortDirection';
 import type { ListContentType } from './listContentType';
 
 export type ListContentParams = {
@@ -11,4 +13,6 @@ page?: number;
 pageSize?: number;
 search?: string;
 type?: ListContentType;
+sortBy?: ListContentSortBy;
+sortDirection?: ListContentSortDirection;
 };

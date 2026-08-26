@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { contentItemsTable, seasonsTable, contractContentTable, contractSeasonsTable, contractsTable, partnersTable } from "@workspace/db";
-import { eq, ilike, and, count, sql, desc, inArray } from "drizzle-orm";
+import { eq, ilike, and, count, sql, desc, asc, inArray } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { routeParam, validateContentYear } from "../lib/validation";
@@ -11,10 +11,24 @@ router.use(authenticateToken);
 
 // GET /api/content
 router.get("/", async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const pageSize = parseInt(req.query.pageSize as string) || 20;
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 20));
   const search = req.query.search as string | undefined;
   const type = req.query.type as string | undefined;
+  const allowedSorts = new Set(["title", "type", "year", "contractCount", "updatedAt"]);
+  const sortBy = allowedSorts.has(req.query.sortBy as string) ? req.query.sortBy as string : "title";
+  const sortDirection = req.query.sortDirection === "desc" ? "desc" : "asc";
+  const contractCount = count(contractsTable.id).mapWith(Number);
+  const sortColumn = {
+    title: contentItemsTable.title,
+    type: contentItemsTable.type,
+    year: contentItemsTable.year,
+    contractCount,
+    updatedAt: contentItemsTable.updatedAt,
+  }[sortBy]!;
+  const primaryOrder = sortDirection === "desc"
+    ? sql`${sortColumn} DESC NULLS LAST`
+    : sql`${sortColumn} ASC NULLS LAST`;
 
   const where = and(
     search ? ilike(contentItemsTable.title, `%${search}%`) : undefined,
@@ -33,11 +47,22 @@ router.get("/", async (req, res) => {
         hasCaptions: contentItemsTable.hasCaptions,
         createdAt: contentItemsTable.createdAt,
         updatedAt: contentItemsTable.updatedAt,
-        contractCount: sql<number>`(select count(*) from contract_content where contract_content.content_item_id = ${contentItemsTable.id})`.mapWith(Number),
+        contractCount,
       })
       .from(contentItemsTable)
+      .leftJoin(contractContentTable, eq(contractContentTable.contentItemId, contentItemsTable.id))
+      .leftJoin(
+        contractsTable,
+        and(
+          eq(contractsTable.id, contractContentTable.contractId),
+          eq(contractsTable.status, "active"),
+          eq(contractsTable.archived, false),
+          sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= current_date)`,
+        ),
+      )
       .where(where)
-      .orderBy(contentItemsTable.title)
+      .groupBy(contentItemsTable.id)
+      .orderBy(primaryOrder, asc(contentItemsTable.title), asc(contentItemsTable.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
     db.select({ value: count() }).from(contentItemsTable).where(where),

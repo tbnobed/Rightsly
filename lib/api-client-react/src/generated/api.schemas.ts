@@ -860,6 +860,7 @@ export interface ContractFilterOptions {
   territories: string[];
   licensors: string[];
 }
+
 export interface PaginatedPartners {
   data: Partner[];
   total: number;
@@ -1000,6 +1001,31 @@ export const ListContractsStatus = {
 } as const;
 
 export type ListContractsSortBy = typeof ListContractsSortBy[keyof typeof ListContractsSortBy];
+
+
+export const ListContractsSortBy = {
+  partnerName: 'partnerName',
+  licensor: 'licensor',
+  direction: 'direction',
+  status: 'status',
+  territories: 'territories',
+  contentCount: 'contentCount',
+  endDate: 'endDate',
+  createdAt: 'createdAt',
+} as const;
+
+export type ListContractsSortDirection = typeof ListContractsSortDirection[keyof typeof ListContractsSortDirection];
+
+
+export const ListContractsSortDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
+
+export type GetContractFilterOptionsParams = {
+includeArchived?: boolean;
+};
+
 export type DeleteContract200 = {
   message?: string;
 };
@@ -1033,6 +1059,8 @@ page?: number;
 pageSize?: number;
 search?: string;
 type?: ListContentType;
+sortBy?: ListContentSortBy;
+sortDirection?: ListContentSortDirection;
 };
 
 export type ListContentType = typeof ListContentType[keyof typeof ListContentType];
@@ -1044,6 +1072,25 @@ export const ListContentType = {
   TBN_FAST: 'TBN_FAST',
   TBN_Linear: 'TBN_Linear',
   WoF_FAST: 'WoF_FAST',
+} as const;
+
+export type ListContentSortBy = typeof ListContentSortBy[keyof typeof ListContentSortBy];
+
+
+export const ListContentSortBy = {
+  title: 'title',
+  type: 'type',
+  year: 'year',
+  contractCount: 'contractCount',
+  updatedAt: 'updatedAt',
+} as const;
+
+export type ListContentSortDirection = typeof ListContentSortDirection[keyof typeof ListContentSortDirection];
+
+
+export const ListContentSortDirection = {
+  asc: 'asc',
+  desc: 'desc',
 } as const;
 
 export type DeleteContent200 = {
@@ -1171,25 +1218,3 @@ export type ListNotifications200 = {
   data: Notification[];
   unreadCount: number;
 };
-
-export type GetContractFilterOptionsParams = {
-includeArchived?: boolean;
-};
-
-export type ListContractsSortDirection = typeof ListContractsSortDirection[keyof typeof ListContractsSortDirection];
-
-export const ListContractsSortBy = {
-  partnerName: 'partnerName',
-  licensor: 'licensor',
-  direction: 'direction',
-  status: 'status',
-  territories: 'territories',
-  contentCount: 'contentCount',
-  endDate: 'endDate',
-  createdAt: 'createdAt',
-} as const;
-
-export const ListContractsSortDirection = {
-  asc: 'asc',
-  desc: 'desc',
-} as const;

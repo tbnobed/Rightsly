@@ -71,6 +71,8 @@ export * from './importResultErrorsItem';
 export * from './listAuditLogsFormat';
 export * from './listAuditLogsParams';
 export * from './listContentParams';
+export * from './listContentSortBy';
+export * from './listContentSortDirection';
 export * from './listContentType';
 export * from './listContractsDirection';
 export * from './listContractsParams';

@@ -2183,6 +2183,18 @@ paths:
           schema:
             type: string
             enum: [Film, TVSeries, TBN_FAST, TBN_Linear, WoF_FAST]
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [title, type, year, contractCount, updatedAt]
+            default: title
+        - name: sortDirection
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
       responses:
         '200':
           description: Paginated content list
