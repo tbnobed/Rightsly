@@ -324,7 +324,6 @@ export const listContractsQueryPageSizeDefault = 20;
 export const listContractsQueryPageSizeMax = 100;
 
 
-
 export const ListContractsQueryParams = zod.object({
   "page": zod.coerce.number().min(1).default(listContractsQueryPageDefault),
   "pageSize": zod.coerce.number().min(1).max(listContractsQueryPageSizeMax).default(listContractsQueryPageSizeDefault),
@@ -832,9 +831,6 @@ export const CreateContractAttachmentParams = zod.object({
 })
 
 
-
-
-
 export const CreateContractAttachmentBody = zod.object({
   "fileName": zod.string().min(1),
   "objectPath": zod.string().min(1),
@@ -870,18 +866,11 @@ export const DeleteContractAttachmentResponse = zod.void()
  */
 
 
-
-
-
 export const RequestUploadUrlBody = zod.object({
   "name": zod.string().min(1).describe('Original file name.'),
   "size": zod.number().min(1).describe('File size in bytes.'),
   "contentType": zod.string().min(1).describe('MIME type of the file (e.g. `application\/pdf`).')
 })
-
-
-
-
 
 
 export const RequestUploadUrlResponse = zod.object({
@@ -942,7 +931,6 @@ export const CreateRevenueReportParams = zod.object({
 export const createRevenueReportBodyAmountReceivedMin = 0;
 
 export const createRevenueReportBodyCostAmountMin = 0;
-
 
 
 export const CreateRevenueReportBody = zod.object({
@@ -1023,7 +1011,6 @@ export const UpdateRevenueReportParams = zod.object({
 export const updateRevenueReportBodyAmountReceivedMin = 0;
 
 export const updateRevenueReportBodyCostAmountMin = 0;
-
 
 
 export const UpdateRevenueReportBody = zod.object({

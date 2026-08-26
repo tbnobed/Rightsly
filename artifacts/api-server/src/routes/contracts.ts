@@ -18,6 +18,7 @@ import { validateContractDates } from "../lib/contractDates";
 import {
   canonicalDistributionTypes,
   canonicalTerritories,
+  isRecognizedTerritory,
   territoryStorageKeys,
   unrecognizedDistributionTypes,
   unrecognizedTerritories,
@@ -144,17 +145,26 @@ router.get("/", contractReadGuard, async (req, res) => {
   }
   if (partnerId) conditions.push(eq(contractsTable.partnerId, partnerId));
   if (search) {
-    const pattern = `%${search.trim()}%`;
+    const trimmedSearch = search.trim();
+    const pattern = `%${trimmedSearch}%`;
+    const searchPredicates = [
+      ilike(partnersTable.name, pattern),
+      ilike(contractsTable.id, pattern),
+      ilike(contractsTable.licensor, pattern),
+      sql`exists (
+        select 1 from jsonb_array_elements_text(${contractsTable.territories}::jsonb) territory_value
+        where territory_value ilike ${pattern}
+      )`,
+    ];
+    if (isRecognizedTerritory(trimmedSearch)) {
+      const storageKeys = territoryStorageKeys(trimmedSearch);
+      searchPredicates.push(sql`exists (
+        select 1 from jsonb_array_elements_text(${contractsTable.territories}::jsonb) territory_value
+        where lower(trim(territory_value)) in (${sql.join(storageKeys.map((value) => sql`${value}`), sql`, `)})
+      )`);
+    }
     conditions.push(
-      or(
-        ilike(partnersTable.name, pattern),
-        ilike(contractsTable.id, pattern),
-        ilike(contractsTable.licensor, pattern),
-        sql`exists (
-          select 1 from jsonb_array_elements_text(${contractsTable.territories}::jsonb) territory_value
-          where territory_value ilike ${pattern}
-        )`,
-      ),
+      or(...searchPredicates),
     );
   }
   if (contentSearch) {

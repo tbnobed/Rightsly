@@ -4286,3 +4286,4 @@ export const useClearNotifications = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getClearNotificationsMutationOptions(options));
     }
+
