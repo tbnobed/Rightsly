@@ -5,6 +5,7 @@ import {
   distributionTypesIntersect,
   isRecognizedDistributionType,
   isRecognizedTerritory,
+  territoryStorageKeys,
   unrecognizedDistributionTypes,
   unrecognizedTerritories,
 } from "./rightsVocabulary.ts";
@@ -49,6 +50,14 @@ test("canonical rights values and documented aliases are recognized", () => {
   assert.equal(isRecognizedTerritory("LATAM"), true);
   assert.equal(isRecognizedDistributionType("Linear"), true);
   assert.equal(isRecognizedDistributionType("Linear Broadcast"), true);
+});
+
+test("territory filter storage keys include canonical and legacy aliases", () => {
+  assert.deepEqual(
+    new Set(territoryStorageKeys("Global")),
+    new Set(["global", "worldwide", "world"]),
+  );
+  assert.ok(territoryStorageKeys("United States").includes("usa"));
 });
 
 test("unknown rights values are rejected by boundary validators", () => {

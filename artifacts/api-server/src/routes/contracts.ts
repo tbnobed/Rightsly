@@ -18,6 +18,7 @@ import { validateContractDates } from "../lib/contractDates";
 import {
   canonicalDistributionTypes,
   canonicalTerritories,
+  territoryStorageKeys,
   unrecognizedDistributionTypes,
   unrecognizedTerritories,
 } from "../lib/rightsVocabulary";
@@ -37,23 +38,88 @@ function contractReadGuard(req: any, res: any, next: any) {
   next();
 }
 
+const contractSortFields = [
+  "partnerName",
+  "licensor",
+  "direction",
+  "status",
+  "territories",
+  "contentCount",
+  "endDate",
+  "createdAt",
+] as const;
+
+type ContractSortField = (typeof contractSortFields)[number];
+
+function discoverableContractConditions(req: any, includeArchived: boolean) {
+  const today = new Date().toISOString().split("T")[0];
+  const conditions: any[] = [];
+  if (!includeArchived) conditions.push(eq(contractsTable.archived, false));
+  if ((req as typeof req & { salesFilter?: boolean }).salesFilter) {
+    conditions.push(salesVisibleContractPredicate(today));
+  }
+  return conditions;
+}
+
+// GET /api/contracts/filter-options
+router.get("/filter-options", contractReadGuard, async (req, res) => {
+  const includeArchived = req.query.includeArchived === "true";
+  const conditions = discoverableContractConditions(req, includeArchived);
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  const rows = await db
+    .select({
+      licensor: contractsTable.licensor,
+      territories: contractsTable.territories,
+    })
+    .from(contractsTable)
+    .where(where);
+
+  const licensors = [...new Set(rows.map((row) => row.licensor?.trim()).filter(Boolean) as string[])]
+    .sort((a, b) => a.localeCompare(b));
+  const territories = [...new Set(rows.flatMap((row) => canonicalTerritories(row.territories)))]
+    .sort((a, b) => a.localeCompare(b));
+
+  res.json({ licensors, territories });
+});
+
 // GET /api/contracts
 router.get("/", contractReadGuard, async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const pageSize = parseInt(req.query.pageSize as string) || 20;
+  const page = Number(req.query.page ?? 1);
+  const pageSize = Number(req.query.pageSize ?? 20);
+  const sortBy = (req.query.sortBy ?? "createdAt") as ContractSortField;
+  const sortDirection = (req.query.sortDirection ?? "desc") as "asc" | "desc";
+  if (!Number.isInteger(page) || page < 1) {
+    res.status(400).json({ error: "page must be a positive integer" });
+    return;
+  }
+  if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) {
+    res.status(400).json({ error: "pageSize must be an integer between 1 and 100" });
+    return;
+  }
+  if (!contractSortFields.includes(sortBy)) {
+    res.status(400).json({ error: "Unsupported sort field" });
+    return;
+  }
+  if (sortDirection !== "asc" && sortDirection !== "desc") {
+    res.status(400).json({ error: "sortDirection must be asc or desc" });
+    return;
+  }
   const direction = req.query.direction as string | undefined;
   const status = req.query.status as string | undefined;
   const partnerId = req.query.partnerId as string | undefined;
   const search = req.query.search as string | undefined;
   const contentSearch = req.query.contentSearch as string | undefined;
   const departmentTag = req.query.departmentTag as string | undefined;
+  const territory = req.query.territory as string | undefined;
+  const licensor = req.query.licensor as string | undefined;
   const includeArchived = req.query.includeArchived === "true";
   const expiringWithinDays = req.query.expiringWithinDays
     ? parseInt(req.query.expiringWithinDays as string)
     : undefined;
   const today = new Date().toISOString().split("T")[0];
 
-  const conditions: any[] = [];
+  const conditions: any[] = discoverableContractConditions(req, includeArchived);
   if (direction) conditions.push(eq(contractsTable.direction, direction as any));
   if (status === "active") {
     conditions.push(
@@ -77,7 +143,20 @@ router.get("/", contractReadGuard, async (req, res) => {
     conditions.push(eq(contractsTable.status, status as any));
   }
   if (partnerId) conditions.push(eq(contractsTable.partnerId, partnerId));
-  if (search) conditions.push(ilike(partnersTable.name, `%${search}%`));
+  if (search) {
+    const pattern = `%${search.trim()}%`;
+    conditions.push(
+      or(
+        ilike(partnersTable.name, pattern),
+        ilike(contractsTable.id, pattern),
+        ilike(contractsTable.licensor, pattern),
+        sql`exists (
+          select 1 from jsonb_array_elements_text(${contractsTable.territories}::jsonb) territory_value
+          where territory_value ilike ${pattern}
+        )`,
+      ),
+    );
+  }
   if (contentSearch) {
     conditions.push(
       sql`exists (select 1 from contract_content cc join content_items ci on ci.id = cc.content_item_id where cc.contract_id = ${contractsTable.id} and ci.title ilike ${`%${contentSearch}%`})`
@@ -86,10 +165,14 @@ router.get("/", contractReadGuard, async (req, res) => {
   if (departmentTag) {
     conditions.push(sql`${contractsTable.departmentTags}::jsonb ? ${departmentTag}`);
   }
-  if (!includeArchived) conditions.push(eq(contractsTable.archived, false));
-  if ((req as typeof req & { salesFilter?: boolean }).salesFilter) {
-    conditions.push(salesVisibleContractPredicate(today));
+  if (territory) {
+    const storageKeys = territoryStorageKeys(territory);
+    conditions.push(sql`exists (
+      select 1 from jsonb_array_elements_text(${contractsTable.territories}::jsonb) territory_value
+      where lower(trim(territory_value)) in (${sql.join(storageKeys.map((value) => sql`${value}`), sql`, `)})
+    )`);
   }
+  if (licensor) conditions.push(eq(contractsTable.licensor, licensor));
   if (expiringWithinDays) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() + expiringWithinDays);
@@ -103,6 +186,22 @@ router.get("/", contractReadGuard, async (req, res) => {
   }
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
+  const contentCountSort = sql<number>`(select count(*) from contract_content where contract_content.contract_id = ${contractsTable.id})`;
+  const displayedStatusSort = sql`case
+    when ${contractsTable.status} = 'active' and ${contractsTable.endType} = 'date' and ${contractsTable.endDate} < ${today} then 'expired'
+    else ${contractsTable.status}
+  end`;
+  const sortColumns: Record<ContractSortField, any> = {
+    partnerName: partnersTable.name,
+    licensor: contractsTable.licensor,
+    direction: contractsTable.direction,
+    status: displayedStatusSort,
+    territories: sql`${contractsTable.territories}::text`,
+    contentCount: contentCountSort,
+    endDate: contractsTable.endDate,
+    createdAt: contractsTable.createdAt,
+  };
+  const sort = sortDirection === "asc" ? asc : desc;
 
   const [contracts, [{ value: total }]] = await Promise.all([
     db
@@ -122,13 +221,13 @@ router.get("/", contractReadGuard, async (req, res) => {
         royaltyType: contractsTable.royaltyType,
         departmentTags: contractsTable.departmentTags,
         archived: contractsTable.archived,
-        contentCount: sql<number>`(select count(*) from contract_content where contract_content.contract_id = ${contractsTable.id})`.mapWith(Number),
+        contentCount: contentCountSort.mapWith(Number),
         createdAt: contractsTable.createdAt,
       })
       .from(contractsTable)
       .leftJoin(partnersTable, eq(contractsTable.partnerId, partnersTable.id))
       .where(where)
-      .orderBy(desc(contractsTable.createdAt))
+      .orderBy(sort(sortColumns[sortBy]), asc(contractsTable.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
     db

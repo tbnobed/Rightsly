@@ -1,5 +1,14 @@
-import { useState } from "react";
-import { useListContracts, getListContractsQueryKey, ContractListItemDirection, ContractListItemStatus } from "@workspace/api-client-react";
+import { useEffect, useState } from "react";
+import {
+  useListContracts,
+  getListContractsQueryKey,
+  useGetContractFilterOptions,
+  getGetContractFilterOptionsQueryKey,
+  ContractListItemDirection,
+  ContractListItemStatus,
+  ListContractsSortBy,
+  ListContractsSortDirection,
+} from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,8 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format, parseISO } from "date-fns";
-import { Search, Plus, FileText, Filter, ChevronRight, Download } from "lucide-react";
+import { Search, Plus, FileText, Filter, ChevronRight, ArrowUp, ArrowDown, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { getContractsPagination, getNextContractSort } from "./contracts-list-state";
 
 export default function ContractsList() {
   const [, setLocation] = useLocation();
@@ -20,7 +30,19 @@ export default function ContractsList() {
   const [direction, setDirection] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
   const [departmentTag, setDepartmentTag] = useState<string>("all");
+  const [territory, setTerritory] = useState<string>("all");
+  const [licensor, setLicensor] = useState<string>("all");
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState<ListContractsSortBy>("createdAt");
+  const [sortDirection, setSortDirection] = useState<ListContractsSortDirection>("desc");
+
+  const resetPage = () => setPage(1);
+  const updateFilter = (setter: (value: string) => void) => (value: string) => {
+    setter(value);
+    resetPage();
+  };
   
   const params = {
     search: debouncedSearch || undefined,
@@ -28,13 +50,36 @@ export default function ContractsList() {
     direction: direction !== "all" ? direction as ContractListItemDirection : undefined,
     status: status !== "all" ? status as ContractListItemStatus : undefined,
     departmentTag: departmentTag !== "all" ? departmentTag : undefined,
+    territory: territory !== "all" ? territory : undefined,
+    licensor: licensor !== "all" ? licensor : undefined,
     includeArchived: includeArchived || undefined,
+    page,
+    pageSize,
+    sortBy,
+    sortDirection,
   };
   const { data: result, isLoading } = useListContracts(params, {
     query: {
       queryKey: getListContractsQueryKey(params),
     }
   });
+  const filterParams = { includeArchived: includeArchived || undefined };
+  const { data: filterOptions } = useGetContractFilterOptions(filterParams, {
+    query: { queryKey: getGetContractFilterOptionsQueryKey(filterParams) },
+  });
+  const pagination = getContractsPagination(result?.total ?? 0, page, pageSize);
+  const { totalPages } = pagination;
+
+  useEffect(() => {
+    if (result && page > totalPages) setPage(totalPages);
+  }, [page, result, totalPages]);
+
+  const changeSort = (field: ListContractsSortBy) => {
+    const next = getNextContractSort(sortBy, sortDirection, field);
+    setSortBy(next.sortBy);
+    setSortDirection(next.sortDirection);
+    resetPage();
+  };
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
@@ -59,9 +104,9 @@ export default function ContractsList() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input 
-                placeholder="Search by partner, territories..." 
+                placeholder="Search partner, ID, licensor, territories..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); resetPage(); }}
                 className="pl-9 bg-white border-slate-200"
                 data-testid="input-search-contracts"
               />
@@ -71,7 +116,7 @@ export default function ContractsList() {
               <Input 
                 placeholder="Search by content title..." 
                 value={contentSearch}
-                onChange={(e) => setContentSearch(e.target.value)}
+                onChange={(e) => { setContentSearch(e.target.value); resetPage(); }}
                 className="pl-9 bg-white border-slate-200"
                 data-testid="input-search-content"
               />
@@ -80,7 +125,7 @@ export default function ContractsList() {
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-slate-400" />
-              <Select value={direction} onValueChange={setDirection}>
+               <Select value={direction} onValueChange={updateFilter(setDirection)}>
                 <SelectTrigger className="w-[140px] bg-white border-slate-200" data-testid="select-direction">
                   <SelectValue placeholder="Direction" />
                 </SelectTrigger>
@@ -91,7 +136,7 @@ export default function ContractsList() {
                 </SelectContent>
               </Select>
             </div>
-            <Select value={status} onValueChange={setStatus}>
+             <Select value={status} onValueChange={updateFilter(setStatus)}>
               <SelectTrigger className="w-[140px] bg-white border-slate-200" data-testid="select-status">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -103,7 +148,7 @@ export default function ContractsList() {
                 <SelectItem value="in_perpetuity">In Perpetuity</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={departmentTag} onValueChange={setDepartmentTag}>
+             <Select value={departmentTag} onValueChange={updateFilter(setDepartmentTag)}>
               <SelectTrigger className="w-[160px] bg-white border-slate-200" data-testid="select-department-tag">
                 <SelectValue placeholder="Department" />
               </SelectTrigger>
@@ -113,10 +158,28 @@ export default function ContractsList() {
                 <SelectItem value="Distribution">Distribution</SelectItem>
               </SelectContent>
             </Select>
+             <Select value={territory} onValueChange={updateFilter(setTerritory)}>
+               <SelectTrigger className="w-[160px] bg-white border-slate-200" data-testid="select-territory">
+                 <SelectValue placeholder="Territory" />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">All Territories</SelectItem>
+                 {filterOptions?.territories.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}
+               </SelectContent>
+             </Select>
+             <Select value={licensor} onValueChange={updateFilter(setLicensor)}>
+               <SelectTrigger className="w-[160px] bg-white border-slate-200" data-testid="select-licensor">
+                 <SelectValue placeholder="Licensor" />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">All Licensors</SelectItem>
+                 {filterOptions?.licensors.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}
+               </SelectContent>
+             </Select>
             <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none ml-auto">
               <Checkbox
                 checked={includeArchived}
-                onCheckedChange={(v) => setIncludeArchived(v === true)}
+                 onCheckedChange={(v) => { setIncludeArchived(v === true); resetPage(); }}
                 data-testid="checkbox-show-archived"
               />
               Show archived
@@ -128,13 +191,13 @@ export default function ContractsList() {
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 bg-slate-50 uppercase border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4 font-medium">Partner / ID</th>
-                <th className="px-6 py-4 font-medium">Licensor</th>
-                <th className="px-6 py-4 font-medium">Direction</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium">Territories</th>
-                <th className="px-6 py-4 font-medium">Content</th>
-                <th className="px-6 py-4 font-medium">End Date</th>
+                 <SortableHeader label="Partner / ID" field="partnerName" {...{ sortBy, sortDirection, changeSort }} />
+                 <SortableHeader label="Licensor" field="licensor" {...{ sortBy, sortDirection, changeSort }} />
+                 <SortableHeader label="Direction" field="direction" {...{ sortBy, sortDirection, changeSort }} />
+                 <SortableHeader label="Status" field="status" {...{ sortBy, sortDirection, changeSort }} />
+                 <SortableHeader label="Territories" field="territories" {...{ sortBy, sortDirection, changeSort }} />
+                 <SortableHeader label="Content" field="contentCount" {...{ sortBy, sortDirection, changeSort }} />
+                 <SortableHeader label="End Date" field="endDate" {...{ sortBy, sortDirection, changeSort }} />
                 <th className="px-6 py-4"></th>
               </tr>
             </thead>
@@ -155,16 +218,8 @@ export default function ContractsList() {
                 result.data.map((contract) => (
                   <tr
                     key={contract.id}
-                    className="hover:bg-slate-50/80 transition-colors group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500"
-                    tabIndex={0}
+                     className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
                     onClick={() => setLocation(`/contracts/${contract.id}`)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setLocation(`/contracts/${contract.id}`);
-                      }
-                    }}
-                    aria-label={`Open contract for ${contract.partnerName || "Unknown Partner"}`}
                     data-testid={`row-contract-${contract.id}`}
                   >
                     <td className="px-6 py-4">
@@ -214,8 +269,8 @@ export default function ContractsList() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="icon" asChild className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link href={`/contracts/${contract.id}`} onClick={(event) => event.stopPropagation()} data-testid={`link-contract-chevron-${contract.id}`}>
+                       <Button variant="ghost" size="icon" asChild className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                         <Link href={`/contracts/${contract.id}`} aria-label={`Open contract for ${contract.partnerName || "Unknown Partner"}`} onClick={(event) => event.stopPropagation()} data-testid={`link-contract-chevron-${contract.id}`}>
                           <ChevronRight className="w-5 h-5 text-slate-400" />
                         </Link>
                       </Button>
@@ -227,14 +282,54 @@ export default function ContractsList() {
           </table>
         </div>
         
-        {result && result.total > result.pageSize && (
-          <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-sm text-slate-500">
-            <span>Showing {result.data.length} of {result.total} results</span>
-            {/* Pagination would go here */}
+         {result && (
+           <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-slate-500">
+             <div className="flex items-center gap-3">
+               <span aria-live="polite">
+                 {result.total === 0 ? "No results" : `Showing ${pagination.start}–${pagination.end} of ${result.total}`}
+               </span>
+               <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); resetPage(); }}>
+                 <SelectTrigger className="w-[110px] bg-white" aria-label="Results per page"><SelectValue /></SelectTrigger>
+                 <SelectContent>
+                   {[10, 20, 50, 100].map((value) => <SelectItem key={value} value={String(value)}>{value} / page</SelectItem>)}
+                 </SelectContent>
+               </Select>
+             </div>
+             <div className="flex items-center gap-1" role="navigation" aria-label="Contracts pagination">
+               <Button variant="outline" size="icon" onClick={() => setPage(1)} disabled={page <= 1} aria-label="First page"><ChevronsLeft className="h-4 w-4" /></Button>
+               <Button variant="outline" size="sm" onClick={() => setPage((value) => value - 1)} disabled={page <= 1}>Previous</Button>
+               <span className="px-2 tabular-nums">Page {page} of {totalPages}</span>
+               <Button variant="outline" size="sm" onClick={() => setPage((value) => value + 1)} disabled={page >= totalPages}>Next</Button>
+               <Button variant="outline" size="icon" onClick={() => setPage(totalPages)} disabled={page >= totalPages} aria-label="Last page"><ChevronsRight className="h-4 w-4" /></Button>
+             </div>
           </div>
         )}
       </Card>
     </div>
+  );
+}
+
+function SortableHeader({
+  label,
+  field,
+  sortBy,
+  sortDirection,
+  changeSort,
+}: {
+  label: string;
+  field: ListContractsSortBy;
+  sortBy: ListContractsSortBy;
+  sortDirection: ListContractsSortDirection;
+  changeSort: (field: ListContractsSortBy) => void;
+}) {
+  const active = sortBy === field;
+  return (
+    <th className="px-6 py-2 font-medium" aria-sort={active ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
+      <button type="button" onClick={() => changeSort(field)} className="flex items-center gap-1 rounded py-2 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500">
+        {label}
+        {active ? (sortDirection === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />) : <span className="h-3.5 w-3.5" />}
+      </button>
+    </th>
   );
 }
 

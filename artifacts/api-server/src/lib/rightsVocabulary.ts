@@ -35,6 +35,15 @@ const canonicalTerritoriesByKey = Object.fromEntries(TERRITORIES.map((value) => 
 const canonicalDistributionTypesByKey = Object.fromEntries(DISTRIBUTION_TYPES.map((value) => [key(value), value]));
 export const canonicalTerritory = (value: string) =>
   territoryAliases[key(value)] ?? canonicalTerritoriesByKey[key(value)] ?? title(value);
+export const territoryStorageKeys = (value: string) => {
+  const canonical = canonicalTerritory(value);
+  return [...new Set([
+    key(canonical),
+    ...Object.entries(territoryAliases)
+      .filter(([, mapped]) => mapped === canonical)
+      .map(([alias]) => alias),
+  ])];
+};
 export const canonicalDistributionType = (value: string) =>
   distributionAliases[key(value)] ?? canonicalDistributionTypesByKey[key(value)] ?? title(value);
 export const canonicalTerritories = (values: unknown) =>

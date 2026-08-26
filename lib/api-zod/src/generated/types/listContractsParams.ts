@@ -5,10 +5,19 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ListContractsDirection } from './listContractsDirection';
+import type { ListContractsSortBy } from './listContractsSortBy';
+import type { ListContractsSortDirection } from './listContractsSortDirection';
 import type { ListContractsStatus } from './listContractsStatus';
 
 export type ListContractsParams = {
+/**
+ * @minimum 1
+ */
 page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
 pageSize?: number;
 direction?: ListContractsDirection;
 status?: ListContractsStatus;
@@ -19,6 +28,10 @@ search?: string;
  */
 contentSearch?: string;
 departmentTag?: string;
+territory?: string;
+licensor?: string;
+sortBy?: ListContractsSortBy;
+sortDirection?: ListContractsSortDirection;
 includeArchived?: boolean;
 expiringWithinDays?: number;
 };

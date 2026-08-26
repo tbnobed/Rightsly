@@ -856,6 +856,10 @@ export interface PaginatedContracts {
   pageSize: number;
 }
 
+export interface ContractFilterOptions {
+  territories: string[];
+  licensors: string[];
+}
 export interface PaginatedPartners {
   data: Partner[];
   total: number;
@@ -950,7 +954,14 @@ export type DeletePartner200 = {
 };
 
 export type ListContractsParams = {
+/**
+ * @minimum 1
+ */
 page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
 pageSize?: number;
 direction?: ListContractsDirection;
 status?: ListContractsStatus;
@@ -961,6 +972,10 @@ search?: string;
  */
 contentSearch?: string;
 departmentTag?: string;
+territory?: string;
+licensor?: string;
+sortBy?: ListContractsSortBy;
+sortDirection?: ListContractsSortDirection;
 includeArchived?: boolean;
 expiringWithinDays?: number;
 };
@@ -984,6 +999,7 @@ export const ListContractsStatus = {
   terminated: 'terminated',
 } as const;
 
+export type ListContractsSortBy = typeof ListContractsSortBy[keyof typeof ListContractsSortBy];
 export type DeleteContract200 = {
   message?: string;
 };
@@ -1156,3 +1172,24 @@ export type ListNotifications200 = {
   unreadCount: number;
 };
 
+export type GetContractFilterOptionsParams = {
+includeArchived?: boolean;
+};
+
+export type ListContractsSortDirection = typeof ListContractsSortDirection[keyof typeof ListContractsSortDirection];
+
+export const ListContractsSortBy = {
+  partnerName: 'partnerName',
+  licensor: 'licensor',
+  direction: 'direction',
+  status: 'status',
+  territories: 'territories',
+  contentCount: 'contentCount',
+  endDate: 'endDate',
+  createdAt: 'createdAt',
+} as const;
+
+export const ListContractsSortDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;

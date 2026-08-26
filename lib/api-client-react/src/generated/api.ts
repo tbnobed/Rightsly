@@ -23,6 +23,7 @@ import type {
   ContentItem,
   Contract,
   ContractAttachment,
+  ContractFilterOptions,
   ContractImportInput,
   ContractListItem,
   CreateAmendmentRequest,
@@ -40,6 +41,7 @@ import type {
   DeleteRevenueReport200,
   DeleteUser200,
   Error,
+  GetContractFilterOptionsParams,
   GetContractReport200,
   GetContractReportParams,
   GetDashboardParams,
@@ -1388,6 +1390,90 @@ export const useCreateContract = <TError = ErrorType<Error>,
       > => {
       return useMutation(getCreateContractMutationOptions(options));
     }
+
+export const getGetContractFilterOptionsUrl = (params?: GetContractFilterOptionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/contracts/filter-options?${stringifiedParams}` : `/api/contracts/filter-options`
+}
+
+/**
+ * @summary List contract-derived filter options visible to the signed-in user
+ */
+export const getContractFilterOptions = async (params?: GetContractFilterOptionsParams, options?: RequestInit): Promise<ContractFilterOptions> => {
+
+  return customFetch<ContractFilterOptions>(getGetContractFilterOptionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetContractFilterOptionsQueryKey = (params?: GetContractFilterOptionsParams,) => {
+    return [
+    `/api/contracts/filter-options`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetContractFilterOptionsQueryOptions = <TData = Awaited<ReturnType<typeof getContractFilterOptions>>, TError = ErrorType<unknown>>(params?: GetContractFilterOptionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getContractFilterOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetContractFilterOptionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getContractFilterOptions>>> = ({ signal }) => getContractFilterOptions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getContractFilterOptions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetContractFilterOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof getContractFilterOptions>>>
+export type GetContractFilterOptionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List contract-derived filter options visible to the signed-in user
+ */
+
+export function useGetContractFilterOptions<TData = Awaited<ReturnType<typeof getContractFilterOptions>>, TError = ErrorType<unknown>>(
+ params?: GetContractFilterOptionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getContractFilterOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetContractFilterOptionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetContractUrl = (id: string,) => {
 
@@ -4128,4 +4214,3 @@ export const useClearNotifications = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getClearNotificationsMutationOptions(options));
     }
-
