@@ -12,6 +12,7 @@ import {
 import { eq, and, ilike, inArray, sql, count, lte, gte, asc, desc } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
+import { validateContractDates } from "../lib/contractDates";
 
 const router = Router();
 router.use(authenticateToken);
@@ -136,6 +137,12 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
     return;
   }
 
+  const dateError = validateContractDates({ startDate, endType, endDate });
+  if (dateError) {
+    res.status(400).json({ message: dateError });
+    return;
+  }
+
   const id = crypto.randomUUID();
   const ri = rightsInDetails || {};
   const ro = rightsOutDetails || {};
@@ -229,6 +236,37 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
     archived,
   } = req.body;
 
+  const [existingContract] = await db
+    .select({
+      startDate: contractsTable.startDate,
+      endType: contractsTable.endType,
+      endDate: contractsTable.endDate,
+    })
+    .from(contractsTable)
+    .where(eq(contractsTable.id, req.params.id));
+  if (!existingContract) {
+    res.status(404).json({ message: "Contract not found" });
+    return;
+  }
+
+  const effectiveEndType = endType !== undefined ? endType : existingContract.endType;
+  const effectiveStartDate = startDate !== undefined ? startDate : existingContract.startDate;
+  const effectiveEndDate =
+    effectiveEndType !== "date"
+      ? null
+      : endDate !== undefined
+        ? endDate
+        : existingContract.endDate;
+  const dateError = validateContractDates({
+    startDate: effectiveStartDate,
+    endType: effectiveEndType,
+    endDate: effectiveEndDate,
+  });
+  if (dateError) {
+    res.status(400).json({ message: dateError });
+    return;
+  }
+
   const ri = rightsInDetails || {};
   const ro = rightsOutDetails || {};
 
@@ -240,6 +278,7 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   if (startDate !== undefined) updates.startDate = startDate;
   if (endType !== undefined) updates.endType = endType;
   if (endDate !== undefined) updates.endDate = endDate;
+  if (endType !== undefined && endType !== "date") updates.endDate = null;
   if (territories !== undefined) updates.territories = territories;
   if (otherTerritories !== undefined) updates.otherTerritories = otherTerritories;
   if (distributionTypes !== undefined) updates.distributionTypes = distributionTypes;

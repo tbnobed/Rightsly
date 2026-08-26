@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/auth";
 import { Link, useLocation, useParams } from "wouter";
-import { useGetContract, getGetContractQueryKey, useGetContentContracts, getGetContentContractsQueryKey, useUpdateContract, getListContractsQueryKey } from "@workspace/api-client-react";
+import { useGetContract, getGetContractQueryKey, useGetContentContracts, getGetContentContractsQueryKey, useUpdateContract, useDeleteContract, getListContractsQueryKey } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/pages/contracts/index";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, Edit, FileText, Globe, Link as LinkIcon, Download, AlertCircle, Plus, Archive, ArchiveRestore } from "lucide-react";
+import { ChevronLeft, Edit, FileText, Globe, Link as LinkIcon, Download, AlertCircle, Plus, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContractAttachments } from "@/components/contract-attachments";
 
@@ -19,6 +19,7 @@ export default function ContractDetail() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   
   const { data: contract, isLoading } = useGetContract(id!, {
     query: {
@@ -28,6 +29,7 @@ export default function ContractDetail() {
   });
 
   const updateContract = useUpdateContract();
+  const deleteContract = useDeleteContract();
 
   const handleToggleArchive = async () => {
     if (!contract) return;
@@ -46,6 +48,26 @@ export default function ContractDetail() {
       toast({
         title: "Action failed",
         description: "Could not update the contract. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!contract) return;
+    const confirmed = window.confirm(
+      `Delete this contract with ${contract.partnerName || "Unknown Partner"}? This cannot be undone.`,
+    );
+    if (!confirmed) return;
+    try {
+      await deleteContract.mutateAsync({ id: contract.id });
+      await queryClient.invalidateQueries({ queryKey: getListContractsQueryKey() });
+      toast({ title: "Contract deleted" });
+      setLocation("/contracts");
+    } catch (err) {
+      toast({
+        title: "Delete failed",
+        description: err instanceof Error ? err.message : "Could not delete the contract.",
         variant: "destructive",
       });
     }
@@ -98,6 +120,17 @@ export default function ContractDetail() {
           )}
           {(user?.role === 'admin' || user?.role === 'legal') && (
             <>
+              {user?.role === 'admin' && (
+                <Button
+                  variant="outline"
+                  className="bg-white text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={handleDelete}
+                  disabled={deleteContract.isPending}
+                  data-testid="button-delete-contract"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                </Button>
+              )}
               <Button
                 variant="outline"
                 className="bg-white"
@@ -111,8 +144,10 @@ export default function ContractDetail() {
                   <><Archive className="w-4 h-4 mr-2" /> Archive</>
                 )}
               </Button>
-              <Button className="bg-slate-900 text-white hover:bg-slate-800" data-testid="button-edit-contract">
-                <Edit className="w-4 h-4 mr-2" /> Edit Contract
+              <Button className="bg-slate-900 text-white hover:bg-slate-800" asChild data-testid="button-edit-contract">
+                <Link href={`/contracts/${contract.id}/edit`}>
+                  <Edit className="w-4 h-4 mr-2" /> Edit Contract
+                </Link>
               </Button>
             </>
           )}

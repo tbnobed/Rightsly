@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +10,12 @@ import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import {
   useCreateContract,
+  useUpdateContract,
+  useGetContract,
+  getGetContractQueryKey,
   useListPartners,
   getListPartnersQueryKey,
   useListContent,
@@ -21,6 +24,7 @@ import {
   useCreateContractAttachment,
   CreateContractRequestDirection,
   type CreateContractRequest,
+  type UpdateContractRequest,
 } from "@workspace/api-client-react";
 import { ArrowRight, Briefcase, FileDown, FileUp, ChevronLeft, Upload, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -66,6 +70,25 @@ const formSchema = z.object({
   roExclusivity: z.enum(["exclusive", "non_exclusive"]).nullable().optional(),
   roReportingFrequency: z.enum(["monthly", "quarterly", "annually"]).nullable().optional(),
   roMinPaymentThreshold: z.string().optional(),
+}).superRefine((values, ctx) => {
+  if (values.endType === "date" && !values.endDate) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["endDate"],
+      message: "End date is required",
+    });
+  } else if (
+    values.endType === "date" &&
+    values.startDate &&
+    values.endDate &&
+    values.endDate < values.startDate
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["endDate"],
+      message: "End date must be on or after start date",
+    });
+  }
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -79,14 +102,24 @@ function toggleArrayValue(current: string[], value: string, checked: boolean) {
 }
 
 export default function NewContractWizard() {
-  const [step, setStep] = useState<1 | 2>(1);
+  const { id } = useParams<{ id?: string }>();
+  const isEditing = !!id;
+  const [step, setStep] = useState<1 | 2>(isEditing ? 2 : 1);
   const [direction, setDirection] = useState<CreateContractRequestDirection | null>(null);
+  const [editHydrated, setEditHydrated] = useState(!isEditing);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const createContract = useCreateContract();
+  const updateContract = useUpdateContract();
   const requestUploadUrl = useRequestUploadUrl();
   const createAttachment = useCreateContractAttachment();
+  const { data: existingContract, isLoading: contractLoading } = useGetContract(id ?? "", {
+    query: {
+      enabled: isEditing,
+      queryKey: getGetContractQueryKey(id ?? ""),
+    },
+  });
 
   const { data: partnersData } = useListPartners(undefined, {
     query: { queryKey: getListPartnersQueryKey() },
@@ -123,6 +156,52 @@ export default function NewContractWizard() {
       roHasAmendment: false,
     },
   });
+
+  useEffect(() => {
+    if (!existingContract) return;
+    const ri = existingContract.rightsInDetails;
+    const ro = existingContract.rightsOutDetails;
+    setDirection(existingContract.direction as CreateContractRequestDirection);
+    setStep(2);
+    setSelectedContentIds(existingContract.contentItems?.map((item) => item.id) ?? []);
+    form.reset({
+      partnerId: existingContract.partnerId,
+      licensor: existingContract.licensor ?? "",
+      licensee: existingContract.licensee ?? "",
+      startDate: existingContract.startDate ?? "",
+      endType: existingContract.endType,
+      endDate: existingContract.endDate ?? "",
+      status: existingContract.status,
+      territories: existingContract.territories ?? [],
+      otherTerritories: existingContract.otherTerritories ?? "",
+      distributionTypes: existingContract.distributionTypes ?? [],
+      royaltyType: existingContract.royaltyType ?? null,
+      royaltyDetails: existingContract.royaltyDetails ?? "",
+      paymentTerms: existingContract.paymentTerms ?? null,
+      websiteLink: existingContract.websiteLink ?? "",
+      notes: existingContract.notes ?? "",
+      departmentTags: existingContract.departmentTags ?? [],
+      riPlatforms: ri?.platforms ?? [],
+      riYoutubeChannel: ri?.youtubeChannel ?? "",
+      riSocialPlatforms: ri?.socialPlatforms ?? [],
+      riSocialHandle: ri?.socialHandle ?? "",
+      riGrantOfRights: ri?.grantOfRights ?? "",
+      riExclusivitySameAsDuration: ri?.exclusivitySameAsDuration ?? false,
+      riExclusivityStartDate: ri?.exclusivityStartDate ?? "",
+      riExclusivityEndDate: ri?.exclusivityEndDate ?? "",
+      riMarketingRights: ri?.marketingRights ?? "",
+      platform: existingContract.platform ?? "",
+      roAutoRenew: ro?.autoRenew ?? false,
+      roHasAmendment: ro?.hasAmendment ?? false,
+      roExclusivity: ro?.exclusivity ?? null,
+      roReportingFrequency: ro?.reportingFrequency ?? null,
+      roMinPaymentThreshold:
+        ro?.minPaymentThreshold !== null && ro?.minPaymentThreshold !== undefined
+          ? String(ro.minPaymentThreshold)
+          : "",
+    });
+    setEditHydrated(true);
+  }, [existingContract, form]);
 
   const toggleContent = (id: string, checked: boolean) => {
     setSelectedContentIds((prev) => toggleArrayValue(prev, id, checked));
@@ -200,7 +279,12 @@ export default function NewContractWizard() {
         };
       }
 
-      const result = await createContract.mutateAsync({ data: requestData });
+      const result = isEditing
+        ? await updateContract.mutateAsync({
+            id: id!,
+            data: requestData as UpdateContractRequest,
+          })
+        : await createContract.mutateAsync({ data: requestData });
 
       if (selectedFile) {
         try {
@@ -215,19 +299,33 @@ export default function NewContractWizard() {
       }
 
       toast({
-        title: "Contract created",
-        description: "Successfully created contract draft.",
+        title: isEditing ? "Contract updated" : "Contract created",
+        description: isEditing
+          ? "The contract changes were saved."
+          : "Successfully created contract draft.",
       });
 
       setLocation(`/contracts/${result.id}`);
     } catch (e) {
       toast({
         variant: "destructive",
-        title: "Error creating contract",
+        title: isEditing ? "Error updating contract" : "Error creating contract",
         description: "Please check your inputs and try again.",
       });
     }
   };
+
+  if (isEditing && contractLoading) {
+    return <div className="p-8 max-w-4xl mx-auto text-slate-500">Loading contract…</div>;
+  }
+
+  if (isEditing && !contractLoading && !existingContract) {
+    return <div className="p-8 max-w-4xl mx-auto text-slate-500">Contract not found.</div>;
+  }
+
+  if (isEditing && !editHydrated) {
+    return <div className="p-8 max-w-4xl mx-auto text-slate-500">Loading contract…</div>;
+  }
 
   if (step === 1) {
     return (
@@ -293,11 +391,16 @@ export default function NewContractWizard() {
     <div className="p-8 max-w-4xl mx-auto space-y-6">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="mb-4 text-slate-500 -ml-3">
-            <ChevronLeft className="w-4 h-4 mr-1" /> Back to Direction
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => isEditing ? setLocation(`/contracts/${id}`) : setStep(1)}
+            className="mb-4 text-slate-500 -ml-3"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" /> {isEditing ? "Back to Contract" : "Back to Direction"}
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Contract Details</h1>
-          <p className="text-slate-500 mt-1">Step 2: Fill in the core agreement details.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">{isEditing ? "Edit Contract" : "Contract Details"}</h1>
+          <p className="text-slate-500 mt-1">{isEditing ? "Update the agreement details below." : "Step 2: Fill in the core agreement details."}</p>
         </div>
         <div className="px-4 py-2 bg-slate-100 rounded-md font-semibold text-slate-700 capitalize flex items-center gap-2">
           {direction === 'rights_in' ? <FileDown className="w-4 h-4 text-blue-600" /> : <FileUp className="w-4 h-4 text-emerald-600" />}
@@ -319,7 +422,7 @@ export default function NewContractWizard() {
                 render={({ field }) => (
                   <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel>Primary Partner</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="bg-white" data-testid="select-partner">
                           <SelectValue placeholder="Select a partner..." />
@@ -374,7 +477,7 @@ export default function NewContractWizard() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="bg-white" data-testid="select-status">
                           <SelectValue placeholder="Select status" />
@@ -402,6 +505,7 @@ export default function NewContractWizard() {
                     <FormControl>
                       <Input type="date" {...field} value={field.value || ''} data-testid="input-start-date" />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -412,7 +516,7 @@ export default function NewContractWizard() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>End Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger className="bg-white" data-testid="select-end-type">
                             <SelectValue placeholder="Select end type" />
@@ -424,6 +528,7 @@ export default function NewContractWizard() {
                           <SelectItem value="auto_renew">Auto-Renewing</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -437,6 +542,7 @@ export default function NewContractWizard() {
                         <FormControl>
                           <Input type="date" {...field} value={field.value || ''} data-testid="input-end-date" />
                         </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -1010,14 +1116,14 @@ export default function NewContractWizard() {
           </Card>
 
           <div className="flex justify-end gap-4 pb-12">
-            <Button variant="outline" type="button" onClick={() => setLocation("/contracts")}>
+            <Button variant="outline" type="button" onClick={() => setLocation(isEditing ? `/contracts/${id}` : "/contracts")}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm" disabled={form.formState.isSubmitting} data-testid="button-create-contract">
+            <Button type="submit" className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm" disabled={form.formState.isSubmitting} data-testid={isEditing ? "button-save-contract" : "button-create-contract"}>
               {form.formState.isSubmitting ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating…</>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {isEditing ? "Saving…" : "Creating…"}</>
               ) : (
-                "Create Draft"
+                isEditing ? "Save Changes" : "Create Draft"
               )}
             </Button>
           </div>

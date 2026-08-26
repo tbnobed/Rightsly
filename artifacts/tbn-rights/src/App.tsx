@@ -39,6 +39,7 @@ function AuthenticatedRouter() {
         <Route path="/" component={Dashboard} />
         <Route path="/contracts" component={ContractsList} />
         <Route path="/contracts/new" component={NewContractWizard} />
+        <Route path="/contracts/:id/edit" component={NewContractWizard} />
         <Route path="/contracts/:id" component={ContractDetail} />
         <Route path="/partners" component={PartnersList} />
         <Route path="/partners/:id" component={PartnerDetail} />

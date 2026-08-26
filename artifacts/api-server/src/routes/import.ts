@@ -6,6 +6,7 @@ import { contractsTable, partnersTable, contractContentTable } from "@workspace/
 import { eq, ilike } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
+import { validateContractDates } from "../lib/contractDates";
 
 const router = Router();
 router.use(authenticateToken, requireRole("admin", "legal"));
@@ -94,6 +95,12 @@ router.post("/contracts", upload.single("file"), async (req, res) => {
       if (!row.end_type || !["date", "perpetuity", "auto_renew"].includes(row.end_type)) {
         throw new Error('end_type must be "date", "perpetuity", or "auto_renew"');
       }
+      const dateError = validateContractDates({
+        startDate: row.start_date || null,
+        endType: row.end_type,
+        endDate: row.end_date || null,
+      });
+      if (dateError) throw new Error(dateError);
 
       // Find or create partner
       const [existingPartner] = await db
