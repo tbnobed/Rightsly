@@ -35,10 +35,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { Plus, Trash2 } from "lucide-react";
+
+const seasonSchema = z.object({
+  id: z.string().optional(),
+  seasonNumber: z.string().refine(
+    (value) => /^\d+$/.test(value) && Number(value) > 0,
+    "Season number must be a positive whole number",
+  ),
+  title: z.string().optional(),
+  year: z.string().refine(
+    (value) => !value || (/^\d{4}$/.test(value) && Number(value) >= 1900 && Number(value) <= new Date().getFullYear() + 5),
+    () => ({ message: `Year must be between 1900 and ${new Date().getFullYear() + 5}` }),
+  ).optional(),
+  episodeCount: z.string().refine(
+    (value) => !value || (/^\d+$/.test(value) && Number(value) >= 0),
+    "Episode count must be a whole number",
+  ).optional(),
+});
 
 const contentSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -50,6 +68,21 @@ const contentSchema = z.object({
   description: z.string().optional(),
   hasCleans: z.boolean().default(false),
   hasCaptions: z.boolean().default(false),
+  seasons: z.array(seasonSchema).default([]),
+}).superRefine((values, ctx) => {
+  if (values.type !== "TVSeries") return;
+  const seen = new Set<number>();
+  values.seasons.forEach((season, index) => {
+    const number = Number(season.seasonNumber);
+    if (seen.has(number)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["seasons", index, "seasonNumber"],
+        message: `Season ${number} is already listed`,
+      });
+    }
+    seen.add(number);
+  });
 });
 
 type ContentFormValues = z.infer<typeof contentSchema>;
@@ -77,8 +110,11 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
       description: "",
       hasCleans: false,
       hasCaptions: false,
+      seasons: [],
     },
   });
+  const seasons = useFieldArray({ control: form.control, name: "seasons" });
+  const selectedType = form.watch("type");
 
   useEffect(() => {
     if (open) {
@@ -89,6 +125,15 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
         description: content?.description ?? "",
         hasCleans: content?.hasCleans ?? false,
         hasCaptions: content?.hasCaptions ?? false,
+        seasons: (content?.seasons ?? []).map((season) => ({
+          id: season.id,
+          seasonNumber: String(season.seasonNumber),
+          title: season.title ?? "",
+          year: season.year ? String(season.year) : "",
+          episodeCount: season.episodeCount !== null && season.episodeCount !== undefined
+            ? String(season.episodeCount)
+            : "",
+        })),
       });
     }
   }, [open, content]);
@@ -103,6 +148,15 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
       description: values.description || null,
       hasCleans: values.hasCleans,
       hasCaptions: values.hasCaptions,
+      seasons: values.type === "TVSeries"
+        ? values.seasons.map((season) => ({
+            id: season.id,
+            seasonNumber: Number(season.seasonNumber),
+            title: season.title || null,
+            year: season.year ? Number(season.year) : null,
+            episodeCount: season.episodeCount ? Number(season.episodeCount) : null,
+          }))
+        : [],
     };
 
     try {
@@ -121,9 +175,17 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
       });
       onOpenChange(false);
     } catch (err) {
+      const error = err as {
+        response?: { data?: { message?: string } };
+        data?: { message?: string };
+        message?: string;
+      };
       toast({
         title: "Save failed",
-        description: "Could not save the content item. Please try again.",
+        description: error.response?.data?.message
+          ?? error.data?.message
+          ?? error.message
+          ?? "Could not save the content item. Please try again.",
         variant: "destructive",
       });
     }
@@ -131,12 +193,12 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Content" : "Add Title"}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? "Update metadata for this catalog item."
+              ? "Update metadata and season details for this catalog item."
               : "Add a new title to the content catalog."}
           </DialogDescription>
         </DialogHeader>
@@ -245,6 +307,115 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
                 )}
               />
             </div>
+
+            {selectedType === "TVSeries" && (
+              <div className="rounded-lg border border-slate-200 bg-slate-50/50" data-testid="section-content-seasons">
+                <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+                  <div>
+                    <h3 className="font-semibold text-slate-900">Seasons</h3>
+                    <p className="text-xs text-slate-500">Add or edit the seasons available for licensing.</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const nextNumber = Math.max(
+                        0,
+                        ...form.getValues("seasons").map((season) => Number(season.seasonNumber) || 0),
+                      ) + 1;
+                      seasons.append({
+                        seasonNumber: String(nextNumber),
+                        title: "",
+                        year: "",
+                        episodeCount: "",
+                      });
+                    }}
+                    data-testid="button-add-season"
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" /> Add Season
+                  </Button>
+                </div>
+
+                {seasons.fields.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-sm text-slate-500">
+                    No seasons yet. Add the first season to make season-specific licensing available.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-200">
+                    {seasons.fields.map((season, index) => (
+                      <div key={season.id} className="grid grid-cols-12 items-start gap-3 p-4">
+                        <FormField
+                          control={form.control}
+                          name={`seasons.${index}.seasonNumber`}
+                          render={({ field }) => (
+                            <FormItem className="col-span-3 sm:col-span-2">
+                              <FormLabel>Season</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="1" step="1" {...field} data-testid={`input-season-number-${index}`} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`seasons.${index}.title`}
+                          render={({ field }) => (
+                            <FormItem className="col-span-9 sm:col-span-4">
+                              <FormLabel>Title</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Optional season title" {...field} data-testid={`input-season-title-${index}`} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`seasons.${index}.year`}
+                          render={({ field }) => (
+                            <FormItem className="col-span-5 sm:col-span-2">
+                              <FormLabel>Year</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="1900" max={new Date().getFullYear() + 5} {...field} data-testid={`input-season-year-${index}`} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`seasons.${index}.episodeCount`}
+                          render={({ field }) => (
+                            <FormItem className="col-span-5 sm:col-span-3">
+                              <FormLabel>Episodes</FormLabel>
+                              <FormControl>
+                                <Input type="number" min="0" step="1" {...field} data-testid={`input-season-episodes-${index}`} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="col-span-2 sm:col-span-1 pt-8 text-right">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="text-slate-500 hover:text-red-600"
+                            onClick={() => seasons.remove(index)}
+                            aria-label={`Remove season ${form.getValues(`seasons.${index}.seasonNumber`)}`}
+                            data-testid={`button-remove-season-${index}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel-content">

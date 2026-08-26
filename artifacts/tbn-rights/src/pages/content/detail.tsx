@@ -65,7 +65,7 @@ export default function ContentDetail() {
           </div>
         </div>
         <Button className="bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 shadow-sm" onClick={() => setEditOpen(true)} data-testid="button-edit-content">
-          <Edit className="w-4 h-4 mr-2" /> Edit Metadata
+          <Edit className="w-4 h-4 mr-2" /> {content.type === "TVSeries" ? "Edit Title & Seasons" : "Edit Metadata"}
         </Button>
       </div>
 
@@ -97,9 +97,14 @@ export default function ContentDetail() {
 
           {content.type === 'TVSeries' && content.seasons && (
             <Card className="border-slate-200 shadow-sm">
-              <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4 flex flex-row items-center gap-2">
-                <Layers className="w-5 h-5 text-indigo-500" />
-                <CardTitle className="text-lg">Seasons ({content.seasons.length})</CardTitle>
+              <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4 flex flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-indigo-500" />
+                  <CardTitle className="text-lg">Seasons ({content.seasons.length})</CardTitle>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)} data-testid="button-manage-seasons">
+                  <Edit className="w-3.5 h-3.5 mr-1.5" /> Manage Seasons
+                </Button>
               </CardHeader>
               <CardContent className="p-0">
                 <ul className="divide-y divide-slate-100">
