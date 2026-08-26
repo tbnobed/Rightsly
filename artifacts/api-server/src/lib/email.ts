@@ -92,7 +92,7 @@ export async function sendEmail(params: {
 }): Promise<boolean> {
   const { to, subject, html, text } = params;
   const plainText = text ?? html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  if (SENDGRID_FROM_EMAIL) {
+  if (SENDGRID_FROM_EMAIL && !SENDGRID_API_KEY) {
     try {
       const connectors = new ReplitConnectors();
       const response = await connectors.proxy("sendgrid", "/v3/mail/send", {
