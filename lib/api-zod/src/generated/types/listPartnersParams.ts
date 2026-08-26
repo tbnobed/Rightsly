@@ -4,6 +4,8 @@
  * Api
  * OpenAPI spec version: 0.1.0
  */
+import type { ListPartnersSortBy } from './listPartnersSortBy';
+import type { ListPartnersSortDirection } from './listPartnersSortDirection';
 import type { ListPartnersType } from './listPartnersType';
 
 export type ListPartnersParams = {
@@ -11,4 +13,6 @@ page?: number;
 pageSize?: number;
 search?: string;
 type?: ListPartnersType;
+sortBy?: ListPartnersSortBy;
+sortDirection?: ListPartnersSortDirection;
 };

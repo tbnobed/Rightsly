@@ -1507,6 +1507,18 @@ paths:
           schema:
             type: string
             enum: [Licensor, Licensee, Both]
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [name, type, website, contractCount, updatedAt]
+            default: name
+        - name: sortDirection
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
       responses:
         '200':
           description: Paginated partner list

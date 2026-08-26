@@ -913,6 +913,8 @@ page?: number;
 pageSize?: number;
 search?: string;
 type?: ListPartnersType;
+sortBy?: ListPartnersSortBy;
+sortDirection?: ListPartnersSortDirection;
 };
 
 export type ListPartnersType = typeof ListPartnersType[keyof typeof ListPartnersType];
@@ -922,6 +924,25 @@ export const ListPartnersType = {
   Licensor: 'Licensor',
   Licensee: 'Licensee',
   Both: 'Both',
+} as const;
+
+export type ListPartnersSortBy = typeof ListPartnersSortBy[keyof typeof ListPartnersSortBy];
+
+
+export const ListPartnersSortBy = {
+  name: 'name',
+  type: 'type',
+  website: 'website',
+  contractCount: 'contractCount',
+  updatedAt: 'updatedAt',
+} as const;
+
+export type ListPartnersSortDirection = typeof ListPartnersSortDirection[keyof typeof ListPartnersSortDirection];
+
+
+export const ListPartnersSortDirection = {
+  asc: 'asc',
+  desc: 'desc',
 } as const;
 
 export type DeletePartner200 = {

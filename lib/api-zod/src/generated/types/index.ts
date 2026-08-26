@@ -76,6 +76,8 @@ export * from './listContractsStatus';
 export * from './listNotifications200';
 export * from './listNotificationsParams';
 export * from './listPartnersParams';
+export * from './listPartnersSortBy';
+export * from './listPartnersSortDirection';
 export * from './listPartnersType';
 export * from './listRevenueReportsParams';
 export * from './listRevenueReportsStatus';

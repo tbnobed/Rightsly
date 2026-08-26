@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { partnersTable, contractsTable } from "@workspace/db";
-import { eq, ilike, and, count, sql } from "drizzle-orm";
+import { eq, ilike, and, count, sql, asc } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { routeParam } from "../lib/validation";
@@ -11,10 +11,24 @@ router.use(authenticateToken);
 
 // GET /api/partners
 router.get("/", async (req, res) => {
-  const page = parseInt(req.query.page as string) || 1;
-  const pageSize = parseInt(req.query.pageSize as string) || 20;
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const pageSize = Math.min(100, Math.max(1, parseInt(req.query.pageSize as string) || 20));
   const search = req.query.search as string | undefined;
   const type = req.query.type as string | undefined;
+  const allowedSorts = new Set(["name", "type", "website", "contractCount", "updatedAt"]);
+  const sortBy = allowedSorts.has(req.query.sortBy as string) ? req.query.sortBy as string : "name";
+  const sortDirection = req.query.sortDirection === "desc" ? "desc" : "asc";
+  const contractCount = count(contractsTable.id).mapWith(Number);
+  const sortColumn = {
+    name: partnersTable.name,
+    type: partnersTable.type,
+    website: partnersTable.website,
+    contractCount,
+    updatedAt: partnersTable.updatedAt,
+  }[sortBy]!;
+  const primaryOrder = sortDirection === "desc"
+    ? sql`${sortColumn} DESC NULLS LAST`
+    : sql`${sortColumn} ASC NULLS LAST`;
 
   const where = and(
     search ? ilike(partnersTable.name, `%${search}%`) : undefined,
@@ -31,13 +45,23 @@ router.get("/", async (req, res) => {
         notes: partnersTable.notes,
         createdAt: partnersTable.createdAt,
         updatedAt: partnersTable.updatedAt,
-        contractCount: sql<number>`(select count(*) from contracts where contracts.partner_id = ${partnersTable.id})`.mapWith(Number),
+        contractCount,
       })
       .from(partnersTable)
+      .leftJoin(
+        contractsTable,
+        and(
+          eq(contractsTable.partnerId, partnersTable.id),
+          eq(contractsTable.status, "active"),
+          eq(contractsTable.archived, false),
+          sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= current_date)`,
+        ),
+      )
       .where(where)
+      .groupBy(partnersTable.id)
       .limit(pageSize)
       .offset((page - 1) * pageSize)
-      .orderBy(partnersTable.name),
+      .orderBy(primaryOrder, asc(partnersTable.name), asc(partnersTable.id)),
     db.select({ value: count() }).from(partnersTable).where(where),
   ]);
 
@@ -74,10 +98,20 @@ router.get("/:id", async (req, res) => {
       notes: partnersTable.notes,
       createdAt: partnersTable.createdAt,
       updatedAt: partnersTable.updatedAt,
-      contractCount: sql<number>`(select count(*) from contracts where contracts.partner_id = ${partnersTable.id})`.mapWith(Number),
+      contractCount: count(contractsTable.id).mapWith(Number),
     })
     .from(partnersTable)
-    .where(eq(partnersTable.id, id));
+    .leftJoin(
+      contractsTable,
+      and(
+        eq(contractsTable.partnerId, partnersTable.id),
+        eq(contractsTable.status, "active"),
+        eq(contractsTable.archived, false),
+        sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= current_date)`,
+      ),
+    )
+    .where(eq(partnersTable.id, id))
+    .groupBy(partnersTable.id);
 
   if (!partner) {
     res.status(404).json({ message: "Partner not found" });
@@ -102,7 +136,15 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   await logAudit({ user: req.user, action: "update", entityType: "partner", entityId: id,
     before: { name: before.name, type: before.type, website: before.website, notes: before.notes },
     after: { name: partner.name, type: partner.type, website: partner.website, notes: partner.notes } });
-  res.json({ ...partner, contractCount: 0 });
+  const [{ contractCount }] = await db.select({
+    contractCount: count(contractsTable.id).mapWith(Number),
+  }).from(contractsTable).where(and(
+    eq(contractsTable.partnerId, id),
+    eq(contractsTable.status, "active"),
+    eq(contractsTable.archived, false),
+    sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= current_date)`,
+  ));
+  res.json({ ...partner, contractCount });
 });
 
 // DELETE /api/partners/:id

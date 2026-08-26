@@ -4,15 +4,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Briefcase, ChevronRight, Globe, LayoutGrid, List } from "lucide-react";
-import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Plus, Briefcase, ChevronRight, ChevronLeft, ChevronsLeft, ChevronsRight, Globe, LayoutGrid, List, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useDebounce } from "@/hooks/use-debounce";
 import { PartnerFormDialog } from "@/components/partner-form-dialog";
 
+type PartnerSortBy = "name" | "type" | "website" | "contractCount" | "updatedAt";
+type SortDirection = "asc" | "desc";
+
 export default function PartnersList() {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [sortBy, setSortBy] = useState<PartnerSortBy>("name");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [, navigate] = useLocation();
   const [view, setView] = useState<"grid" | "list">(
     () => (localStorage.getItem("partners_view") === "list" ? "list" : "grid")
@@ -23,12 +31,54 @@ export default function PartnersList() {
   };
   const debouncedSearch = useDebounce(search, 300);
 
-  const params = { search: debouncedSearch || undefined };
+  const params = {
+    page,
+    pageSize,
+    search: debouncedSearch || undefined,
+    sortBy,
+    sortDirection,
+  };
   const { data: result, isLoading } = useListPartners(params, {
     query: {
       queryKey: getListPartnersQueryKey(params),
     }
   });
+  const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / pageSize));
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  const changeSort = (field: PartnerSortBy) => {
+    if (sortBy === field) {
+      setSortDirection((current) => current === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortDirection(field === "contractCount" || field === "updatedAt" ? "desc" : "asc");
+    }
+    setPage(1);
+  };
+
+  const SortIcon = ({ field }: { field: PartnerSortBy }) => {
+    if (sortBy !== field) return <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />;
+    return sortDirection === "asc"
+      ? <ArrowUp className="h-3.5 w-3.5 text-amber-700" />
+      : <ArrowDown className="h-3.5 w-3.5 text-amber-700" />;
+  };
+
+  const SortHeader = ({ field, label, align = "left" }: { field: PartnerSortBy; label: string; align?: "left" | "right" }) => (
+    <th className={`px-6 py-3 font-medium ${align === "right" ? "text-right" : ""}`}>
+      <button
+        type="button"
+        className={`inline-flex items-center gap-1.5 hover:text-slate-900 ${align === "right" ? "justify-end" : ""}`}
+        onClick={() => changeSort(field)}
+        aria-label={`Sort by ${label}`}
+        data-testid={`button-sort-partners-${field}`}
+      >
+        {label}<SortIcon field={field} />
+      </button>
+    </th>
+  );
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
@@ -44,17 +94,54 @@ export default function PartnersList() {
       </div>
 
       <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50/50">
+        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center gap-3 bg-slate-50/50">
           <div className="relative max-w-md w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input 
               placeholder="Search partners..." 
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               className="pl-9 bg-white border-slate-200"
             />
           </div>
-          <div className="ml-auto flex items-center rounded-md border border-slate-200 bg-white p-0.5">
+          <div className="flex items-center gap-2 md:ml-auto">
+            <Select
+              value={sortBy}
+              onValueChange={(value) => {
+                setSortBy(value as PartnerSortBy);
+                setSortDirection(value === "contractCount" || value === "updatedAt" ? "desc" : "asc");
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[170px] bg-white" data-testid="select-partners-sort">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="type">Partner type</SelectItem>
+                <SelectItem value="website">Website</SelectItem>
+                <SelectItem value="contractCount">Active contract count</SelectItem>
+                <SelectItem value="updatedAt">Recently updated</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                setSortDirection((current) => current === "asc" ? "desc" : "asc");
+                setPage(1);
+              }}
+              aria-label={`Sort ${sortDirection === "asc" ? "descending" : "ascending"}`}
+              data-testid="button-partners-sort-direction"
+            >
+              {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+            </Button>
+          </div>
+          <div className="flex items-center rounded-md border border-slate-200 bg-white p-0.5">
             <Button
               variant={view === "grid" ? "secondary" : "ghost"}
               size="sm"
@@ -84,13 +171,14 @@ export default function PartnersList() {
             <p className="text-slate-500 font-medium">No partners found</p>
           </div>
         ) : view === "list" ? (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm text-left" data-testid="table-partners">
             <thead className="text-xs text-slate-500 bg-slate-50 uppercase border-b border-slate-100">
               <tr>
-                <th className="px-6 py-3 font-medium">Name</th>
-                <th className="px-6 py-3 font-medium">Type</th>
-                <th className="px-6 py-3 font-medium">Website</th>
-                <th className="px-6 py-3 font-medium text-right">Contracts</th>
+                <SortHeader field="name" label="Name" />
+                <SortHeader field="type" label="Type" />
+                <SortHeader field="website" label="Website" />
+                <SortHeader field="contractCount" label="Active Contracts" align="right" />
                 <th className="px-6 py-3"></th>
               </tr>
             </thead>
@@ -130,6 +218,7 @@ export default function PartnersList() {
               ))}
             </tbody>
           </table>
+          </div>
         ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
           {result.data.map((partner) => (
@@ -161,7 +250,7 @@ export default function PartnersList() {
                     )}
                     
                     <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between text-sm">
-                      <span className="text-slate-600"><strong className="text-slate-900">{partner.contractCount || 0}</strong> Contracts</span>
+                      <span className="text-slate-600"><strong className="text-slate-900">{partner.contractCount || 0}</strong> Active Contracts</span>
                       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-amber-500 transition-colors" />
                     </div>
                   </CardContent>
@@ -169,6 +258,53 @@ export default function PartnersList() {
               </Link>
             ))}
         </div>
+        )}
+
+        {result && result.total > 0 && (
+          <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-slate-600" aria-live="polite">
+              Showing <span className="font-medium text-slate-900">{(result.page - 1) * result.pageSize + 1}</span>
+              {"–"}
+              <span className="font-medium text-slate-900">{Math.min(result.page * result.pageSize, result.total)}</span>
+              {" of "}
+              <span className="font-medium text-slate-900">{result.total}</span> partners
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-slate-600">Rows</span>
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => {
+                  setPageSize(Number(value));
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[72px] bg-white" data-testid="select-partners-page-size">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="min-w-[92px] text-center text-sm text-slate-600">
+                Page {result.page} of {totalPages}
+              </span>
+              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage(1)} aria-label="First page" data-testid="button-partners-first-page">
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} aria-label="Previous page" data-testid="button-partners-previous-page">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} aria-label="Next page" data-testid="button-partners-next-page">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Last page" data-testid="button-partners-last-page">
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         )}
       </Card>
 

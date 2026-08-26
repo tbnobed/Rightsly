@@ -175,12 +175,16 @@ export const DeleteUserResponse = zod.object({
  */
 export const listPartnersQueryPageDefault = 1;
 export const listPartnersQueryPageSizeDefault = 20;
+export const listPartnersQuerySortByDefault = `name`;
+export const listPartnersQuerySortDirectionDefault = `asc`;
 
 export const ListPartnersQueryParams = zod.object({
   "page": zod.coerce.number().default(listPartnersQueryPageDefault),
   "pageSize": zod.coerce.number().default(listPartnersQueryPageSizeDefault),
   "search": zod.coerce.string().optional(),
-  "type": zod.enum(['Licensor', 'Licensee', 'Both']).optional()
+  "type": zod.enum(['Licensor', 'Licensee', 'Both']).optional(),
+  "sortBy": zod.enum(['name', 'type', 'website', 'contractCount', 'updatedAt']).default(listPartnersQuerySortByDefault),
+  "sortDirection": zod.enum(['asc', 'desc']).default(listPartnersQuerySortDirectionDefault)
 })
 
 export const ListPartnersResponse = zod.object({

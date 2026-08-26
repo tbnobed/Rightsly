@@ -91,7 +91,10 @@ export default function PartnerDetail() {
           <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 pb-4">
             <CardTitle className="text-lg flex items-center">
               <FileText className="w-5 h-5 mr-2 text-amber-500" />
-              Contracts ({partner.contractCount || 0})
+              Contracts
+              <Badge variant="outline" className="ml-2 border-emerald-200 bg-emerald-50 text-emerald-700">
+                {partner.contractCount || 0} active
+              </Badge>
             </CardTitle>
             <Button size="sm" asChild className="bg-slate-900 text-white hover:bg-slate-800">
               <Link href={`/contracts/new?partnerId=${partner.id}`}>New Contract</Link>
