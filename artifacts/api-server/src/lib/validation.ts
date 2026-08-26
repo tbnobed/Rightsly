@@ -71,14 +71,17 @@ function normalizeRightsDuration(label: string, duration: unknown, term: unknown
   return { duration, term: normalizedTerm as TitleRightsTerm, customTerm: null };
 }
 
-export function normalizeTitleRights(input: Record<string, unknown>): { value?: NormalizedTitleRights; error?: string } {
+export function normalizeTitleRights(
+  input: Record<string, unknown>,
+  options: { allowMissingTbnMediaId?: boolean } = {},
+): { value?: NormalizedTitleRights; error?: string } {
   const source = input.contentSource;
   if (source !== "tbn" && source !== "third_party") {
     return { error: "contentSource must be tbn or third_party" };
   }
   const tbnMediaId = optionalText(input.tbnMediaId);
   if (tbnMediaId && tbnMediaId.length > 200) return { error: "TBN Media ID must be 200 characters or fewer" };
-  if (source === "tbn" && !tbnMediaId) {
+  if (source === "tbn" && !tbnMediaId && !options.allowMissingTbnMediaId) {
     return { error: "TBN Media ID is required for TBN content" };
   }
   const notes = optionalText(input.notes);

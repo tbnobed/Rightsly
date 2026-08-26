@@ -21,6 +21,8 @@ import type {
 import type {
   AcceptInviteRequest,
   Amendment,
+  CatalogImportPreview,
+  CatalogImportResult,
   Contact,
   ContactImportApproval,
   ContactImportPreview,
@@ -4263,6 +4265,152 @@ export const useValidateContractImport = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getValidateContractImportMutationOptions(options));
+    }
+
+export const getImportContentCatalogUrl = () => {
+
+
+
+
+  return `/api/import/catalog`
+}
+
+/**
+ * @summary Import titles, seasons, and episodes from the TBN catalog XLSX
+ */
+export const importContentCatalog = async (contractImportInput: ContractImportInput, options?: RequestInit): Promise<CatalogImportResult> => {
+    const formData = new FormData();
+formData.append(`file`, contractImportInput.file);
+
+  return customFetch<CatalogImportResult>(getImportContentCatalogUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getImportContentCatalogMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importContentCatalog>>, TError,{data: BodyType<ContractImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importContentCatalog>>, TError,{data: BodyType<ContractImportInput>}, TContext> => {
+
+const mutationKey = ['importContentCatalog'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importContentCatalog>>, {data: BodyType<ContractImportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importContentCatalog(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportContentCatalogMutationResult = NonNullable<Awaited<ReturnType<typeof importContentCatalog>>>
+    export type ImportContentCatalogMutationBody = BodyType<ContractImportInput>
+    export type ImportContentCatalogMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Import titles, seasons, and episodes from the TBN catalog XLSX
+ */
+export const useImportContentCatalog = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importContentCatalog>>, TError,{data: BodyType<ContractImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importContentCatalog>>,
+        TError,
+        {data: BodyType<ContractImportInput>},
+        TContext
+      > => {
+      return useMutation(getImportContentCatalogMutationOptions(options));
+    }
+
+export const getValidateContentCatalogImportUrl = () => {
+
+
+
+
+  return `/api/import/catalog/validate`
+}
+
+/**
+ * @summary Validate and preview a TBN catalog XLSX import
+ */
+export const validateContentCatalogImport = async (contractImportInput: ContractImportInput, options?: RequestInit): Promise<CatalogImportPreview> => {
+    const formData = new FormData();
+formData.append(`file`, contractImportInput.file);
+
+  return customFetch<CatalogImportPreview>(getValidateContentCatalogImportUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: formData
+  }
+);}
+
+
+
+
+
+export const getValidateContentCatalogImportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateContentCatalogImport>>, TError,{data: BodyType<ContractImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof validateContentCatalogImport>>, TError,{data: BodyType<ContractImportInput>}, TContext> => {
+
+const mutationKey = ['validateContentCatalogImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof validateContentCatalogImport>>, {data: BodyType<ContractImportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  validateContentCatalogImport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ValidateContentCatalogImportMutationResult = NonNullable<Awaited<ReturnType<typeof validateContentCatalogImport>>>
+    export type ValidateContentCatalogImportMutationBody = BodyType<ContractImportInput>
+    export type ValidateContentCatalogImportMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Validate and preview a TBN catalog XLSX import
+ */
+export const useValidateContentCatalogImport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof validateContentCatalogImport>>, TError,{data: BodyType<ContractImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof validateContentCatalogImport>>,
+        TError,
+        {data: BodyType<ContractImportInput>},
+        TContext
+      > => {
+      return useMutation(getValidateContentCatalogImportMutationOptions(options));
     }
 
 export const getGetImportTemplateUrl = () => {

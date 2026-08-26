@@ -1313,6 +1313,14 @@ export const ListContentResponse = zod.object({
   "contentSource": zod.union([zod.literal('tbn'),zod.literal('third_party'),zod.literal(null)]).nullable(),
   "tbnMediaId": zod.string().nullable(),
   "notes": zod.string().nullable(),
+  "catalogImportKey": zod.string().nullable(),
+  "catalogInternalId": zod.string().nullable(),
+  "mediaFormat": zod.string().nullable(),
+  "genres": zod.string().nullable(),
+  "director": zod.string().nullable(),
+  "actors": zod.string().nullable(),
+  "releaseDate": zod.coerce.date().nullable(),
+  "contentRating": zod.string().nullable(),
   "broadcastRightsDuration": zod.number().min(1).nullable(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
   "broadcastRightsCustomTerm": zod.string().max(listContentResponseDataItemBroadcastRightsCustomTermMax).nullable(),
@@ -1335,6 +1343,28 @@ export const ListContentResponse = zod.object({
   "year": zod.number().nullish(),
   "episodeCount": zod.number().nullish()
 })).optional(),
+  "episodes": zod.array(zod.object({
+  "id": zod.string(),
+  "contentItemId": zod.string(),
+  "seasonId": zod.string().nullable(),
+  "catalogKey": zod.string(),
+  "internalId": zod.string().nullable(),
+  "episodeNumber": zod.number().nullable(),
+  "episodeNumberText": zod.string().nullable(),
+  "title": zod.string().nullable(),
+  "description": zod.string().nullable(),
+  "mediaFormat": zod.string().nullable(),
+  "genres": zod.string().nullable(),
+  "director": zod.string().nullable(),
+  "actors": zod.string().nullable(),
+  "year": zod.number().nullable(),
+  "releaseDate": zod.coerce.date().nullable(),
+  "contentRating": zod.string().nullable(),
+  "sourceSheet": zod.string(),
+  "sourceRow": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})).optional(),
   "contractCount": zod.number().optional(),
   "hasCleans": zod.boolean().optional(),
   "hasCaptions": zod.boolean().optional(),
@@ -1353,6 +1383,18 @@ export const ListContentResponse = zod.object({
 export const createContentBodyTbnMediaIdMax = 200;
 
 export const createContentBodyNotesMax = 5000;
+
+export const createContentBodyCatalogInternalIdMax = 200;
+
+export const createContentBodyMediaFormatMax = 100;
+
+export const createContentBodyGenresMax = 1000;
+
+export const createContentBodyDirectorMax = 500;
+
+export const createContentBodyActorsMax = 2000;
+
+export const createContentBodyContentRatingMax = 100;
 
 
 export const createContentBodyBroadcastRightsCustomTermMax = 50;
@@ -1376,6 +1418,13 @@ export const CreateContentBody = zod.object({
   "contentSource": zod.enum(['tbn', 'third_party']),
   "tbnMediaId": zod.string().max(createContentBodyTbnMediaIdMax).nullish(),
   "notes": zod.string().max(createContentBodyNotesMax).nullish(),
+  "catalogInternalId": zod.string().max(createContentBodyCatalogInternalIdMax).nullish(),
+  "mediaFormat": zod.string().max(createContentBodyMediaFormatMax).nullish(),
+  "genres": zod.string().max(createContentBodyGenresMax).nullish(),
+  "director": zod.string().max(createContentBodyDirectorMax).nullish(),
+  "actors": zod.string().max(createContentBodyActorsMax).nullish(),
+  "releaseDate": zod.coerce.date().nullish(),
+  "contentRating": zod.string().max(createContentBodyContentRatingMax).nullish(),
   "broadcastRightsDuration": zod.number().min(1).nullish(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
   "broadcastRightsCustomTerm": zod.string().max(createContentBodyBroadcastRightsCustomTermMax).nullish(),
@@ -1424,6 +1473,14 @@ export const CreateContentResponse = zod.object({
   "contentSource": zod.union([zod.literal('tbn'),zod.literal('third_party'),zod.literal(null)]).nullable(),
   "tbnMediaId": zod.string().nullable(),
   "notes": zod.string().nullable(),
+  "catalogImportKey": zod.string().nullable(),
+  "catalogInternalId": zod.string().nullable(),
+  "mediaFormat": zod.string().nullable(),
+  "genres": zod.string().nullable(),
+  "director": zod.string().nullable(),
+  "actors": zod.string().nullable(),
+  "releaseDate": zod.coerce.date().nullable(),
+  "contentRating": zod.string().nullable(),
   "broadcastRightsDuration": zod.number().min(1).nullable(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
   "broadcastRightsCustomTerm": zod.string().max(createContentResponseBroadcastRightsCustomTermMax).nullable(),
@@ -1445,6 +1502,28 @@ export const CreateContentResponse = zod.object({
   "title": zod.string().nullish(),
   "year": zod.number().nullish(),
   "episodeCount": zod.number().nullish()
+})).optional(),
+  "episodes": zod.array(zod.object({
+  "id": zod.string(),
+  "contentItemId": zod.string(),
+  "seasonId": zod.string().nullable(),
+  "catalogKey": zod.string(),
+  "internalId": zod.string().nullable(),
+  "episodeNumber": zod.number().nullable(),
+  "episodeNumberText": zod.string().nullable(),
+  "title": zod.string().nullable(),
+  "description": zod.string().nullable(),
+  "mediaFormat": zod.string().nullable(),
+  "genres": zod.string().nullable(),
+  "director": zod.string().nullable(),
+  "actors": zod.string().nullable(),
+  "year": zod.number().nullable(),
+  "releaseDate": zod.coerce.date().nullable(),
+  "contentRating": zod.string().nullable(),
+  "sourceSheet": zod.string(),
+  "sourceRow": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })).optional(),
   "contractCount": zod.number().optional(),
   "hasCleans": zod.boolean().optional(),
@@ -1484,6 +1563,14 @@ export const GetContentResponse = zod.object({
   "contentSource": zod.union([zod.literal('tbn'),zod.literal('third_party'),zod.literal(null)]).nullable(),
   "tbnMediaId": zod.string().nullable(),
   "notes": zod.string().nullable(),
+  "catalogImportKey": zod.string().nullable(),
+  "catalogInternalId": zod.string().nullable(),
+  "mediaFormat": zod.string().nullable(),
+  "genres": zod.string().nullable(),
+  "director": zod.string().nullable(),
+  "actors": zod.string().nullable(),
+  "releaseDate": zod.coerce.date().nullable(),
+  "contentRating": zod.string().nullable(),
   "broadcastRightsDuration": zod.number().min(1).nullable(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
   "broadcastRightsCustomTerm": zod.string().max(getContentResponseBroadcastRightsCustomTermMax).nullable(),
@@ -1506,6 +1593,28 @@ export const GetContentResponse = zod.object({
   "year": zod.number().nullish(),
   "episodeCount": zod.number().nullish()
 })).optional(),
+  "episodes": zod.array(zod.object({
+  "id": zod.string(),
+  "contentItemId": zod.string(),
+  "seasonId": zod.string().nullable(),
+  "catalogKey": zod.string(),
+  "internalId": zod.string().nullable(),
+  "episodeNumber": zod.number().nullable(),
+  "episodeNumberText": zod.string().nullable(),
+  "title": zod.string().nullable(),
+  "description": zod.string().nullable(),
+  "mediaFormat": zod.string().nullable(),
+  "genres": zod.string().nullable(),
+  "director": zod.string().nullable(),
+  "actors": zod.string().nullable(),
+  "year": zod.number().nullable(),
+  "releaseDate": zod.coerce.date().nullable(),
+  "contentRating": zod.string().nullable(),
+  "sourceSheet": zod.string(),
+  "sourceRow": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})).optional(),
   "contractCount": zod.number().optional(),
   "hasCleans": zod.boolean().optional(),
   "hasCaptions": zod.boolean().optional(),
@@ -1524,6 +1633,18 @@ export const UpdateContentParams = zod.object({
 export const updateContentBodyTbnMediaIdMax = 200;
 
 export const updateContentBodyNotesMax = 5000;
+
+export const updateContentBodyCatalogInternalIdMax = 200;
+
+export const updateContentBodyMediaFormatMax = 100;
+
+export const updateContentBodyGenresMax = 1000;
+
+export const updateContentBodyDirectorMax = 500;
+
+export const updateContentBodyActorsMax = 2000;
+
+export const updateContentBodyContentRatingMax = 100;
 
 
 export const updateContentBodyBroadcastRightsCustomTermMax = 50;
@@ -1547,6 +1668,13 @@ export const UpdateContentBody = zod.object({
   "contentSource": zod.enum(['tbn', 'third_party']).optional(),
   "tbnMediaId": zod.string().max(updateContentBodyTbnMediaIdMax).nullish(),
   "notes": zod.string().max(updateContentBodyNotesMax).nullish(),
+  "catalogInternalId": zod.string().max(updateContentBodyCatalogInternalIdMax).nullish(),
+  "mediaFormat": zod.string().max(updateContentBodyMediaFormatMax).nullish(),
+  "genres": zod.string().max(updateContentBodyGenresMax).nullish(),
+  "director": zod.string().max(updateContentBodyDirectorMax).nullish(),
+  "actors": zod.string().max(updateContentBodyActorsMax).nullish(),
+  "releaseDate": zod.coerce.date().nullish(),
+  "contentRating": zod.string().max(updateContentBodyContentRatingMax).nullish(),
   "broadcastRightsDuration": zod.number().min(1).nullish(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullish(),
   "broadcastRightsCustomTerm": zod.string().max(updateContentBodyBroadcastRightsCustomTermMax).nullish(),
@@ -1595,6 +1723,14 @@ export const UpdateContentResponse = zod.object({
   "contentSource": zod.union([zod.literal('tbn'),zod.literal('third_party'),zod.literal(null)]).nullable(),
   "tbnMediaId": zod.string().nullable(),
   "notes": zod.string().nullable(),
+  "catalogImportKey": zod.string().nullable(),
+  "catalogInternalId": zod.string().nullable(),
+  "mediaFormat": zod.string().nullable(),
+  "genres": zod.string().nullable(),
+  "director": zod.string().nullable(),
+  "actors": zod.string().nullable(),
+  "releaseDate": zod.coerce.date().nullable(),
+  "contentRating": zod.string().nullable(),
   "broadcastRightsDuration": zod.number().min(1).nullable(),
   "broadcastRightsTerm": zod.union([zod.literal('months'),zod.literal('years'),zod.literal('in_perpetuity'),zod.literal(null)]).nullable(),
   "broadcastRightsCustomTerm": zod.string().max(updateContentResponseBroadcastRightsCustomTermMax).nullable(),
@@ -1616,6 +1752,28 @@ export const UpdateContentResponse = zod.object({
   "title": zod.string().nullish(),
   "year": zod.number().nullish(),
   "episodeCount": zod.number().nullish()
+})).optional(),
+  "episodes": zod.array(zod.object({
+  "id": zod.string(),
+  "contentItemId": zod.string(),
+  "seasonId": zod.string().nullable(),
+  "catalogKey": zod.string(),
+  "internalId": zod.string().nullable(),
+  "episodeNumber": zod.number().nullable(),
+  "episodeNumberText": zod.string().nullable(),
+  "title": zod.string().nullable(),
+  "description": zod.string().nullable(),
+  "mediaFormat": zod.string().nullable(),
+  "genres": zod.string().nullable(),
+  "director": zod.string().nullable(),
+  "actors": zod.string().nullable(),
+  "year": zod.number().nullable(),
+  "releaseDate": zod.coerce.date().nullable(),
+  "contentRating": zod.string().nullable(),
+  "sourceSheet": zod.string(),
+  "sourceRow": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 })).optional(),
   "contractCount": zod.number().optional(),
   "hasCleans": zod.boolean().optional(),
@@ -1841,6 +1999,58 @@ export const ValidateContractImportResponse = zod.object({
   "review": zod.number(),
   "skipped": zod.number(),
   "invalid": zod.number(),
+  "errors": zod.array(zod.object({
+  "row": zod.number(),
+  "message": zod.string()
+})),
+  "warnings": zod.array(zod.object({
+  "row": zod.number(),
+  "message": zod.string()
+}))
+})
+
+
+/**
+ * @summary Import titles, seasons, and episodes from the TBN catalog XLSX
+ */
+export const ImportContentCatalogBody = zod.object({
+  "file": zod.instanceof(File)
+})
+
+export const ImportContentCatalogResponse = zod.object({
+  "imported": zod.number(),
+  "failed": zod.number(),
+  "duplicates": zod.number(),
+  "titlesCreated": zod.number(),
+  "titlesUpdated": zod.number(),
+  "episodesCreated": zod.number(),
+  "episodesUpdated": zod.number(),
+  "errors": zod.array(zod.object({
+  "row": zod.number(),
+  "message": zod.string()
+})),
+  "warnings": zod.array(zod.object({
+  "row": zod.number(),
+  "message": zod.string()
+}))
+})
+
+
+/**
+ * @summary Validate and preview a TBN catalog XLSX import
+ */
+export const ValidateContentCatalogImportBody = zod.object({
+  "file": zod.instanceof(File)
+})
+
+export const ValidateContentCatalogImportResponse = zod.object({
+  "total": zod.number(),
+  "ready": zod.number(),
+  "duplicates": zod.number(),
+  "invalid": zod.number(),
+  "titleCount": zod.number(),
+  "episodic": zod.number(),
+  "standalone": zod.number(),
   "errors": zod.array(zod.object({
   "row": zod.number(),
   "message": zod.string()

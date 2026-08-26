@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, pgEnum, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, pgEnum, boolean, date, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -22,6 +22,14 @@ export const contentItemsTable = pgTable("content_items", {
   tbnMediaId: text("tbn_media_id"),
   notes: text("notes"),
   year: integer("year"),
+  catalogImportKey: text("catalog_import_key"),
+  catalogInternalId: text("catalog_internal_id"),
+  mediaFormat: text("media_format"),
+  genres: text("genres"),
+  director: text("director"),
+  actors: text("actors"),
+  releaseDate: date("release_date"),
+  contentRating: text("content_rating"),
   broadcastRightsDuration: integer("broadcast_rights_duration"),
   broadcastRightsTerm: titleRightsTermEnum("broadcast_rights_term"),
   broadcastRightsCustomTerm: text("broadcast_rights_custom_term"),
@@ -39,7 +47,9 @@ export const contentItemsTable = pgTable("content_items", {
   hasCaptions: boolean("has_captions").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("content_items_catalog_import_key_idx").on(table.catalogImportKey),
+]);
 
 export const seasonsTable = pgTable("seasons", {
   id: text("id").primaryKey(),
@@ -52,13 +62,50 @@ export const seasonsTable = pgTable("seasons", {
   episodeCount: integer("episode_count"),
 });
 
+export const episodesTable = pgTable("episodes", {
+  id: text("id").primaryKey(),
+  contentItemId: text("content_item_id")
+    .notNull()
+    .references(() => contentItemsTable.id, { onDelete: "cascade" }),
+  seasonId: text("season_id")
+    .references(() => seasonsTable.id, { onDelete: "cascade" }),
+  catalogKey: text("catalog_key").notNull(),
+  internalId: text("internal_id"),
+  episodeNumber: integer("episode_number"),
+  episodeNumberText: text("episode_number_text"),
+  title: text("title"),
+  description: text("description"),
+  mediaFormat: text("media_format"),
+  genres: text("genres"),
+  director: text("director"),
+  actors: text("actors"),
+  year: integer("year"),
+  releaseDate: date("release_date"),
+  contentRating: text("content_rating"),
+  sourceSheet: text("source_sheet").notNull().default("Metadata"),
+  sourceRow: integer("source_row").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("episodes_catalog_key_idx").on(table.catalogKey),
+  uniqueIndex("episodes_internal_id_idx").on(table.internalId),
+  index("episodes_content_item_idx").on(table.contentItemId),
+  index("episodes_season_idx").on(table.seasonId),
+]);
+
 export const insertContentItemSchema = createInsertSchema(contentItemsTable).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 export const insertSeasonSchema = createInsertSchema(seasonsTable).omit({ id: true });
+export const insertEpisodeSchema = createInsertSchema(episodesTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
 export type InsertContentItem = z.infer<typeof insertContentItemSchema>;
 export type ContentItem = typeof contentItemsTable.$inferSelect;
 export type Season = typeof seasonsTable.$inferSelect;
+export type Episode = typeof episodesTable.$inferSelect;

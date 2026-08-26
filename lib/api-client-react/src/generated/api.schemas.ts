@@ -390,6 +390,42 @@ export interface Season {
   episodeCount?: number | null;
 }
 
+export interface Episode {
+  id: string;
+  contentItemId: string;
+  /** @nullable */
+  seasonId: string | null;
+  catalogKey: string;
+  /** @nullable */
+  internalId: string | null;
+  /** @nullable */
+  episodeNumber: number | null;
+  /** @nullable */
+  episodeNumberText: string | null;
+  /** @nullable */
+  title: string | null;
+  /** @nullable */
+  description: string | null;
+  /** @nullable */
+  mediaFormat: string | null;
+  /** @nullable */
+  genres: string | null;
+  /** @nullable */
+  director: string | null;
+  /** @nullable */
+  actors: string | null;
+  /** @nullable */
+  year: number | null;
+  /** @nullable */
+  releaseDate: string | null;
+  /** @nullable */
+  contentRating: string | null;
+  sourceSheet: string;
+  sourceRow: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ContentItem {
   id: string;
   type: ContentItemType;
@@ -401,6 +437,22 @@ export interface ContentItem {
   tbnMediaId: string | null;
   /** @nullable */
   notes: string | null;
+  /** @nullable */
+  catalogImportKey: string | null;
+  /** @nullable */
+  catalogInternalId: string | null;
+  /** @nullable */
+  mediaFormat: string | null;
+  /** @nullable */
+  genres: string | null;
+  /** @nullable */
+  director: string | null;
+  /** @nullable */
+  actors: string | null;
+  /** @nullable */
+  releaseDate: string | null;
+  /** @nullable */
+  contentRating: string | null;
   /**
      * @minimum 1
      * @nullable
@@ -456,6 +508,7 @@ export interface ContentItem {
   youtubeRightsCustomTerm: string | null;
   year?: number | null;
   seasons?: Season[];
+  episodes?: Episode[];
   contractCount?: number;
   hasCleans?: boolean;
   hasCaptions?: boolean;
@@ -572,6 +625,38 @@ export interface CreateContentItemRequest {
      * @nullable
      */
   notes?: string | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  catalogInternalId?: string | null;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  mediaFormat?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  genres?: string | null;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  director?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  actors?: string | null;
+  /** @nullable */
+  releaseDate?: string | null;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  contentRating?: string | null;
   /**
      * @minimum 1
      * @nullable
@@ -721,6 +806,38 @@ export interface UpdateContentItemRequest {
      * @nullable
      */
   notes?: string | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  catalogInternalId?: string | null;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  mediaFormat?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  genres?: string | null;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  director?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  actors?: string | null;
+  /** @nullable */
+  releaseDate?: string | null;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  contentRating?: string | null;
   /**
      * @minimum 1
      * @nullable
@@ -1358,6 +1475,30 @@ export interface ContractImportInput {
 export interface ImportIssue {
   row: number;
   message: string;
+}
+
+export interface CatalogImportPreview {
+  total: number;
+  ready: number;
+  duplicates: number;
+  invalid: number;
+  titleCount: number;
+  episodic: number;
+  standalone: number;
+  errors: ImportIssue[];
+  warnings: ImportIssue[];
+}
+
+export interface CatalogImportResult {
+  imported: number;
+  failed: number;
+  duplicates: number;
+  titlesCreated: number;
+  titlesUpdated: number;
+  episodesCreated: number;
+  episodesUpdated: number;
+  errors: ImportIssue[];
+  warnings: ImportIssue[];
 }
 
 export interface ImportResult {

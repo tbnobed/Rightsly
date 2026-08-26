@@ -63,6 +63,7 @@ const contentSchema = z.object({
   title: z.string().min(1, "Title is required"),
   contentSource: z.enum(["tbn", "third_party"], { message: "Choose TBN content or third-party content" }),
   tbnMediaId: z.string().optional(),
+  catalogImportKey: z.string().optional(),
   type: z.enum(["Film", "TVSeries", "TBN_FAST", "TBN_Linear", "WoF_FAST"]),
   year: z.string().refine(
     (value) => !value || (/^\d{4}$/.test(value) && Number(value) >= 1900 && Number(value) <= new Date().getFullYear() + 5),
@@ -90,7 +91,7 @@ const contentSchema = z.object({
   hasCaptions: z.boolean().default(false),
   seasons: z.array(seasonSchema).default([]),
 }).superRefine((values, ctx) => {
-  if (values.contentSource === "tbn" && !values.tbnMediaId?.trim()) {
+  if (values.contentSource === "tbn" && !values.tbnMediaId?.trim() && !values.catalogImportKey) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["tbnMediaId"], message: "TBN Media ID is required for TBN content" });
   }
   const rights = [
@@ -279,6 +280,7 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
       title: "",
       contentSource: undefined,
       tbnMediaId: "",
+      catalogImportKey: "",
       type: "Film",
       year: "",
       description: "",
@@ -311,6 +313,7 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
         title: content?.title ?? "",
         contentSource: content?.contentSource ?? undefined,
         tbnMediaId: content?.tbnMediaId ?? "",
+        catalogImportKey: content?.catalogImportKey ?? "",
         type: (content?.type as ContentFormValues["type"]) ?? "Film",
         year: content?.year ? String(content.year) : "",
         description: content?.description ?? "",

@@ -295,15 +295,28 @@ test("expanded import validates first, links exact content, and skips source-key
       season_count: 1,
     }]);
   } finally {
-    await pool.query(`
-      DELETE FROM audit_logs WHERE user_id = $1;
-      DELETE FROM contracts WHERE partner_id IN (SELECT id FROM partners WHERE name = $2);
-      DELETE FROM partners WHERE name = $2;
-      DELETE FROM seasons WHERE content_item_id = $3;
-      DELETE FROM content_items WHERE id = $3;
-      DELETE FROM notifications WHERE user_id = $1;
-      DELETE FROM users WHERE id = $1;
-    `, [userId, partnerName, contentId]).catch(() => {});
+    await pool.query("DELETE FROM audit_logs WHERE user_id = $1", [userId]).catch(() => {});
+    await pool.query(
+      `DELETE FROM contract_content WHERE contract_id IN (
+        SELECT c.id FROM contracts c JOIN partners p ON p.id = c.partner_id WHERE p.name = $1
+      )`,
+      [partnerName],
+    ).catch(() => {});
+    await pool.query(
+      `DELETE FROM contract_seasons WHERE contract_id IN (
+        SELECT c.id FROM contracts c JOIN partners p ON p.id = c.partner_id WHERE p.name = $1
+      )`,
+      [partnerName],
+    ).catch(() => {});
+    await pool.query(
+      "DELETE FROM contracts WHERE partner_id IN (SELECT id FROM partners WHERE name = $1)",
+      [partnerName],
+    ).catch(() => {});
+    await pool.query("DELETE FROM partners WHERE name = $1", [partnerName]).catch(() => {});
+    await pool.query("DELETE FROM seasons WHERE content_item_id = $1", [contentId]).catch(() => {});
+    await pool.query("DELETE FROM content_items WHERE id = $1", [contentId]).catch(() => {});
+    await pool.query("DELETE FROM notifications WHERE user_id = $1", [userId]).catch(() => {});
+    await pool.query("DELETE FROM users WHERE id = $1", [userId]).catch(() => {});
     await pool.end();
   }
 });

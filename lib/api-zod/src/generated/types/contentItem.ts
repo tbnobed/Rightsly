@@ -10,6 +10,7 @@ import type { ContentItemDigitalRightsTerm } from './contentItemDigitalRightsTer
 import type { ContentItemInternationalRightsTerm } from './contentItemInternationalRightsTerm';
 import type { ContentItemType } from './contentItemType';
 import type { ContentItemYoutubeRightsTerm } from './contentItemYoutubeRightsTerm';
+import type { Episode } from './episode';
 import type { Season } from './season';
 
 export interface ContentItem {
@@ -23,6 +24,22 @@ export interface ContentItem {
   tbnMediaId: string | null;
   /** @nullable */
   notes: string | null;
+  /** @nullable */
+  catalogImportKey: string | null;
+  /** @nullable */
+  catalogInternalId: string | null;
+  /** @nullable */
+  mediaFormat: string | null;
+  /** @nullable */
+  genres: string | null;
+  /** @nullable */
+  director: string | null;
+  /** @nullable */
+  actors: string | null;
+  /** @nullable */
+  releaseDate: Date | null;
+  /** @nullable */
+  contentRating: string | null;
   /**
      * @minimum 1
      * @nullable
@@ -78,6 +95,7 @@ export interface ContentItem {
   youtubeRightsCustomTerm: string | null;
   year?: number | null;
   seasons?: Season[];
+  episodes?: Episode[];
   contractCount?: number;
   hasCleans?: boolean;
   hasCaptions?: boolean;

@@ -386,7 +386,7 @@ components:
 
     ContentItem:
       type: object
-      required: [id, type, title, contentSource, tbnMediaId, notes, broadcastRightsDuration, broadcastRightsTerm, broadcastRightsCustomTerm, digitalRightsDuration, digitalRightsTerm, digitalRightsCustomTerm, internationalRightsDuration, internationalRightsTerm, internationalRightsCustomTerm, internationalBroadcastAirAmount, youtubeRightsDuration, youtubeRightsTerm, youtubeRightsCustomTerm, createdAt]
+      required: [id, type, title, contentSource, tbnMediaId, notes, catalogImportKey, catalogInternalId, mediaFormat, genres, director, actors, releaseDate, contentRating, broadcastRightsDuration, broadcastRightsTerm, broadcastRightsCustomTerm, digitalRightsDuration, digitalRightsTerm, digitalRightsCustomTerm, internationalRightsDuration, internationalRightsTerm, internationalRightsCustomTerm, internationalBroadcastAirAmount, youtubeRightsDuration, youtubeRightsTerm, youtubeRightsCustomTerm, createdAt]
       properties:
         id:
           type: string
@@ -404,6 +404,23 @@ components:
         tbnMediaId:
           type: [string, "null"]
         notes:
+          type: [string, "null"]
+        catalogImportKey:
+          type: [string, "null"]
+        catalogInternalId:
+          type: [string, "null"]
+        mediaFormat:
+          type: [string, "null"]
+        genres:
+          type: [string, "null"]
+        director:
+          type: [string, "null"]
+        actors:
+          type: [string, "null"]
+        releaseDate:
+          type: [string, "null"]
+          format: date
+        contentRating:
           type: [string, "null"]
         broadcastRightsDuration: { type: [integer, "null"], minimum: 1 }
         broadcastRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
@@ -425,6 +442,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Season'
+        episodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Episode'
         contractCount:
           type: integer
         hasCleans:
@@ -472,6 +493,31 @@ components:
           type: integer
           nullable: true
 
+    Episode:
+      type: object
+      required: [id, contentItemId, seasonId, catalogKey, internalId, episodeNumber, episodeNumberText, title, description, mediaFormat, genres, director, actors, year, releaseDate, contentRating, sourceSheet, sourceRow, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        contentItemId: { type: string }
+        seasonId: { type: [string, "null"] }
+        catalogKey: { type: string }
+        internalId: { type: [string, "null"] }
+        episodeNumber: { type: [integer, "null"] }
+        episodeNumberText: { type: [string, "null"] }
+        title: { type: [string, "null"] }
+        description: { type: [string, "null"] }
+        mediaFormat: { type: [string, "null"] }
+        genres: { type: [string, "null"] }
+        director: { type: [string, "null"] }
+        actors: { type: [string, "null"] }
+        year: { type: [integer, "null"] }
+        releaseDate: { type: [string, "null"], format: date }
+        contentRating: { type: [string, "null"] }
+        sourceSheet: { type: string }
+        sourceRow: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
     CreateContentItemRequest:
       type: object
       required: [type, title, contentSource]
@@ -489,6 +535,13 @@ components:
           enum: [tbn, third_party]
         tbnMediaId: { type: [string, "null"], maxLength: 200 }
         notes: { type: [string, "null"], maxLength: 5000 }
+        catalogInternalId: { type: [string, "null"], maxLength: 200 }
+        mediaFormat: { type: [string, "null"], maxLength: 100 }
+        genres: { type: [string, "null"], maxLength: 1000 }
+        director: { type: [string, "null"], maxLength: 500 }
+        actors: { type: [string, "null"], maxLength: 2000 }
+        releaseDate: { type: [string, "null"], format: date }
+        contentRating: { type: [string, "null"], maxLength: 100 }
         broadcastRightsDuration: { type: [integer, "null"], minimum: 1 }
         broadcastRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
         broadcastRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
@@ -545,6 +598,13 @@ components:
           enum: [tbn, third_party]
         tbnMediaId: { type: [string, "null"], maxLength: 200 }
         notes: { type: [string, "null"], maxLength: 5000 }
+        catalogInternalId: { type: [string, "null"], maxLength: 200 }
+        mediaFormat: { type: [string, "null"], maxLength: 100 }
+        genres: { type: [string, "null"], maxLength: 1000 }
+        director: { type: [string, "null"], maxLength: 500 }
+        actors: { type: [string, "null"], maxLength: 2000 }
+        releaseDate: { type: [string, "null"], format: date }
+        contentRating: { type: [string, "null"], maxLength: 100 }
         broadcastRightsDuration: { type: [integer, "null"], minimum: 1 }
         broadcastRightsTerm: { type: [string, "null"], enum: [months, years, in_perpetuity, null] }
         broadcastRightsCustomTerm: { type: [string, "null"], maxLength: 50 }
@@ -1405,6 +1465,42 @@ components:
         file:
           type: string
           format: binary
+
+    CatalogImportPreview:
+      type: object
+      required: [total, ready, duplicates, invalid, titleCount, episodic, standalone, errors, warnings]
+      properties:
+        total: { type: integer }
+        ready: { type: integer }
+        duplicates: { type: integer }
+        invalid: { type: integer }
+        titleCount: { type: integer }
+        episodic: { type: integer }
+        standalone: { type: integer }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/ImportIssue' }
+        warnings:
+          type: array
+          items: { $ref: '#/components/schemas/ImportIssue' }
+
+    CatalogImportResult:
+      type: object
+      required: [imported, failed, duplicates, titlesCreated, titlesUpdated, episodesCreated, episodesUpdated, errors, warnings]
+      properties:
+        imported: { type: integer }
+        failed: { type: integer }
+        duplicates: { type: integer }
+        titlesCreated: { type: integer }
+        titlesUpdated: { type: integer }
+        episodesCreated: { type: integer }
+        episodesUpdated: { type: integer }
+        errors:
+          type: array
+          items: { $ref: '#/components/schemas/ImportIssue' }
+        warnings:
+          type: array
+          items: { $ref: '#/components/schemas/ImportIssue' }
 
     ImportResult:
       type: object
@@ -2954,6 +3050,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ImportPreview'
+
+  /import/catalog:
+    post:
+      operationId: importContentCatalog
+      summary: Import titles, seasons, and episodes from the TBN catalog XLSX
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContractImportInput'
+      responses:
+        '200':
+          description: Catalog import result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogImportResult'
+
+  /import/catalog/validate:
+    post:
+      operationId: validateContentCatalogImport
+      summary: Validate and preview a TBN catalog XLSX import
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContractImportInput'
+      responses:
+        '200':
+          description: Catalog import preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogImportPreview'
 
   /import/template:
     get:

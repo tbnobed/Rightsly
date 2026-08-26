@@ -8,6 +8,7 @@ import {
   parseContractImportCsv,
   previewContractImportRecords,
 } from "../lib/contractImport";
+import { importCatalog, previewCatalogImport } from "../lib/catalogImport";
 
 const router = Router();
 router.use(authenticateToken, requireRole("admin", "legal"));
@@ -99,6 +100,49 @@ router.post("/contracts", upload.single("file"), async (req, res) => {
   }
 
   res.json(await importContractRecords(records, req.user!));
+});
+
+function isXlsxUpload(file: Express.Multer.File) {
+  return file.originalname.toLocaleLowerCase("en-US").endsWith(".xlsx") ||
+    file.mimetype === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+}
+
+// POST /api/import/catalog/validate
+router.post("/catalog/validate", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    res.status(400).json({ message: "No file uploaded" });
+    return;
+  }
+  if (!isXlsxUpload(req.file)) {
+    res.status(400).json({ message: "Content catalog imports require an XLSX file" });
+    return;
+  }
+  try {
+    res.json(await previewCatalogImport(req.file.buffer));
+  } catch (error) {
+    res.status(400).json({
+      message: error instanceof Error ? error.message : "Invalid catalog workbook",
+    });
+  }
+});
+
+// POST /api/import/catalog
+router.post("/catalog", upload.single("file"), async (req, res) => {
+  if (!req.file) {
+    res.status(400).json({ message: "No file uploaded" });
+    return;
+  }
+  if (!isXlsxUpload(req.file)) {
+    res.status(400).json({ message: "Content catalog imports require an XLSX file" });
+    return;
+  }
+  try {
+    res.json(await importCatalog(req.file.buffer, req.user!));
+  } catch (error) {
+    res.status(400).json({
+      message: error instanceof Error ? error.message : "Catalog import failed",
+    });
+  }
 });
 
 export default router;

@@ -28,6 +28,38 @@ export interface CreateContentItemRequest {
      */
   notes?: string | null;
   /**
+     * @maxLength 200
+     * @nullable
+     */
+  catalogInternalId?: string | null;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  mediaFormat?: string | null;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  genres?: string | null;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  director?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  actors?: string | null;
+  /** @nullable */
+  releaseDate?: Date | null;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  contentRating?: string | null;
+  /**
      * @minimum 1
      * @nullable
      */

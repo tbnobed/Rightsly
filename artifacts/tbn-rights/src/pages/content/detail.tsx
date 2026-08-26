@@ -177,9 +177,24 @@ export default function ContentDetail() {
               {content.contentSource === "tbn" && (
                 <div>
                   <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">TBN Media ID</span>
-                  <p className="text-sm font-mono text-slate-700" data-testid="text-tbn-media-id">{content.tbnMediaId}</p>
+                  <p className="text-sm font-mono text-slate-700" data-testid="text-tbn-media-id">
+                    {content.tbnMediaId || "Not assigned at title level"}
+                  </p>
                 </div>
               )}
+              {[
+                ["Format", content.mediaFormat],
+                ["Genres", content.genres],
+                ["Director", content.director],
+                ["Actors", content.actors],
+                ["Release Date", content.releaseDate ? format(parseISO(content.releaseDate), "MMM d, yyyy") : null],
+                ["Rating", content.contentRating],
+              ].filter((entry): entry is [string, string] => Boolean(entry[1])).map(([label, value]) => (
+                <div key={label}>
+                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">{label}</span>
+                  <p className="text-sm whitespace-pre-wrap text-slate-700">{value}</p>
+                </div>
+              ))}
               {content.notes && (
                 <div>
                   <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">Notes</span>
@@ -188,8 +203,12 @@ export default function ContentDetail() {
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">Internal ID</span>
-                  <p className="text-sm font-mono text-slate-700">{content.id.split('-')[0]}</p>
+                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">
+                    {content.catalogInternalId ? "Catalog Internal ID" : "Rightsly ID"}
+                  </span>
+                  <p className="text-sm font-mono text-slate-700">
+                    {content.catalogInternalId || content.id}
+                  </p>
                 </div>
                 <div>
                   <span className="text-xs font-medium text-slate-500 uppercase tracking-wider block mb-1">Added</span>
@@ -297,6 +316,58 @@ export default function ContentDetail() {
           </CardContent>
         </Card>
       </div>
+
+      {content.episodes && content.episodes.length > 0 && (
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <LayoutList className="h-5 w-5 text-indigo-500" />
+              Episodes ({content.episodes.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="max-h-[42rem] overflow-auto p-0">
+            <ul className="divide-y divide-slate-100">
+              {content.episodes.map((episode) => {
+                const season = content.seasons?.find((item) => item.id === episode.seasonId);
+                const episodeLabel = episode.episodeNumberText ||
+                  (episode.episodeNumber ? String(episode.episodeNumber) : null);
+                return (
+                  <li key={episode.id} className="space-y-3 p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {season && <Badge variant="outline">Season {season.seasonNumber}</Badge>}
+                          {episodeLabel && <Badge variant="secondary">Episode {episodeLabel}</Badge>}
+                          <h3 className="font-semibold text-slate-900">{episode.title || "Untitled episode"}</h3>
+                        </div>
+                        {episode.internalId && (
+                          <p className="mt-1 font-mono text-xs text-slate-500">Catalog ID: {episode.internalId}</p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {episode.mediaFormat && <Badge variant="outline">{episode.mediaFormat}</Badge>}
+                        {episode.contentRating && <Badge variant="outline">{episode.contentRating}</Badge>}
+                        {episode.year && <Badge variant="outline">{episode.year}</Badge>}
+                      </div>
+                    </div>
+                    {episode.description && (
+                      <p className="text-sm leading-relaxed text-slate-600">{episode.description}</p>
+                    )}
+                    <div className="grid gap-2 text-xs text-slate-500 sm:grid-cols-2 lg:grid-cols-4">
+                      {episode.genres && <p><strong className="text-slate-700">Genres:</strong> {episode.genres}</p>}
+                      {episode.director && <p><strong className="text-slate-700">Director:</strong> {episode.director}</p>}
+                      {episode.actors && <p><strong className="text-slate-700">Actors:</strong> {episode.actors}</p>}
+                      {episode.releaseDate && (
+                        <p><strong className="text-slate-700">Release:</strong> {format(parseISO(episode.releaseDate), "MMM d, yyyy")}</p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {canEdit && <ContentFormDialog open={editOpen} onOpenChange={setEditOpen} content={content} />}
     </div>

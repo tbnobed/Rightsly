@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { contentItemsTable, seasonsTable, contractContentTable, contractSeasonsTable, contractsTable, partnersTable } from "@workspace/db";
+import { contentItemsTable, seasonsTable, episodesTable, contractContentTable, contractSeasonsTable, contractsTable, partnersTable } from "@workspace/db";
 import { eq, ilike, and, count, sql, desc, asc, inArray } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
@@ -52,6 +52,14 @@ router.get("/", async (req, res) => {
         tbnMediaId: contentItemsTable.tbnMediaId,
         notes: contentItemsTable.notes,
         year: contentItemsTable.year,
+        catalogImportKey: contentItemsTable.catalogImportKey,
+        catalogInternalId: contentItemsTable.catalogInternalId,
+        mediaFormat: contentItemsTable.mediaFormat,
+        genres: contentItemsTable.genres,
+        director: contentItemsTable.director,
+        actors: contentItemsTable.actors,
+        releaseDate: contentItemsTable.releaseDate,
+        contentRating: contentItemsTable.contentRating,
         broadcastRightsDuration: contentItemsTable.broadcastRightsDuration,
         broadcastRightsTerm: contentItemsTable.broadcastRightsTerm,
         broadcastRightsCustomTerm: contentItemsTable.broadcastRightsCustomTerm,
@@ -114,7 +122,10 @@ router.get("/", async (req, res) => {
 
 // POST /api/content
 router.post("/", requireRole("admin", "legal"), async (req, res) => {
-  const { type, title, description, year, seasons, hasCleans, hasCaptions } = req.body;
+  const {
+    type, title, description, year, seasons, hasCleans, hasCaptions,
+    catalogInternalId, mediaFormat, genres, director, actors, releaseDate, contentRating,
+  } = req.body;
 
   if (!type || typeof title !== "string" || !title.trim()) {
     res.status(400).json({ message: "type and title are required" });
@@ -136,6 +147,9 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
     .values({
       id, type: normalizedType, title: title.trim(), description: description || null,
       year: year || null, hasCleans: !!hasCleans, hasCaptions: !!hasCaptions,
+      catalogInternalId: catalogInternalId || null, mediaFormat: mediaFormat || null,
+      genres: genres || null, director: director || null, actors: actors || null,
+      releaseDate: releaseDate || null, contentRating: contentRating || null,
       ...normalizedRights.value,
     })
     .returning();
@@ -174,18 +188,23 @@ router.get("/:id", async (req, res) => {
     return;
   }
 
-  const [seasons, [{ value: contractCount }]] = await Promise.all([
+  const [seasons, episodes, [{ value: contractCount }]] = await Promise.all([
     db.select().from(seasonsTable).where(eq(seasonsTable.contentItemId, id)).orderBy(seasonsTable.seasonNumber),
+    db.select().from(episodesTable).where(eq(episodesTable.contentItemId, id))
+      .orderBy(episodesTable.seasonId, episodesTable.episodeNumber, episodesTable.sourceRow),
     db.select({ value: count() }).from(contractContentTable).where(eq(contractContentTable.contentItemId, id)),
   ]);
 
-  res.json({ ...item, seasons, contractCount: Number(contractCount) });
+  res.json({ ...item, seasons, episodes, contractCount: Number(contractCount) });
 });
 
 // PUT /api/content/:id
 router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   const id = routeParam(req.params.id);
-  const { type, title, description, year, seasons, hasCleans, hasCaptions } = req.body;
+  const {
+    type, title, description, year, seasons, hasCleans, hasCaptions,
+    catalogInternalId, mediaFormat, genres, director, actors, releaseDate, contentRating,
+  } = req.body;
   const [current] = await db.select().from(contentItemsTable).where(eq(contentItemsTable.id, id));
   if (!current) { res.status(404).json({ message: "Content item not found" }); return; }
   if (title !== undefined && (typeof title !== "string" || !title.trim())) {
@@ -238,7 +257,9 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
     }
     rightsValues = { ...rightsInput, contentSource: null, notes };
   } else {
-    const normalizedRights = normalizeTitleRights(rightsInput);
+    const normalizedRights = normalizeTitleRights(rightsInput, {
+      allowMissingTbnMediaId: Boolean(current.catalogImportKey),
+    });
     if (!normalizedRights.value) { res.status(400).json({ message: normalizedRights.error }); return; }
     rightsValues = normalizedRights.value;
   }
@@ -248,7 +269,7 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
       if (seasons !== undefined) {
         // Serialize contract scope inserts with season removal. Together with
         // the restrictive FK, no concurrent edit can cascade away scope.
-        await tx.execute(sql`LOCK TABLE seasons, contract_seasons IN SHARE ROW EXCLUSIVE MODE`);
+        await tx.execute(sql`LOCK TABLE seasons, contract_seasons, episodes IN SHARE ROW EXCLUSIVE MODE`);
         currentSeasonRows = await tx.select({ id: seasonsTable.id }).from(seasonsTable)
           .where(eq(seasonsTable.contentItemId, id));
         const currentIds = new Set(currentSeasonRows.map((season) => season.id));
@@ -264,6 +285,11 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
             .where(inArray(contractSeasonsTable.seasonId, removedIds))
             .limit(1);
           if (reference) return { error: "referenced" as const };
+          const [episode] = await tx.select({ id: episodesTable.id })
+            .from(episodesTable)
+            .where(inArray(episodesTable.seasonId, removedIds))
+            .limit(1);
+          if (episode) return { error: "has_episodes" as const };
         }
       }
 
@@ -272,6 +298,13 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
         title: title === undefined ? current.title : title.trim(),
         description: description === undefined ? current.description : description || null,
         year: year === undefined ? current.year : year || null,
+        catalogInternalId: catalogInternalId === undefined ? current.catalogInternalId : catalogInternalId || null,
+        mediaFormat: mediaFormat === undefined ? current.mediaFormat : mediaFormat || null,
+        genres: genres === undefined ? current.genres : genres || null,
+        director: director === undefined ? current.director : director || null,
+        actors: actors === undefined ? current.actors : actors || null,
+        releaseDate: releaseDate === undefined ? current.releaseDate : releaseDate || null,
+        contentRating: contentRating === undefined ? current.contentRating : contentRating || null,
         ...rightsValues,
         ...(hasCleans !== undefined ? { hasCleans: !!hasCleans } : {}),
         ...(hasCaptions !== undefined ? { hasCaptions: !!hasCaptions } : {}),
@@ -314,7 +347,9 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
       res.status(result.error === "not_found" ? 404 : 409).json({
         message: result.error === "not_found"
           ? "Content item not found"
-          : "A season linked to a contract cannot be deleted",
+          : result.error === "has_episodes"
+            ? "A season containing imported episodes cannot be deleted"
+            : "A season linked to a contract cannot be deleted",
       });
       return;
     }

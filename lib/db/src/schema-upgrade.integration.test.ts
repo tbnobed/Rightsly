@@ -13,6 +13,7 @@ test("reconciled schema persists new rights and revenue fields", async () => {
   const partnerId = id();
   const contentId = id();
   const seasonId = id();
+  const episodeId = id();
   const contractId = id();
   const reportId = id();
   const contactId = id();
@@ -38,6 +39,15 @@ test("reconciled schema persists new rights and revenue fields", async () => {
     await client.query(
       "INSERT INTO seasons (id, content_item_id, season_number) VALUES ($1, $2, 1)",
       [seasonId, contentId],
+    );
+    await client.query(
+      `INSERT INTO episodes (
+        id, content_item_id, season_id, catalog_key, internal_id,
+        episode_number, episode_number_text, title, media_format, genres,
+        year, release_date, content_rating, source_row
+      ) VALUES ($1, $2, $3, $4, $5, 1, 'Part 1', 'Catalog episode',
+        'HD', 'Documentary | Faith Based', 2026, '2026-01-15', 'TV-PG', 2)`,
+      [episodeId, contentId, seasonId, `schema-episode:${id()}`, `episode-${id()}`],
     );
     await client.query(
       `INSERT INTO contracts (
@@ -115,6 +125,20 @@ test("reconciled schema persists new rights and revenue fields", async () => {
     assert.equal(titleRights.rows[0]?.digital_rights_term, "in_perpetuity");
     assert.equal(titleRights.rows[0]?.international_broadcast_air_amount, 4);
     assert.equal(titleRights.rows[0]?.youtube_rights_custom_term, "Weeks");
+    const episode = await client.query<{
+      episode_number: number;
+      episode_number_text: string;
+      media_format: string;
+      release_date: string;
+    }>(
+      `SELECT episode_number, episode_number_text, media_format, release_date::text
+       FROM episodes WHERE id = $1`,
+      [episodeId],
+    );
+    assert.equal(episode.rows[0]?.episode_number, 1);
+    assert.equal(episode.rows[0]?.episode_number_text, "Part 1");
+    assert.equal(episode.rows[0]?.media_format, "HD");
+    assert.equal(episode.rows[0]?.release_date, "2026-01-15");
 
     await client.query("SAVEPOINT season_delete");
     await assert.rejects(

@@ -10,6 +10,7 @@ import {
   type ImportResult,
 } from "@workspace/api-client-react";
 import { Progress } from "@/components/ui/progress";
+import { CatalogImportCard } from "@/components/catalog-import-card";
 
 export default function ImportData() {
   const [file, setFile] = useState<File | null>(null);
@@ -144,8 +145,10 @@ export default function ImportData() {
     <div className="p-8 max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Bulk Import</h1>
-        <p className="text-slate-500 mt-1">Import legacy contracts via CSV.</p>
+        <p className="text-slate-500 mt-1">Import the TBN content catalog or legacy contracts.</p>
       </div>
+
+      <CatalogImportCard />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-2 border-slate-200 shadow-sm">
