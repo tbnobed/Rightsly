@@ -7,6 +7,10 @@ import { eq, ilike } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { validateContractDates } from "../lib/contractDates";
+import { canonicalDistributionTypes, canonicalTerritories } from "../lib/rightsVocabulary";
+import { validateHttpUrl } from "../lib/validation";
+
+const IMPORT_HEADERS = ["direction", "partner_name", "licensor", "licensee", "status", "start_date", "end_type", "end_date", "territories", "distribution_types", "platform", "royalty_type", "royalty_details", "payment_terms", "notes", "website_link"];
 
 const router = Router();
 router.use(authenticateToken, requireRole("admin", "legal"));
@@ -15,24 +19,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 
 // GET /api/import/template
 router.get("/template", (_req, res) => {
-  const headers = [
-    "direction",
-    "partner_name",
-    "licensor",
-    "licensee",
-    "status",
-    "start_date",
-    "end_type",
-    "end_date",
-    "territories",
-    "distribution_types",
-    "platform",
-    "royalty_type",
-    "royalty_details",
-    "payment_terms",
-    "notes",
-    "website_link",
-  ];
+  const headers = IMPORT_HEADERS;
 
   const exampleRow = [
     "rights_out",
@@ -69,11 +56,21 @@ router.post("/contracts", upload.single("file"), async (req, res) => {
 
   let records: Record<string, string>[];
   try {
-    records = parse(req.file.buffer.toString("utf-8"), {
+    const source = req.file.buffer.toString("utf-8");
+    const [header] = parse(source, { to_line: 1, trim: true, skip_empty_lines: true }) as string[][];
+    const unknown = (header ?? []).filter((name) => !IMPORT_HEADERS.includes(name));
+    const missing = IMPORT_HEADERS.filter((name) => !(header ?? []).includes(name));
+    if (unknown.length || missing.length) {
+      res.status(400).json({ message: `Unrecognized columns. Expected: ${IMPORT_HEADERS.join(", ")}` });
+      return;
+    }
+    records = (parse(source, {
       columns: true,
       skip_empty_lines: true,
       trim: true,
-    });
+    }) as Record<string, string>[]).filter((row) =>
+      Object.values(row).some((value) => value.trim().length > 0),
+    );
   } catch (err) {
     res.status(400).json({ message: "Invalid CSV file" });
     return;
@@ -81,6 +78,7 @@ router.post("/contracts", upload.single("file"), async (req, res) => {
 
   let imported = 0;
   let failed = 0;
+  let createdPartners = 0;
   const errors: { row: number; message: string }[] = [];
 
   for (let i = 0; i < records.length; i++) {
@@ -101,6 +99,8 @@ router.post("/contracts", upload.single("file"), async (req, res) => {
         endDate: row.end_date || null,
       });
       if (dateError) throw new Error(dateError);
+      const websiteError = validateHttpUrl(row.website_link);
+      if (websiteError) throw new Error(websiteError);
 
       // Find or create partner
       const [existingPartner] = await db
@@ -118,6 +118,7 @@ router.post("/contracts", upload.single("file"), async (req, res) => {
           name: row.partner_name.trim(),
           type: "Both",
         });
+        createdPartners++;
       }
 
       const contractId = crypto.randomUUID();
@@ -131,8 +132,8 @@ router.post("/contracts", upload.single("file"), async (req, res) => {
         startDate: row.start_date || null,
         endType: row.end_type as any,
         endDate: row.end_date || null,
-        territories: row.territories ? row.territories.split("|").map((t) => t.trim()) : [],
-        distributionTypes: row.distribution_types ? row.distribution_types.split("|").map((t) => t.trim()) : [],
+        territories: canonicalTerritories(row.territories ? row.territories.split(/[|,;]/) : []),
+        distributionTypes: canonicalDistributionTypes(row.distribution_types ? row.distribution_types.split(/[|,;]/) : []),
         platform: row.platform || null,
         royaltyType: (row.royalty_type as any) || null,
         royaltyDetails: row.royalty_details || null,
@@ -150,7 +151,7 @@ router.post("/contracts", upload.single("file"), async (req, res) => {
     }
   }
 
-  res.json({ imported, failed, errors });
+  res.json({ imported, failed, errors, createdPartners });
 });
 
 export default router;

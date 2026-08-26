@@ -11,6 +11,34 @@ import { useToast } from "@/hooks/use-toast";
 type SortField = "partner" | "contentCount" | "status" | "royaltyType" | "endDate";
 type SortDir = "asc" | "desc";
 
+function trailingQuarters() {
+  const now = new Date();
+  let year = now.getFullYear();
+  let quarter = Math.floor(now.getMonth() / 3); // completed quarter: 0 means prior year's Q4
+  if (quarter === 0) {
+    year -= 1;
+    quarter = 4;
+  }
+  return Array.from({ length: 8 }, (_, index) => {
+    const q = quarter - index;
+    const optionYear = year - (q <= 0 ? Math.ceil((1 - q) / 4) : 0);
+    const optionQuarter = q <= 0 ? ((q % 4) + 4) % 4 || 4 : q;
+    return { value: `q${optionQuarter}_${optionYear}`, label: `Q${optionQuarter} ${optionYear}` };
+  });
+}
+
+function quarterDateRange(value: string) {
+  const match = /^q([1-4])_(\d{4})$/.exec(value);
+  if (!match) return null;
+  const quarter = Number(match[1]);
+  const year = Number(match[2]);
+  const startMonth = (quarter - 1) * 3;
+  return {
+    from: `${year}-${String(startMonth + 1).padStart(2, "0")}-01`,
+    to: new Date(Date.UTC(year, quarter * 3, 0)).toISOString().slice(0, 10),
+  };
+}
+
 const STATUS_CHIPS: { key: string; label: string }[] = [
   { key: "active", label: "Active" },
   { key: "in_perpetuity", label: "In Perpetuity" },
@@ -24,6 +52,12 @@ export default function Reports() {
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>("partner");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const royaltyPeriods = useMemo(trailingQuarters, []);
+  const [royaltyPeriod, setRoyaltyPeriod] = useState(royaltyPeriods[0].value);
+  const [contractDirection, setContractDirection] = useState("all");
+  const [contractStatus, setContractStatus] = useState("active");
+  const [expiringDays, setExpiringDays] = useState("90");
+  const [royaltyStatus, setRoyaltyStatus] = useState("all");
 
   const { data: contractReport, isLoading: isLoadingReport } = useGetContractReport(undefined, {
     query: { queryKey: getGetContractReportQueryKey() },
@@ -91,8 +125,22 @@ export default function Reports() {
     });
     try {
       const token = localStorage.getItem("auth_token");
+      const params = new URLSearchParams({ format: fmt });
+      if (type === "contracts") {
+        if (contractDirection !== "all") params.set("direction", contractDirection);
+        if (contractStatus !== "all") params.set("status", contractStatus);
+      } else if (type === "expiring") {
+        params.set("withinDays", expiringDays);
+      } else {
+        const range = quarterDateRange(royaltyPeriod);
+        if (range) {
+          params.set("from", range.from);
+          params.set("to", range.to);
+        }
+        if (royaltyStatus !== "all") params.set("status", royaltyStatus);
+      }
       const res = await fetch(
-        `${import.meta.env.BASE_URL}api/reports/${type}?format=${fmt}`,
+        `${import.meta.env.BASE_URL}api/reports/${type}?${params.toString()}`,
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
       );
       if (!res.ok) {
@@ -145,8 +193,8 @@ export default function Reports() {
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-500 uppercase">Direction Filter</label>
-              <Select defaultValue="all">
-                <SelectTrigger className="bg-white">
+              <Select value={contractDirection} onValueChange={setContractDirection}>
+                <SelectTrigger className="bg-white" data-testid="select-contract-report-direction">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -158,13 +206,14 @@ export default function Reports() {
             </div>
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-500 uppercase">Status Filter</label>
-              <Select defaultValue="active">
-                <SelectTrigger className="bg-white">
+              <Select value={contractStatus} onValueChange={setContractStatus}>
+                <SelectTrigger className="bg-white" data-testid="select-contract-report-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="active">Active Only</SelectItem>
+                  <SelectItem value="expired">Expired Only</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -192,8 +241,8 @@ export default function Reports() {
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-500 uppercase">Timeframe</label>
-              <Select defaultValue="90">
-                <SelectTrigger className="bg-white">
+              <Select value={expiringDays} onValueChange={setExpiringDays}>
+                <SelectTrigger className="bg-white" data-testid="select-expiring-report-days">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -230,28 +279,27 @@ export default function Reports() {
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-500 uppercase">Period</label>
-              <Select defaultValue="q1_2023">
-                <SelectTrigger className="bg-white">
+              <Select value={royaltyPeriod} onValueChange={setRoyaltyPeriod}>
+                <SelectTrigger className="bg-white" data-testid="select-royalty-period">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="q3_2023">Q3 2023</SelectItem>
-                  <SelectItem value="q2_2023">Q2 2023</SelectItem>
-                  <SelectItem value="q1_2023">Q1 2023</SelectItem>
+                  {royaltyPeriods.map((period) => <SelectItem key={period.value} value={period.value}>{period.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-500 uppercase">Status</label>
-              <Select defaultValue="approved">
-                <SelectTrigger className="bg-white">
+              <Select value={royaltyStatus} onValueChange={setRoyaltyStatus}>
+                <SelectTrigger className="bg-white" data-testid="select-royalty-report-status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="approved">Approved Only</SelectItem>
-                  <SelectItem value="pending">Pending Only</SelectItem>
+                  <SelectItem value="expected">Expected Only</SelectItem>
+                  <SelectItem value="received">Received Only</SelectItem>
+                  <SelectItem value="overdue">Overdue Only</SelectItem>
                 </SelectContent>
               </Select>
             </div>

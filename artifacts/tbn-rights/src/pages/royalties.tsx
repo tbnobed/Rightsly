@@ -14,9 +14,9 @@ export default function Royalties() {
   const { user } = useAuth();
   const [location] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
-  const initialContractId = searchParams.get('contractId') || undefined;
+  const initialContractId = searchParams.get('contractId') || "";
   
-  const [selectedContractId, setSelectedContractId] = useState<string | undefined>(initialContractId);
+  const [selectedContractId, setSelectedContractId] = useState(initialContractId);
   const { toast } = useToast();
 
   const contractsParams = { pageSize: 100 }; // Get many for dropdown
@@ -29,10 +29,10 @@ export default function Royalties() {
   // Filter for contracts that actually have royalties (often rights_out, or revenue_share)
   const royaltyContracts = contractsData?.data?.filter(c => c.royaltyType === 'revenue_share' || c.direction === 'rights_out') || [];
 
-  const { data: calcResult, isLoading: isCalcLoading, refetch } = useGetRoyaltyCalc(selectedContractId!, {
+  const { data: calcResult, isLoading: isCalcLoading, refetch } = useGetRoyaltyCalc(selectedContractId, {
     query: {
       enabled: !!selectedContractId,
-      queryKey: getGetRoyaltyCalcQueryKey(selectedContractId!),
+      queryKey: getGetRoyaltyCalcQueryKey(selectedContractId),
     }
   });
 
@@ -193,7 +193,7 @@ export default function Royalties() {
             <Card className="border-slate-200 shadow-sm">
               <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4 flex flex-row items-center justify-between">
                 <CardTitle className="text-lg">Period Calculations</CardTitle>
-                <Button size="sm" variant="outline" className="bg-white">
+                <Button size="sm" variant="outline" className="bg-white" disabled={calcResult.calculations.length === 0} data-testid="button-export-royalty-csv">
                   <FileText className="w-4 h-4 mr-2" /> Export CSV
                 </Button>
               </CardHeader>

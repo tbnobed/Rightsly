@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useListContracts, getListContractsQueryKey, ContractListItemDirection, ContractListItemStatus } from "@workspace/api-client-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Search, Plus, FileText, Filter, ChevronRight, Download } from "lucide-r
 import { useDebounce } from "@/hooks/use-debounce";
 
 export default function ContractsList() {
+  const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [contentSearch, setContentSearch] = useState("");
@@ -152,10 +153,23 @@ export default function ContractsList() {
                 </tr>
               ) : (
                 result.data.map((contract) => (
-                  <tr key={contract.id} className="hover:bg-slate-50/80 transition-colors group">
+                  <tr
+                    key={contract.id}
+                    className="hover:bg-slate-50/80 transition-colors group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-500"
+                    tabIndex={0}
+                    onClick={() => setLocation(`/contracts/${contract.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setLocation(`/contracts/${contract.id}`);
+                      }
+                    }}
+                    aria-label={`Open contract for ${contract.partnerName || "Unknown Partner"}`}
+                    data-testid={`row-contract-${contract.id}`}
+                  >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <div className="font-semibold text-slate-900">{contract.partnerName || 'Unknown Partner'}</div>
+                        <Link href={`/contracts/${contract.id}`} className="font-semibold text-slate-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded" onClick={(event) => event.stopPropagation()} data-testid={`link-contract-${contract.id}`}>{contract.partnerName || 'Unknown Partner'}</Link>
                         {(contract as { archived?: boolean }).archived && (
                           <Badge variant="secondary" className="bg-slate-200 text-slate-600 hover:bg-slate-200 text-[10px] uppercase tracking-wider" data-testid={`badge-archived-${contract.id}`}>Archived</Badge>
                         )}
@@ -201,7 +215,7 @@ export default function ContractsList() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Button variant="ghost" size="icon" asChild className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Link href={`/contracts/${contract.id}`}>
+                        <Link href={`/contracts/${contract.id}`} onClick={(event) => event.stopPropagation()} data-testid={`link-contract-chevron-${contract.id}`}>
                           <ChevronRight className="w-5 h-5 text-slate-400" />
                         </Link>
                       </Button>

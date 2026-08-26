@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { normalizeRightValue, territoriesOverlap } from "./rightsMatching.ts";
+import { distributionTypesIntersect } from "./rightsVocabulary.ts";
 
 test("Global request overlaps a specific territorial grant", () => {
   assert.equal(territoriesOverlap("Global", ["US"]), true);
@@ -25,4 +26,13 @@ test("custom territories are normalized and included", () => {
 
 test("distribution values normalize case and surrounding whitespace", () => {
   assert.equal(normalizeRightValue("  SVOD "), "svod");
+});
+
+test("regional hierarchy and distribution groupings match conservatively both ways", () => {
+  assert.equal(territoriesOverlap("Europe", ["France"]), true);
+  assert.equal(territoriesOverlap("France", ["Europe"]), true);
+  assert.equal(territoriesOverlap("Europe", ["Canada"]), false);
+  assert.equal(distributionTypesIntersect("VOD", "SVOD"), true);
+  assert.equal(distributionTypesIntersect("Broadcast", "Linear"), true);
+  assert.equal(distributionTypesIntersect("FAST", "SVOD"), false);
 });

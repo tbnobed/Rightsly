@@ -1,18 +1,40 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { contractsTable, revenueReportsTable, partnersTable } from "@workspace/db";
-import { eq, and, lte, gte, desc } from "drizzle-orm";
+import { eq, and, or, lte, gte, desc, sql } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { sendPdfReport } from "../lib/pdfReport";
+import { displayContractStatus } from "../lib/contractStatus";
 
 const router = Router();
 router.use(authenticateToken);
 
 async function getContractsData(params: any) {
   const { direction, status, from, to } = params;
+  const today = new Date().toISOString().split("T")[0];
   const conditions: any[] = [];
-  if (direction) conditions.push(eq(contractsTable.direction, direction));
-  if (status) conditions.push(eq(contractsTable.status, status));
+  if (direction && direction !== "all") conditions.push(eq(contractsTable.direction, direction));
+  if (status === "active") {
+    conditions.push(
+      and(
+        eq(contractsTable.status, "active"),
+        sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})`,
+      ),
+    );
+  } else if (status === "expired") {
+    conditions.push(
+      or(
+        eq(contractsTable.status, "expired"),
+        and(
+          eq(contractsTable.status, "active"),
+          eq(contractsTable.endType, "date"),
+          sql`${contractsTable.endDate} < ${today}`,
+        ),
+      ),
+    );
+  } else if (status && status !== "all") {
+    conditions.push(eq(contractsTable.status, status));
+  }
   if (from) conditions.push(gte(contractsTable.startDate, from));
   if (to) conditions.push(lte(contractsTable.endDate, to));
   const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -32,6 +54,7 @@ async function getContractsData(params: any) {
       territories: contractsTable.territories,
       distributionTypes: contractsTable.distributionTypes,
       royaltyType: contractsTable.royaltyType,
+      contentCount: sql<number>`(select count(*) from contract_content where contract_content.contract_id = ${contractsTable.id})`.mapWith(Number),
       createdAt: contractsTable.createdAt,
     })
     .from(contractsTable)
@@ -43,7 +66,7 @@ async function getContractsData(params: any) {
 // GET /api/reports/contracts
 router.get("/contracts", async (req, res) => {
   const { direction, status, from, to, format } = req.query as Record<string, string>;
-  const data = await getContractsData({ direction, status, from, to });
+  const data = (await getContractsData({ direction, status, from, to })).map((contract) => displayContractStatus(contract));
 
   if (format === "xlsx") {
     const ExcelJS = await import("exceljs");
@@ -91,7 +114,7 @@ router.get("/contracts", async (req, res) => {
     return;
   }
 
-  res.json({ data: data.map(d => ({ ...d, contentCount: 0 })), generatedAt: new Date().toISOString() });
+  res.json({ data, generatedAt: new Date().toISOString() });
 });
 
 // GET /api/reports/expiring
@@ -165,17 +188,18 @@ router.get("/expiring", async (req, res) => {
     return;
   }
 
-  res.json({ data: data.map(d => ({ ...d, contentCount: 0 })), generatedAt: new Date().toISOString() });
+  res.json({ data: data.map((contract) => displayContractStatus(contract)).map(d => ({ ...d, contentCount: 0 })), generatedAt: new Date().toISOString() });
 });
 
 // GET /api/reports/royalties
 router.get("/royalties", requireRole("admin", "finance"), async (req, res) => {
-  const { contractId, from, to, format } = req.query as Record<string, string>;
+  const { contractId, from, to, status, format } = req.query as Record<string, string>;
 
   const conditions: any[] = [];
   if (contractId) conditions.push(eq(revenueReportsTable.contractId, contractId));
   if (from) conditions.push(gte(revenueReportsTable.expectedDate, from));
   if (to) conditions.push(lte(revenueReportsTable.expectedDate, to));
+  if (status && status !== "all") conditions.push(eq(revenueReportsTable.status, status as any));
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
   const data = await db

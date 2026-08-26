@@ -9,5 +9,7 @@ import type { ImportResultErrorsItem } from './importResultErrorsItem';
 export interface ImportResult {
   imported: number;
   failed: number;
+  /** Number of previously unknown partners created while importing. */
+  createdPartners: number;
   errors: ImportResultErrorsItem[];
 }

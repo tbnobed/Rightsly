@@ -4,6 +4,7 @@ import { contentItemsTable, seasonsTable, contractContentTable, contractsTable, 
 import { eq, ilike, and, count, sql, desc } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
+import { routeParam, validateContentYear } from "../lib/validation";
 
 const router = Router();
 router.use(authenticateToken);
@@ -72,6 +73,8 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
     res.status(400).json({ message: "type and title are required" });
     return;
   }
+  const yearError = validateContentYear(year);
+  if (yearError) { res.status(400).json({ message: yearError }); return; }
 
   const id = crypto.randomUUID();
   const [item] = await db
@@ -102,10 +105,11 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
 
 // GET /api/content/:id
 router.get("/:id", async (req, res) => {
+  const id = routeParam(req.params.id);
   const [item] = await db
     .select()
     .from(contentItemsTable)
-    .where(eq(contentItemsTable.id, req.params.id));
+    .where(eq(contentItemsTable.id, id));
 
   if (!item) {
     res.status(404).json({ message: "Content item not found" });
@@ -113,8 +117,8 @@ router.get("/:id", async (req, res) => {
   }
 
   const [seasons, [{ value: contractCount }]] = await Promise.all([
-    db.select().from(seasonsTable).where(eq(seasonsTable.contentItemId, req.params.id)).orderBy(seasonsTable.seasonNumber),
-    db.select({ value: count() }).from(contractContentTable).where(eq(contractContentTable.contentItemId, req.params.id)),
+    db.select().from(seasonsTable).where(eq(seasonsTable.contentItemId, id)).orderBy(seasonsTable.seasonNumber),
+    db.select({ value: count() }).from(contractContentTable).where(eq(contractContentTable.contentItemId, id)),
   ]);
 
   res.json({ ...item, seasons, contractCount: Number(contractCount) });
@@ -122,7 +126,10 @@ router.get("/:id", async (req, res) => {
 
 // PUT /api/content/:id
 router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
+  const id = routeParam(req.params.id);
   const { type, title, description, year, seasons, hasCleans, hasCaptions } = req.body;
+  const yearError = validateContentYear(year);
+  if (yearError) { res.status(400).json({ message: yearError }); return; }
 
   const [item] = await db
     .update(contentItemsTable)
@@ -135,7 +142,7 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
       ...(hasCaptions !== undefined ? { hasCaptions: !!hasCaptions } : {}),
       updatedAt: new Date(),
     })
-    .where(eq(contentItemsTable.id, req.params.id))
+    .where(eq(contentItemsTable.id, id))
     .returning();
 
   if (!item) {
@@ -144,12 +151,12 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   }
 
   if (seasons !== undefined) {
-    await db.delete(seasonsTable).where(eq(seasonsTable.contentItemId, req.params.id));
+    await db.delete(seasonsTable).where(eq(seasonsTable.contentItemId, id));
     if (seasons.length) {
       await db.insert(seasonsTable).values(
         seasons.map((s: any) => ({
           id: crypto.randomUUID(),
-          contentItemId: req.params.id,
+          contentItemId: id,
           seasonNumber: s.seasonNumber,
           title: s.title || null,
           year: s.year || null,
@@ -160,23 +167,25 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   }
 
   const [updatedSeasons, [{ value: contractCount }]] = await Promise.all([
-    db.select().from(seasonsTable).where(eq(seasonsTable.contentItemId, req.params.id)).orderBy(seasonsTable.seasonNumber),
-    db.select({ value: count() }).from(contractContentTable).where(eq(contractContentTable.contentItemId, req.params.id)),
+    db.select().from(seasonsTable).where(eq(seasonsTable.contentItemId, id)).orderBy(seasonsTable.seasonNumber),
+    db.select({ value: count() }).from(contractContentTable).where(eq(contractContentTable.contentItemId, id)),
   ]);
 
-  await logAudit({ user: req.user, action: "update", entityType: "content", entityId: req.params.id });
+  await logAudit({ user: req.user, action: "update", entityType: "content", entityId: id });
   res.json({ ...item, seasons: updatedSeasons, contractCount: Number(contractCount) });
 });
 
 // DELETE /api/content/:id
 router.delete("/:id", requireRole("admin"), async (req, res) => {
-  await db.delete(contentItemsTable).where(eq(contentItemsTable.id, req.params.id));
-  await logAudit({ user: req.user, action: "delete", entityType: "content", entityId: req.params.id });
+  const id = routeParam(req.params.id);
+  await db.delete(contentItemsTable).where(eq(contentItemsTable.id, id));
+  await logAudit({ user: req.user, action: "delete", entityType: "content", entityId: id });
   res.json({ message: "Content item deleted" });
 });
 
 // GET /api/content/:id/contracts
 router.get("/:id/contracts", async (req, res) => {
+  const id = routeParam(req.params.id);
   const contracts = await db
     .select({
       id: contractsTable.id,
@@ -198,7 +207,7 @@ router.get("/:id/contracts", async (req, res) => {
     .from(contractContentTable)
     .innerJoin(contractsTable, eq(contractContentTable.contractId, contractsTable.id))
     .leftJoin(partnersTable, eq(contractsTable.partnerId, partnersTable.id))
-    .where(eq(contractContentTable.contentItemId, req.params.id))
+    .where(eq(contractContentTable.contentItemId, id))
     .orderBy(desc(contractsTable.createdAt));
 
   res.json(contracts);

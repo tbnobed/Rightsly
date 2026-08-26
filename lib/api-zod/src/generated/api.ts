@@ -1315,6 +1315,7 @@ export const ImportContractsBody = zod.object({
 export const ImportContractsResponse = zod.object({
   "imported": zod.number(),
   "failed": zod.number(),
+  "createdPartners": zod.number().describe('Number of previously unknown partners created while importing.'),
   "errors": zod.array(zod.object({
   "row": zod.number(),
   "message": zod.string()

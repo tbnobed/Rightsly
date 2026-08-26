@@ -4,6 +4,7 @@ import { partnersTable, contractsTable } from "@workspace/db";
 import { eq, ilike, and, count, sql } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
+import { routeParam } from "../lib/validation";
 
 const router = Router();
 router.use(authenticateToken);
@@ -46,7 +47,6 @@ router.get("/", async (req, res) => {
 // POST /api/partners
 router.post("/", requireRole("admin", "legal"), async (req, res) => {
   const { name, type, website, notes } = req.body;
-
   if (!name || !type) {
     res.status(400).json({ message: "name and type are required" });
     return;
@@ -64,6 +64,7 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
 
 // GET /api/partners/:id
 router.get("/:id", async (req, res) => {
+  const id = routeParam(req.params.id);
   const [partner] = await db
     .select({
       id: partnersTable.id,
@@ -76,7 +77,7 @@ router.get("/:id", async (req, res) => {
       contractCount: sql<number>`(select count(*) from contracts where contracts.partner_id = ${partnersTable.id})`.mapWith(Number),
     })
     .from(partnersTable)
-    .where(eq(partnersTable.id, req.params.id));
+    .where(eq(partnersTable.id, id));
 
   if (!partner) {
     res.status(404).json({ message: "Partner not found" });
@@ -88,26 +89,27 @@ router.get("/:id", async (req, res) => {
 // PUT /api/partners/:id
 router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   const { name, type, website, notes } = req.body;
+  const id = routeParam(req.params.id);
+  const [before] = await db.select().from(partnersTable).where(eq(partnersTable.id, id));
+  if (!before) { res.status(404).json({ message: "Partner not found" }); return; }
 
   const [partner] = await db
     .update(partnersTable)
     .set({ name, type, website: website || null, notes: notes || null, updatedAt: new Date() })
-    .where(eq(partnersTable.id, req.params.id))
+    .where(eq(partnersTable.id, id))
     .returning();
 
-  if (!partner) {
-    res.status(404).json({ message: "Partner not found" });
-    return;
-  }
-
-  await logAudit({ user: req.user, action: "update", entityType: "partner", entityId: req.params.id });
+  await logAudit({ user: req.user, action: "update", entityType: "partner", entityId: id,
+    before: { name: before.name, type: before.type, website: before.website, notes: before.notes },
+    after: { name: partner.name, type: partner.type, website: partner.website, notes: partner.notes } });
   res.json({ ...partner, contractCount: 0 });
 });
 
 // DELETE /api/partners/:id
 router.delete("/:id", requireRole("admin"), async (req, res) => {
-  await db.delete(partnersTable).where(eq(partnersTable.id, req.params.id));
-  await logAudit({ user: req.user, action: "delete", entityType: "partner", entityId: req.params.id });
+  const id = routeParam(req.params.id);
+  await db.delete(partnersTable).where(eq(partnersTable.id, id));
+  await logAudit({ user: req.user, action: "delete", entityType: "partner", entityId: id });
   res.json({ message: "Partner deleted" });
 });
 

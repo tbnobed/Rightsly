@@ -11,6 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Search, CheckCircle, XCircle, AlertTriangle, ArrowRight, ShieldCheck, ShieldAlert } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { DISTRIBUTION_OPTIONS, localDateValue, TERRITORY_OPTIONS } from "@/lib/rights-options";
 
 const checkSchema = z.object({
   contentItemId: z.string().min(1, "Select content"),
@@ -31,7 +32,7 @@ export default function RightsCheck() {
     defaultValues: {
       territory: "Global",
       distributionType: "SVOD",
-      date: new Date().toISOString().split('T')[0],
+      date: localDateValue(),
     },
   });
 
@@ -70,9 +71,9 @@ export default function RightsCheck() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Content Title</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
-                          <SelectTrigger className="bg-white">
+                          <SelectTrigger className="bg-white" data-testid="select-rights-check-content">
                             <SelectValue placeholder="Select a title..." />
                           </SelectTrigger>
                         </FormControl>
@@ -93,19 +94,14 @@ export default function RightsCheck() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Territory</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
-                          <SelectTrigger className="bg-white">
+                          <SelectTrigger className="bg-white" data-testid="select-rights-check-territory">
                             <SelectValue placeholder="Select territory..." />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Global">Global</SelectItem>
-                          <SelectItem value="US">United States</SelectItem>
-                          <SelectItem value="Canada">Canada</SelectItem>
-                          <SelectItem value="UK">United Kingdom</SelectItem>
-                          <SelectItem value="Europe">Europe</SelectItem>
-                          <SelectItem value="LATAM">Latin America</SelectItem>
+                          {TERRITORY_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -119,18 +115,14 @@ export default function RightsCheck() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Distribution Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
-                          <SelectTrigger className="bg-white">
+                          <SelectTrigger className="bg-white" data-testid="select-rights-check-distribution">
                             <SelectValue placeholder="Select type..." />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="SVOD">SVOD</SelectItem>
-                          <SelectItem value="AVOD">AVOD</SelectItem>
-                          <SelectItem value="FAST">FAST</SelectItem>
-                          <SelectItem value="TVOD">TVOD</SelectItem>
-                          <SelectItem value="Linear">Linear Broadcast</SelectItem>
+                          {DISTRIBUTION_OPTIONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -145,7 +137,7 @@ export default function RightsCheck() {
                     <FormItem>
                       <FormLabel>Effective Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} className="bg-white" />
+                        <Input type="date" {...field} className="bg-white" data-testid="input-rights-check-date" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

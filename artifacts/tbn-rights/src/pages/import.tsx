@@ -10,7 +10,7 @@ export default function ImportData() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<{ imported: number, failed: number, errors: any[] } | null>(null);
+  const [result, setResult] = useState<{ imported: number, failed: number, errors: any[], createdPartners?: number } | null>(null);
   const { toast } = useToast();
   
   const importMutation = useImportContracts();
@@ -65,9 +65,31 @@ export default function ImportData() {
     }
   };
 
-  const handleDownloadTemplate = () => {
-    // Usually calls useGetImportTemplate, but simulating link download for UI
-    toast({ title: "Downloading Template", description: "Template file is downloading." });
+  const handleDownloadTemplate = async () => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      const response = await fetch(`${import.meta.env.BASE_URL}api/import/template`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!response.ok) throw new Error(`Template download failed (HTTP ${response.status})`);
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "contract-import-template.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Template Downloaded", description: "contract-import-template.csv" });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Download Failed",
+        description: error instanceof Error ? error.message : "Unable to download the template.",
+      });
+    }
   };
 
   return (
@@ -153,6 +175,11 @@ export default function ImportData() {
                     <span className={`text-xs font-semibold uppercase ${result.failed > 0 ? 'text-red-800' : 'text-slate-500'}`}>Failed Rows</span>
                   </div>
                 </div>
+                {typeof result.createdPartners === "number" && (
+                  <p className="text-sm text-slate-600" data-testid="text-created-partners">
+                    Created partners: <span className="font-semibold">{result.createdPartners}</span>
+                  </p>
+                )}
 
                 {result.errors && result.errors.length > 0 && (
                   <div className="mt-6 border border-red-100 rounded-lg overflow-hidden">
@@ -187,9 +214,9 @@ export default function ImportData() {
           <CardContent className="p-6 space-y-4 text-sm text-slate-600">
             <p>Upload a CSV file containing contract records. Ensure columns match the template exactly.</p>
             <ul className="list-disc pl-5 space-y-2">
-              <li>Required fields: Partner Name, Direction, End Date.</li>
-              <li>Date format: YYYY-MM-DD.</li>
-              <li>Territories should be comma-separated.</li>
+              <li>Use these snake_case columns exactly: <code>direction, partner_name, licensor, licensee, status, start_date, end_type, end_date, territories, distribution_types, platform, royalty_type, royalty_details, payment_terms, notes, website_link</code>.</li>
+              <li>Use <code>YYYY-MM-DD</code> dates and values such as <code>rights_out</code> and <code>active</code>.</li>
+              <li>Separate multiple <code>territories</code> and <code>distribution_types</code> with a pipe (<code>|</code>), for example <code>US|Canada</code>.</li>
             </ul>
             <Button variant="outline" className="w-full mt-4 bg-white" onClick={handleDownloadTemplate}>
               <FileDown className="w-4 h-4 mr-2" /> Download Template

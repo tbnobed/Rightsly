@@ -43,7 +43,10 @@ import { useToast } from "@/hooks/use-toast";
 const contentSchema = z.object({
   title: z.string().min(1, "Title is required"),
   type: z.enum(["Film", "TVSeries", "TBN_FAST", "TBN_Linear", "WoF_FAST"]),
-  year: z.string().optional(),
+  year: z.string().refine(
+    (value) => !value || (/^\d{4}$/.test(value) && Number(value) >= 1900 && Number(value) <= new Date().getFullYear() + 5),
+    () => ({ message: `Year must be between 1900 and ${new Date().getFullYear() + 5}` }),
+  ).optional(),
   description: z.string().optional(),
   hasCleans: z.boolean().default(false),
   hasCaptions: z.boolean().default(false),
@@ -186,7 +189,7 @@ export function ContentFormDialog({ open, onOpenChange, content }: ContentFormDi
                   <FormItem>
                     <FormLabel>Year</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="2024" {...field} data-testid="input-content-year" />
+                      <Input type="number" min="1900" max={new Date().getFullYear() + 5} placeholder={String(new Date().getFullYear())} {...field} data-testid="input-content-year" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

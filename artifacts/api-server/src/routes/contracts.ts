@@ -9,10 +9,13 @@ import {
   contractAttachmentsTable,
   usersTable,
 } from "@workspace/db";
-import { eq, and, ilike, inArray, sql, count, lte, gte, asc, desc } from "drizzle-orm";
+import { eq, and, or, ilike, inArray, sql, count, lte, gte, asc, desc } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { validateContractDates } from "../lib/contractDates";
+import { canonicalDistributionTypes, canonicalTerritories } from "../lib/rightsVocabulary";
+import { routeParam, validateHttpUrl } from "../lib/validation";
+import { displayContractStatus } from "../lib/contractStatus";
 
 const router = Router();
 router.use(authenticateToken);
@@ -39,10 +42,31 @@ router.get("/", contractReadGuard, async (req, res) => {
   const expiringWithinDays = req.query.expiringWithinDays
     ? parseInt(req.query.expiringWithinDays as string)
     : undefined;
+  const today = new Date().toISOString().split("T")[0];
 
   const conditions: any[] = [];
   if (direction) conditions.push(eq(contractsTable.direction, direction as any));
-  if (status) conditions.push(eq(contractsTable.status, status as any));
+  if (status === "active") {
+    conditions.push(
+      and(
+        eq(contractsTable.status, "active"),
+        sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})`,
+      ),
+    );
+  } else if (status === "expired") {
+    conditions.push(
+      or(
+        eq(contractsTable.status, "expired"),
+        and(
+          eq(contractsTable.status, "active"),
+          eq(contractsTable.endType, "date"),
+          sql`${contractsTable.endDate} < ${today}`,
+        ),
+      ),
+    );
+  } else if (status) {
+    conditions.push(eq(contractsTable.status, status as any));
+  }
   if (partnerId) conditions.push(eq(contractsTable.partnerId, partnerId));
   if (search) conditions.push(ilike(partnersTable.name, `%${search}%`));
   if (contentSearch) {
@@ -54,7 +78,14 @@ router.get("/", contractReadGuard, async (req, res) => {
     conditions.push(sql`${contractsTable.departmentTags}::jsonb ? ${departmentTag}`);
   }
   if (!includeArchived) conditions.push(eq(contractsTable.archived, false));
-  if (req.salesFilter) conditions.push(eq(contractsTable.status, "active"));
+  if ((req as typeof req & { salesFilter?: boolean }).salesFilter) {
+    conditions.push(
+      and(
+        eq(contractsTable.status, "active"),
+        sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})`,
+      ),
+    );
+  }
   if (expiringWithinDays) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() + expiringWithinDays);
@@ -62,7 +93,7 @@ router.get("/", contractReadGuard, async (req, res) => {
       and(
         eq(contractsTable.endType, "date"),
         lte(contractsTable.endDate, cutoff.toISOString().split("T")[0]),
-        gte(contractsTable.endDate, new Date().toISOString().split("T")[0])
+        gte(contractsTable.endDate, today)
       )
     );
   }
@@ -103,7 +134,18 @@ router.get("/", contractReadGuard, async (req, res) => {
       .where(where),
   ]);
 
-  res.json({ data: contracts, total: Number(total), page, pageSize });
+  res.json({
+    data: contracts.map((contract) =>
+      displayContractStatus({
+        ...contract,
+        territories: canonicalTerritories(contract.territories),
+        distributionTypes: canonicalDistributionTypes(contract.distributionTypes),
+      }),
+    ),
+    total: Number(total),
+    page,
+    pageSize,
+  });
 });
 
 // POST /api/contracts
@@ -142,6 +184,8 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
     res.status(400).json({ message: dateError });
     return;
   }
+  const websiteError = validateHttpUrl(websiteLink);
+  if (websiteError) { res.status(400).json({ message: websiteError }); return; }
 
   const id = crypto.randomUUID();
   const ri = rightsInDetails || {};
@@ -159,9 +203,9 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
       startDate: startDate || null,
       endType,
       endDate: endDate || null,
-      territories: territories || [],
+      territories: canonicalTerritories(territories),
       otherTerritories: otherTerritories || null,
-      distributionTypes: distributionTypes || [],
+      distributionTypes: canonicalDistributionTypes(distributionTypes),
       platform: platform || null,
       royaltyType: royaltyType || null,
       royaltyDetails: royaltyDetails || null,
@@ -202,8 +246,11 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
 
 // GET /api/contracts/:id
 router.get("/:id", contractReadGuard, async (req, res) => {
-  const contract = await getContractById(req.params.id);
-  if (!contract) {
+  const contract = await getContractById(routeParam(req.params.id));
+  if (
+    !contract ||
+    (req.user?.role === "sales" && (contract.archived || contract.status !== "active"))
+  ) {
     res.status(404).json({ message: "Contract not found" });
     return;
   }
@@ -212,6 +259,7 @@ router.get("/:id", contractReadGuard, async (req, res) => {
 
 // PUT /api/contracts/:id
 router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
+  const id = routeParam(req.params.id);
   const {
     partnerId,
     licensor,
@@ -243,7 +291,7 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
       endDate: contractsTable.endDate,
     })
     .from(contractsTable)
-    .where(eq(contractsTable.id, req.params.id));
+    .where(eq(contractsTable.id, id));
   if (!existingContract) {
     res.status(404).json({ message: "Contract not found" });
     return;
@@ -266,6 +314,10 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
     res.status(400).json({ message: dateError });
     return;
   }
+  if (websiteLink !== undefined) {
+    const websiteError = validateHttpUrl(websiteLink);
+    if (websiteError) { res.status(400).json({ message: websiteError }); return; }
+  }
 
   const ri = rightsInDetails || {};
   const ro = rightsOutDetails || {};
@@ -279,9 +331,9 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   if (endType !== undefined) updates.endType = endType;
   if (endDate !== undefined) updates.endDate = endDate;
   if (endType !== undefined && endType !== "date") updates.endDate = null;
-  if (territories !== undefined) updates.territories = territories;
+  if (territories !== undefined) updates.territories = canonicalTerritories(territories);
   if (otherTerritories !== undefined) updates.otherTerritories = otherTerritories;
-  if (distributionTypes !== undefined) updates.distributionTypes = distributionTypes;
+  if (distributionTypes !== undefined) updates.distributionTypes = canonicalDistributionTypes(distributionTypes);
   if (platform !== undefined) updates.platform = platform;
   if (royaltyType !== undefined) updates.royaltyType = royaltyType;
   if (royaltyDetails !== undefined) updates.royaltyDetails = royaltyDetails;
@@ -311,33 +363,39 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
     if (ro.minPaymentThreshold !== undefined) updates.rightsOutMinPaymentThreshold = ro.minPaymentThreshold?.toString();
   }
 
-  await db.update(contractsTable).set(updates).where(eq(contractsTable.id, req.params.id));
+  await db.update(contractsTable).set(updates).where(eq(contractsTable.id, id));
 
   if (contentItemIds !== undefined) {
-    await db.delete(contractContentTable).where(eq(contractContentTable.contractId, req.params.id));
+    await db.delete(contractContentTable).where(eq(contractContentTable.contractId, id));
     if (contentItemIds.length) {
       await db.insert(contractContentTable).values(
-        contentItemIds.map((cid: string) => ({ contractId: req.params.id, contentItemId: cid }))
+        contentItemIds.map((cid: string) => ({ contractId: id, contentItemId: cid }))
       );
     }
   }
 
   const prevStatus = req.body._prevStatus;
   const action = status && status !== prevStatus ? "status_change" : "update";
-  await logAudit({ user: req.user, action, entityType: "contract", entityId: req.params.id, after: updates });
+  await logAudit({ user: req.user, action, entityType: "contract", entityId: id, after: updates });
 
-  res.json(await getContractById(req.params.id));
+  res.json(await getContractById(id));
 });
 
 // DELETE /api/contracts/:id
 router.delete("/:id", requireRole("admin"), async (req, res) => {
-  await db.delete(contractsTable).where(eq(contractsTable.id, req.params.id));
-  await logAudit({ user: req.user, action: "delete", entityType: "contract", entityId: req.params.id });
+  const id = routeParam(req.params.id);
+  await db.delete(contractsTable).where(eq(contractsTable.id, id));
+  await logAudit({ user: req.user, action: "delete", entityType: "contract", entityId: id });
   res.json({ message: "Contract deleted" });
 });
 
 // GET /api/contracts/:id/amendments
 router.get("/:id/amendments", async (req, res) => {
+  const contractId = routeParam(req.params.id);
+  if (!(await canReadContract(req.user?.role, contractId))) {
+    res.status(404).json({ message: "Contract not found" });
+    return;
+  }
   const amendments = await db
     .select({
       id: amendmentsTable.id,
@@ -350,7 +408,7 @@ router.get("/:id/amendments", async (req, res) => {
     })
     .from(amendmentsTable)
     .leftJoin(usersTable, eq(amendmentsTable.createdBy, usersTable.id))
-    .where(eq(amendmentsTable.contractId, req.params.id))
+    .where(eq(amendmentsTable.contractId, contractId))
     .orderBy(desc(amendmentsTable.date));
 
   res.json(amendments);
@@ -358,6 +416,7 @@ router.get("/:id/amendments", async (req, res) => {
 
 // POST /api/contracts/:id/amendments
 router.post("/:id/amendments", requireRole("admin", "legal"), async (req, res) => {
+  const contractId = routeParam(req.params.id);
   const { date, description, documentUrl } = req.body;
 
   if (!date || !description) {
@@ -368,15 +427,20 @@ router.post("/:id/amendments", requireRole("admin", "legal"), async (req, res) =
   const id = crypto.randomUUID();
   const [amendment] = await db
     .insert(amendmentsTable)
-    .values({ id, contractId: req.params.id, date, description, documentUrl: documentUrl || null, createdBy: req.user!.id })
+    .values({ id, contractId, date, description, documentUrl: documentUrl || null, createdBy: req.user!.id })
     .returning();
 
-  await logAudit({ user: req.user, action: "create", entityType: "amendment", entityId: id, after: { contractId: req.params.id, date } });
+  await logAudit({ user: req.user, action: "create", entityType: "amendment", entityId: id, after: { contractId, date } });
   res.status(201).json({ ...amendment, createdByName: req.user!.name });
 });
 
 // GET /api/contracts/:id/attachments
 router.get("/:id/attachments", async (req, res) => {
+  const contractId = routeParam(req.params.id);
+  if (!(await canReadContract(req.user?.role, contractId))) {
+    res.status(404).json({ message: "Contract not found" });
+    return;
+  }
   const attachments = await db
     .select({
       id: contractAttachmentsTable.id,
@@ -390,7 +454,7 @@ router.get("/:id/attachments", async (req, res) => {
     })
     .from(contractAttachmentsTable)
     .leftJoin(usersTable, eq(contractAttachmentsTable.uploadedBy, usersTable.id))
-    .where(eq(contractAttachmentsTable.contractId, req.params.id))
+    .where(eq(contractAttachmentsTable.contractId, contractId))
     .orderBy(desc(contractAttachmentsTable.createdAt));
 
   res.json(attachments);
@@ -398,6 +462,7 @@ router.get("/:id/attachments", async (req, res) => {
 
 // POST /api/contracts/:id/attachments
 router.post("/:id/attachments", requireRole("admin", "legal"), async (req, res) => {
+  const contractId = routeParam(req.params.id);
   const { fileName, objectPath, contentType, size } = req.body;
 
   if (!fileName || !objectPath) {
@@ -414,7 +479,7 @@ router.post("/:id/attachments", requireRole("admin", "legal"), async (req, res) 
   const [contract] = await db
     .select({ id: contractsTable.id })
     .from(contractsTable)
-    .where(eq(contractsTable.id, req.params.id));
+    .where(eq(contractsTable.id, contractId));
   if (!contract) {
     res.status(404).json({ message: "Contract not found" });
     return;
@@ -425,7 +490,7 @@ router.post("/:id/attachments", requireRole("admin", "legal"), async (req, res) 
     .insert(contractAttachmentsTable)
     .values({
       id,
-      contractId: req.params.id,
+      contractId,
       fileName,
       objectPath,
       contentType: contentType || null,
@@ -434,18 +499,20 @@ router.post("/:id/attachments", requireRole("admin", "legal"), async (req, res) 
     })
     .returning();
 
-  await logAudit({ user: req.user, action: "create", entityType: "contract_attachment", entityId: id, after: { contractId: req.params.id, fileName } });
+  await logAudit({ user: req.user, action: "create", entityType: "contract_attachment", entityId: id, after: { contractId, fileName } });
   res.status(201).json({ ...attachment, uploadedByName: req.user!.name });
 });
 
 // DELETE /api/contracts/:id/attachments/:attachmentId
 router.delete("/:id/attachments/:attachmentId", requireRole("admin", "legal"), async (req, res) => {
+  const contractId = routeParam(req.params.id);
+  const attachmentId = routeParam(req.params.attachmentId);
   const [deleted] = await db
     .delete(contractAttachmentsTable)
     .where(
       and(
-        eq(contractAttachmentsTable.id, req.params.attachmentId),
-        eq(contractAttachmentsTable.contractId, req.params.id)
+        eq(contractAttachmentsTable.id, attachmentId),
+        eq(contractAttachmentsTable.contractId, contractId)
       )
     )
     .returning();
@@ -494,13 +561,13 @@ async function getContractById(id: string) {
     partnerName: p?.name ?? null,
     licensor: c.licensor,
     licensee: c.licensee,
-    status: c.status,
+    status: displayContractStatus(c).status,
     startDate: c.startDate,
     endType: c.endType,
     endDate: c.endDate,
-    territories: c.territories,
+    territories: canonicalTerritories(c.territories),
     otherTerritories: c.otherTerritories,
-    distributionTypes: c.distributionTypes,
+    distributionTypes: canonicalDistributionTypes(c.distributionTypes),
     platform: c.platform,
     royaltyType: c.royaltyType,
     royaltyDetails: c.royaltyDetails,
@@ -534,6 +601,23 @@ async function getContractById(id: string) {
     updatedAt: c.updatedAt,
     createdByName: u?.name ?? null,
   };
+}
+
+async function canReadContract(role: string | undefined, id: string) {
+  if (role !== "sales") return true;
+  const [contract] = await db
+    .select({
+      status: contractsTable.status,
+      endType: contractsTable.endType,
+      endDate: contractsTable.endDate,
+      archived: contractsTable.archived,
+    })
+    .from(contractsTable)
+    .where(eq(contractsTable.id, id));
+
+  return !!contract &&
+    !contract.archived &&
+    displayContractStatus(contract).status === "active";
 }
 
 export default router;

@@ -1091,12 +1091,15 @@ components:
 
     ImportResult:
       type: object
-      required: [imported, failed, errors]
+      required: [imported, failed, errors, createdPartners]
       properties:
         imported:
           type: integer
         failed:
           type: integer
+        createdPartners:
+          type: integer
+          description: Number of previously unknown partners created while importing.
         errors:
           type: array
           items:

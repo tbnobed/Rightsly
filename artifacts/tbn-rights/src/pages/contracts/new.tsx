@@ -29,9 +29,8 @@ import {
 import { ArrowRight, Briefcase, FileDown, FileUp, ChevronLeft, Upload, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
+import { DISTRIBUTION_OPTIONS, TERRITORY_OPTIONS } from "@/lib/rights-options";
 
-const TERRITORY_OPTIONS = ["Global", "US", "Canada", "UK"] as const;
-const DISTRIBUTION_OPTIONS = ["AVOD", "SVOD", "TVOD", "FAST", "Linear", "VOD", "Broadcast"] as const;
 const DEPARTMENT_OPTIONS = ["Acquisition", "Distribution"] as const;
 const RIGHTS_IN_PLATFORMS = ["TBN Broadcast", "TBN+", "YouTube", "Socials", "Yippee"] as const;
 const SOCIAL_PLATFORMS = ["All Socials", "Facebook", "Instagram", "TikTok", "Other"] as const;
@@ -50,7 +49,7 @@ const formSchema = z.object({
   royaltyType: z.enum(["revenue_share", "flat_fee", "other"]).nullable().optional(),
   royaltyDetails: z.string().optional(),
   paymentTerms: z.enum(["net_30", "net_60", "net_90"]).nullable().optional(),
-  websiteLink: z.string().optional(),
+  websiteLink: z.string().refine((value) => !value || /^https?:\/\/.+/i.test(value), "Website must use http:// or https://").optional(),
   notes: z.string().optional(),
   departmentTags: z.array(z.string()).default([]),
   // Rights In
@@ -154,6 +153,21 @@ export default function NewContractWizard() {
       riExclusivitySameAsDuration: false,
       roAutoRenew: false,
       roHasAmendment: false,
+      partnerId: "",
+      licensor: "",
+      licensee: "",
+      startDate: "",
+      endDate: "",
+      otherTerritories: "",
+      royaltyType: null,
+      royaltyDetails: "",
+      paymentTerms: null,
+      websiteLink: "",
+      notes: "",
+      platform: "",
+      roExclusivity: null,
+      roReportingFrequency: null,
+      roMinPaymentThreshold: "",
     },
   });
 
@@ -205,6 +219,13 @@ export default function NewContractWizard() {
 
   const toggleContent = (id: string, checked: boolean) => {
     setSelectedContentIds((prev) => toggleArrayValue(prev, id, checked));
+  };
+  const focusFirstInvalid = () => {
+    requestAnimationFrame(() => {
+      const firstInvalid = document.querySelector<HTMLElement>("[aria-invalid='true'], [data-invalid='true']");
+      firstInvalid?.scrollIntoView({ behavior: "smooth", block: "center" });
+      firstInvalid?.focus();
+    });
   };
 
   const uploadDocument = async (contractId: string, file: File) => {
@@ -302,7 +323,7 @@ export default function NewContractWizard() {
         title: isEditing ? "Contract updated" : "Contract created",
         description: isEditing
           ? "The contract changes were saved."
-          : "Successfully created contract draft.",
+          : `Successfully created ${values.status.replace(/_/g, " ")} contract.`,
       });
 
       setLocation(`/contracts/${result.id}`);
@@ -409,7 +430,7 @@ export default function NewContractWizard() {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit, focusFirstInvalid)} className="space-y-8">
           {/* Parties */}
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
@@ -422,7 +443,17 @@ export default function NewContractWizard() {
                 render={({ field }) => (
                   <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel>Primary Partner</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={(partnerId) => {
+                        field.onChange(partnerId);
+                        const partner = partners.find((item) => item.id === partnerId);
+                        if (partner && !isEditing) {
+                          form.setValue("licensor", direction === "rights_out" ? "TBN" : partner.name);
+                          form.setValue("licensee", direction === "rights_out" ? partner.name : "TBN");
+                        }
+                      }}
+                      value={field.value || ""}
+                    >
                       <FormControl>
                         <SelectTrigger className="bg-white" data-testid="select-partner">
                           <SelectValue placeholder="Select a partner..." />
@@ -516,7 +547,7 @@ export default function NewContractWizard() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>End Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
                         <FormControl>
                           <SelectTrigger className="bg-white" data-testid="select-end-type">
                             <SelectValue placeholder="Select end type" />
@@ -567,13 +598,13 @@ export default function NewContractWizard() {
                     <FormLabel>Territories</FormLabel>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {TERRITORY_OPTIONS.map((t) => (
-                        <label key={t} className="flex items-center gap-2 text-sm text-slate-700">
+                        <label key={t.value} className="flex items-center gap-2 text-sm text-slate-700">
                           <Checkbox
-                            checked={field.value?.includes(t)}
-                            onCheckedChange={(c) => field.onChange(toggleArrayValue(field.value || [], t, c === true))}
-                            data-testid={`checkbox-territory-${t.toLowerCase()}`}
+                            checked={field.value?.includes(t.value)}
+                            onCheckedChange={(c) => field.onChange(toggleArrayValue(field.value || [], t.value, c === true))}
+                            data-testid={`checkbox-territory-${t.value.toLowerCase()}`}
                           />
-                          {t}
+                          {t.label}
                         </label>
                       ))}
                     </div>
@@ -603,13 +634,13 @@ export default function NewContractWizard() {
                     <FormLabel>Distribution Types</FormLabel>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {DISTRIBUTION_OPTIONS.map((d) => (
-                        <label key={d} className="flex items-center gap-2 text-sm text-slate-700">
+                        <label key={d.value} className="flex items-center gap-2 text-sm text-slate-700">
                           <Checkbox
-                            checked={field.value?.includes(d)}
-                            onCheckedChange={(c) => field.onChange(toggleArrayValue(field.value || [], d, c === true))}
-                            data-testid={`checkbox-distribution-${d.toLowerCase()}`}
+                            checked={field.value?.includes(d.value)}
+                            onCheckedChange={(c) => field.onChange(toggleArrayValue(field.value || [], d.value, c === true))}
+                            data-testid={`checkbox-distribution-${d.value.toLowerCase()}`}
                           />
-                          {d}
+                          {d.label}
                         </label>
                       ))}
                     </div>
@@ -859,7 +890,7 @@ export default function NewContractWizard() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Exclusivity</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || undefined}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger className="bg-white" data-testid="select-exclusivity">
                                 <SelectValue placeholder="Select exclusivity" />
@@ -879,7 +910,7 @@ export default function NewContractWizard() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Reporting Frequency</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || undefined}>
+                          <Select onValueChange={field.onChange} value={field.value || ""}>
                             <FormControl>
                               <SelectTrigger className="bg-white" data-testid="select-reporting-frequency">
                                 <SelectValue placeholder="Select frequency" />
@@ -924,7 +955,7 @@ export default function NewContractWizard() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Royalty Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || undefined}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger className="bg-white" data-testid="select-royalty-type">
                           <SelectValue placeholder="Select type" />
@@ -945,7 +976,7 @@ export default function NewContractWizard() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Payment Terms</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || undefined}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger className="bg-white" data-testid="select-payment-terms">
                           <SelectValue placeholder="Select terms" />
@@ -992,7 +1023,7 @@ export default function NewContractWizard() {
                   <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel>Website Link</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://..." {...field} value={field.value || ''} data-testid="input-website-link" />
+                      <Input type="url" placeholder="https://..." {...field} value={field.value || ''} data-testid="input-website-link" />
                     </FormControl>
                   </FormItem>
                 )}
@@ -1123,7 +1154,7 @@ export default function NewContractWizard() {
               {form.formState.isSubmitting ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {isEditing ? "Saving…" : "Creating…"}</>
               ) : (
-                isEditing ? "Save Changes" : "Create Draft"
+                isEditing ? "Save Changes" : `Create ${form.watch("status") === "draft" ? "Draft" : form.watch("status").replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())}`
               )}
             </Button>
           </div>

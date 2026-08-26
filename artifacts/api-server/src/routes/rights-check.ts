@@ -3,7 +3,8 @@ import { db } from "@workspace/db";
 import { contractsTable, contractContentTable, partnersTable } from "@workspace/db";
 import { eq, and, or } from "drizzle-orm";
 import { authenticateToken } from "../lib/auth";
-import { normalizeRightValue, territoriesOverlap } from "../lib/rightsMatching";
+import { territoriesOverlap } from "../lib/rightsMatching";
+import { distributionTypesIntersect } from "../lib/rightsVocabulary";
 
 const router = Router();
 router.use(authenticateToken);
@@ -39,6 +40,7 @@ router.get("/", async (req, res) => {
       and(
         eq(contractContentTable.contentItemId, contentItemId),
         eq(contractsTable.direction, "rights_out"),
+        eq(contractsTable.archived, false),
         or(
           eq(contractsTable.status, "active"),
           eq(contractsTable.status, "in_perpetuity")
@@ -63,10 +65,8 @@ router.get("/", async (req, res) => {
       c.territories as string[],
       c.otherTerritories,
     );
-    const requestedDistributionType = normalizeRightValue(distributionType);
-    const distMatch = (c.distributionTypes as string[]).some(
-      (value) => normalizeRightValue(value) === requestedDistributionType,
-    );
+    const distMatch = (c.distributionTypes as string[]).some((value) =>
+      distributionTypesIntersect(distributionType, value));
 
     let dateMatch = true;
     if (c.endType === "date" && c.endDate) {

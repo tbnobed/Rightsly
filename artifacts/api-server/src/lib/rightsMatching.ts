@@ -1,5 +1,5 @@
-export const normalizeRightValue = (value: string) =>
-  value.trim().toLocaleLowerCase("en-US");
+import { canonicalTerritory, territoriesIntersect } from "./rightsVocabulary.ts";
+export const normalizeRightValue = (value: string) => canonicalTerritory(value).toLocaleLowerCase("en-US");
 
 /**
  * Returns true when the requested territory overlaps a contract's territory.
@@ -12,18 +12,16 @@ export function territoriesOverlap(
   contractTerritories: string[] | null | undefined,
   otherTerritories?: string | null,
 ) {
-  const requested = normalizeRightValue(requestedTerritory);
-  const explicit = (contractTerritories ?? []).map(normalizeRightValue).filter(Boolean);
+  const requested = canonicalTerritory(requestedTerritory);
+  const explicit = (contractTerritories ?? []).map(canonicalTerritory).filter(Boolean);
   const other = (otherTerritories ?? "")
     .split(/[,;|]/)
-    .map(normalizeRightValue)
+    .map(canonicalTerritory)
     .filter(Boolean);
   const granted = [...explicit, ...other];
 
   return (
-    requested === "global" ||
     granted.length === 0 ||
-    granted.includes("global") ||
-    granted.includes(requested)
+    granted.some((territory) => territoriesIntersect(requested, territory))
   );
 }

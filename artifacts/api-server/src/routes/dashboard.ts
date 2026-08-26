@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { contractsTable, revenueReportsTable, partnersTable } from "@workspace/db";
 import { eq, and, lte, gte, count, sql } from "drizzle-orm";
 import { authenticateToken } from "../lib/auth";
+import { displayContractStatus } from "../lib/contractStatus";
 
 const router = Router();
 router.use(authenticateToken);
@@ -46,13 +47,14 @@ router.get("/", async (req, res) => {
 
   const [[{ active }], [{ expiring }], [{ upcoming }], [{ drafts }], [{ rightsIn }], [{ rightsOut }]] =
     await Promise.all([
-      db.select({ active: count() }).from(contractsTable).where(eq(contractsTable.status, "active")),
+      db.select({ active: count() }).from(contractsTable).where(and(eq(contractsTable.status, "active"), eq(contractsTable.archived, false), sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})`)),
       db
         .select({ expiring: count() })
         .from(contractsTable)
         .where(
           and(
             eq(contractsTable.status, "active"),
+            eq(contractsTable.archived, false),
             eq(contractsTable.endType, "date"),
             lte(contractsTable.endDate, in60DaysStr),
             gte(contractsTable.endDate, today)
@@ -62,9 +64,9 @@ router.get("/", async (req, res) => {
         .select({ upcoming: count() })
         .from(revenueReportsTable)
         .where(and(eq(revenueReportsTable.status, "expected"), lte(revenueReportsTable.expectedDate, in60DaysStr))),
-      db.select({ drafts: count() }).from(contractsTable).where(eq(contractsTable.status, "draft")),
-      db.select({ rightsIn: count() }).from(contractsTable).where(and(eq(contractsTable.direction, "rights_in"), eq(contractsTable.status, "active"))),
-      db.select({ rightsOut: count() }).from(contractsTable).where(and(eq(contractsTable.direction, "rights_out"), eq(contractsTable.status, "active"))),
+      db.select({ drafts: count() }).from(contractsTable).where(and(eq(contractsTable.status, "draft"), eq(contractsTable.archived, false))),
+      db.select({ rightsIn: count() }).from(contractsTable).where(and(eq(contractsTable.direction, "rights_in"), eq(contractsTable.status, "active"), eq(contractsTable.archived, false), sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})`)),
+      db.select({ rightsOut: count() }).from(contractsTable).where(and(eq(contractsTable.direction, "rights_out"), eq(contractsTable.status, "active"), eq(contractsTable.archived, false), sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})`)),
     ]);
 
   // Calendar events in the period
@@ -141,6 +143,7 @@ router.get("/", async (req, res) => {
         eq(contractsTable.direction, "rights_in"),
         eq(contractsTable.status, "active"),
         eq(contractsTable.archived, false),
+        eq(contractsTable.archived, false),
         lte(contractsTable.startDate, endStr),
         sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${startStr})`
       )
@@ -214,7 +217,7 @@ router.get("/", async (req, res) => {
     totalRightsIn: Number(rightsIn),
     totalRightsOut: Number(rightsOut),
     calendarEvents,
-    expiringSoonContracts,
+    expiringSoonContracts: expiringSoonContracts.map((contract) => displayContractStatus(contract)),
     rightsInSpans: rightsInSpans.map((s) => ({
       ...s,
       platforms: (s.platforms as string[] | null) ?? [],

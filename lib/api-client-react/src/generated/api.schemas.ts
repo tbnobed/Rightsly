@@ -805,6 +805,8 @@ export type ImportResultErrorsItem = {
 export interface ImportResult {
   imported: number;
   failed: number;
+  /** Number of previously unknown partners created while importing. */
+  createdPartners: number;
   errors: ImportResultErrorsItem[];
 }
 

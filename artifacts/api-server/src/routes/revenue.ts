@@ -4,12 +4,14 @@ import { revenueReportsTable, contractsTable, partnersTable } from "@workspace/d
 import { eq, and, count, sql, desc } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
+import { routeParam } from "../lib/validation";
 
 const router = Router();
 router.use(authenticateToken);
 
 // GET /api/contracts/:id/revenue-reports
 router.get("/contracts/:id/revenue-reports", async (req, res) => {
+  const contractId = routeParam(req.params.id);
   const reports = await db
     .select({
       id: revenueReportsTable.id,
@@ -25,7 +27,7 @@ router.get("/contracts/:id/revenue-reports", async (req, res) => {
     .from(revenueReportsTable)
     .leftJoin(contractsTable, eq(revenueReportsTable.contractId, contractsTable.id))
     .leftJoin(partnersTable, eq(contractsTable.partnerId, partnersTable.id))
-    .where(eq(revenueReportsTable.contractId, req.params.id))
+    .where(eq(revenueReportsTable.contractId, contractId))
     .orderBy(desc(revenueReportsTable.expectedDate));
 
   res.json(reports.map(r => ({ ...r, amount: r.amount ? Number(r.amount) : null })));
@@ -33,6 +35,7 @@ router.get("/contracts/:id/revenue-reports", async (req, res) => {
 
 // POST /api/contracts/:id/revenue-reports
 router.post("/contracts/:id/revenue-reports", requireRole("admin", "finance"), async (req, res) => {
+  const contractId = routeParam(req.params.id);
   const { period, expectedDate, receivedDate, amount, status } = req.body;
 
   if (!period || !status) {
@@ -45,7 +48,7 @@ router.post("/contracts/:id/revenue-reports", requireRole("admin", "finance"), a
     .insert(revenueReportsTable)
     .values({
       id,
-      contractId: req.params.id,
+      contractId,
       period,
       expectedDate: expectedDate || null,
       receivedDate: receivedDate || null,
@@ -54,7 +57,7 @@ router.post("/contracts/:id/revenue-reports", requireRole("admin", "finance"), a
     })
     .returning();
 
-  await logAudit({ user: req.user, action: "create", entityType: "revenue_report", entityId: id, after: { contractId: req.params.id, period } });
+  await logAudit({ user: req.user, action: "create", entityType: "revenue_report", entityId: id, after: { contractId, period } });
   res.status(201).json({ ...report, amount: report.amount ? Number(report.amount) : null, partnerName: null });
 });
 
@@ -103,6 +106,7 @@ router.get("/revenue-reports", requireRole("admin", "finance"), async (req, res)
 
 // PUT /api/revenue-reports/:id
 router.put("/revenue-reports/:id", requireRole("admin", "finance"), async (req, res) => {
+  const id = routeParam(req.params.id);
   const { period, expectedDate, receivedDate, amount, status, documentPath, documentName } = req.body;
 
   const updates: Record<string, unknown> = {
@@ -118,7 +122,7 @@ router.put("/revenue-reports/:id", requireRole("admin", "finance"), async (req, 
   const [report] = await db
     .update(revenueReportsTable)
     .set(updates)
-    .where(eq(revenueReportsTable.id, req.params.id))
+    .where(eq(revenueReportsTable.id, id))
     .returning();
 
   if (!report) {
@@ -126,14 +130,15 @@ router.put("/revenue-reports/:id", requireRole("admin", "finance"), async (req, 
     return;
   }
 
-  await logAudit({ user: req.user, action: "update", entityType: "revenue_report", entityId: req.params.id });
+  await logAudit({ user: req.user, action: "update", entityType: "revenue_report", entityId: id });
   res.json({ ...report, amount: report.amount ? Number(report.amount) : null, partnerName: null });
 });
 
 // DELETE /api/revenue-reports/:id
 router.delete("/revenue-reports/:id", requireRole("admin", "finance"), async (req, res) => {
-  await db.delete(revenueReportsTable).where(eq(revenueReportsTable.id, req.params.id));
-  await logAudit({ user: req.user, action: "delete", entityType: "revenue_report", entityId: req.params.id });
+  const id = routeParam(req.params.id);
+  await db.delete(revenueReportsTable).where(eq(revenueReportsTable.id, id));
+  await logAudit({ user: req.user, action: "delete", entityType: "revenue_report", entityId: id });
   res.json({ message: "Revenue report deleted" });
 });
 

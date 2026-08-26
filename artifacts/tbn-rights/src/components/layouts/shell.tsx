@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { useAuth } from "@/contexts/auth";
 import { Link, useLocation } from "wouter";
-import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarFooter } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarFooter, SidebarTrigger } from "@/components/ui/sidebar";
 import { LayoutDashboard, FileText, Users, Film, CheckCircle, Calculator, BarChart3, Upload, History, UserCog, LogOut, Briefcase } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationsBell } from "@/components/notifications-bell";
@@ -147,6 +147,10 @@ export function Shell({ children }: { children: ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         <main className="flex-1 overflow-auto bg-slate-50 relative">
+          <div className="md:hidden sticky top-0 z-20 h-12 bg-white border-b border-slate-200 flex items-center px-3">
+            <SidebarTrigger data-testid="button-mobile-navigation" aria-label="Toggle navigation" />
+            <span className="ml-2 font-medium text-slate-900">Rightsly</span>
+          </div>
           {children}
         </main>
       </div>

@@ -34,6 +34,7 @@ export default function ContractDetail() {
   const handleToggleArchive = async () => {
     if (!contract) return;
     const nextArchived = !contract.archived;
+    if (nextArchived && !window.confirm("Archive this contract? You can restore it later from this page.")) return;
     try {
       await updateContract.mutateAsync({ id: contract.id, data: { archived: nextArchived } });
       queryClient.invalidateQueries({ queryKey: getGetContractQueryKey(contract.id) });
@@ -182,6 +183,16 @@ export default function ContractDetail() {
                       </dd>
                     </div>
                     <div className="px-6 py-4 grid grid-cols-3 gap-4">
+                      <dt className="text-sm font-medium text-slate-500">Department Tags</dt>
+                      <dd className="text-sm text-slate-900 col-span-2">{contract.departmentTags?.length ? contract.departmentTags.join(", ") : "None specified"}</dd>
+                    </div>
+                    {contract.websiteLink && (
+                      <div className="px-6 py-4 grid grid-cols-3 gap-4">
+                        <dt className="text-sm font-medium text-slate-500">Website</dt>
+                        <dd className="text-sm col-span-2"><a href={contract.websiteLink} target="_blank" rel="noreferrer" className="text-blue-700 hover:underline break-all" data-testid="link-contract-website">{contract.websiteLink}</a></dd>
+                      </div>
+                    )}
+                    <div className="px-6 py-4 grid grid-cols-3 gap-4">
                       <dt className="text-sm font-medium text-slate-500">Parties</dt>
                       <dd className="text-sm text-slate-900 col-span-2">
                         <div className="flex flex-col space-y-1">
@@ -212,6 +223,16 @@ export default function ContractDetail() {
                   </dl>
                 </CardContent>
               </Card>
+              <Card className="border-slate-200 shadow-sm">
+                <CardHeader className="border-b border-slate-100 bg-slate-50/80 pb-4"><CardTitle className="text-lg">Rights &amp; Terms</CardTitle></CardHeader>
+                <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm">
+                  <div><span className="block text-slate-500">Platform</span><span className="font-medium">{contract.platform || "Not specified"}</span></div>
+                  <div><span className="block text-slate-500">Exclusivity</span><span className="font-medium capitalize">{contract.rightsOutDetails?.exclusivity?.replace("_", " ") || "Not specified"}</span></div>
+                  <div><span className="block text-slate-500">Auto-renew</span><span className="font-medium">{contract.rightsOutDetails?.autoRenew ? "Yes" : "No"}</span></div>
+                  <div><span className="block text-slate-500">Reporting Frequency</span><span className="font-medium capitalize">{contract.rightsOutDetails?.reportingFrequency || "Not specified"}</span></div>
+                  <div><span className="block text-slate-500">Has Amendment</span><span className="font-medium">{contract.rightsOutDetails?.hasAmendment ? "Yes" : "No"}</span></div>
+                </CardContent>
+              </Card>
 
               {contract.direction === 'rights_in' && contract.rightsInDetails && (
                 <Card className="border-blue-200 shadow-sm overflow-hidden bg-blue-50/10">
@@ -234,6 +255,15 @@ export default function ContractDetail() {
                           <h4 className="text-sm font-semibold text-slate-900 mb-1">Grant of Rights</h4>
                           <p className="text-sm text-slate-700 bg-white p-3 rounded border border-blue-100">{contract.rightsInDetails.grantOfRights}</p>
                         </div>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div><span className="block text-slate-500">YouTube Channel</span><span className="font-medium">{contract.rightsInDetails.youtubeChannel || "Not specified"}</span></div>
+                        <div><span className="block text-slate-500">Social Platforms</span><span className="font-medium">{contract.rightsInDetails.socialPlatforms?.join(", ") || "Not specified"}</span></div>
+                        <div><span className="block text-slate-500">Social Handle</span><span className="font-medium">{contract.rightsInDetails.socialHandle || "Not specified"}</span></div>
+                        <div><span className="block text-slate-500">Exclusivity</span><span className="font-medium">{contract.rightsInDetails.exclusivitySameAsDuration ? "Same as agreement duration" : [contract.rightsInDetails.exclusivityStartDate, contract.rightsInDetails.exclusivityEndDate].filter(Boolean).join(" – ") || "Not specified"}</span></div>
+                      </div>
+                      {contract.rightsInDetails.marketingRights && (
+                        <div><h4 className="text-sm font-semibold text-slate-900 mb-1">Marketing Rights</h4><p className="text-sm text-slate-700">{contract.rightsInDetails.marketingRights}</p></div>
                       )}
                     </div>
                   </CardContent>
@@ -359,9 +389,14 @@ export default function ContractDetail() {
         </TabsContent>
         
         <TabsContent value="financials" className="mt-6">
-          {/* Financial details here */}
-          <div className="p-8 text-center text-slate-500 bg-white border border-slate-200 rounded-lg shadow-sm">
-            <p>Financial details tab selected. Use the Revenue Reports or Royalties section to manage money.</p>
+          <div className="p-8 bg-white border border-slate-200 rounded-lg shadow-sm">
+            <h3 className="text-lg font-semibold text-slate-900 mb-5">Financial Terms</h3>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
+              <div><dt className="text-slate-500">Royalty Type</dt><dd className="mt-1 font-medium capitalize">{contract.royaltyType?.replace(/_/g, " ") || "Not specified"}</dd></div>
+              <div><dt className="text-slate-500">Minimum Payment Threshold</dt><dd className="mt-1 font-medium">{contract.rightsOutDetails?.minPaymentThreshold != null ? `$${contract.rightsOutDetails.minPaymentThreshold}` : "Not specified"}</dd></div>
+              <div><dt className="text-slate-500">Payment Terms</dt><dd className="mt-1 font-medium uppercase">{contract.paymentTerms?.replace("_", " ") || "Not specified"}</dd></div>
+              <div><dt className="text-slate-500">Royalty Details</dt><dd className="mt-1 font-medium whitespace-pre-wrap">{contract.royaltyDetails || "Not specified"}</dd></div>
+            </dl>
             <div className="mt-4 flex justify-center gap-4">
               <Button asChild variant="outline">
                 <Link href={`/royalties?contractId=${contract.id}`}>View Royalties</Link>
