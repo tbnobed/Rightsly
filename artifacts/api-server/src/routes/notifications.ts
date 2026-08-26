@@ -6,7 +6,7 @@ import { eq, and, or, desc, count, lte, gte, lt, isNotNull, isNull, ne, sql } fr
 import { authenticateToken } from "../lib/auth";
 import { sendNotificationEmail } from "../lib/email";
 import { logger } from "../lib/logger";
-import { canReceiveRevenueNotifications } from "../lib/notificationPolicy";
+import { canReceiveRevenueNotifications, canSendNotificationEmails } from "../lib/notificationPolicy";
 
 const router = Router();
 router.use(authenticateToken);
@@ -176,7 +176,7 @@ async function generateForUser(userId: string) {
       .onConflictDoNothing()
       .returning();
 
-    if (inserted.length) {
+    if (inserted.length && canSendNotificationEmails(process.env["NODE_ENV"])) {
       // Fire-and-forget notification emails for newly inserted rows. Never let
       // email failures affect the request; catch and log.
       void (async () => {

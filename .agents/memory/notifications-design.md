@@ -10,7 +10,8 @@ Invariants:
 - DB-level uniqueness on `(user_id, dedupe_key)` + `onConflictDoNothing` guards concurrent GETs; app-level key checks alone are racy.
 - Retention: dismissed generated rows older than 90 days are hard-deleted at generation time to bound growth; keep some retention if changing this, or old dedupe keys regrow forever.
 - Generated alerts must enforce the same role and row visibility as their target page: revenue/approval alerts are financial-role-only, and Sales contract alerts may reference only Sales-visible contracts.
+- Automated notification email delivery is production-only. Development sweeps still create in-app rows but must never send email because seeded recipients can route to real shared inboxes.
 
-**Why:** unattended generation persists and emails data without a page authorization check, so a query broader than the target page becomes a durable disclosure.
+**Why:** unattended generation persists and emails data without a page authorization check, so a query broader than the target page becomes a durable disclosure. Development API restarts also run sweeps; sending there can turn test records into real email bursts.
 
 **How to apply:** any new notification type must set a stable dedupeKey encoding entity + period, respect soft-dismiss/clear semantics, and reuse the target feature's authorization predicate.
