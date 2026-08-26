@@ -1,0 +1,152 @@
+Requirements Audit · Rightsly
+
+Rightsly vs. The Ask
+Every request in the three stakeholder documents, checked against what is actually running at rightsly.obtv.io — 74 line items in all.
+
+Audited 26 Aug 2026
+Build index-CuLLk9RB.js
+Sources Obed Questions · Dashboard Notes · Dashboard Form
+Mostly yes — with one exception that will dominate the meeting. The contract model is right, and that was the hardest thing to get right. J&J asked for the system to stop treating each piece of content as its own contract, and it does: a contract now holds many titles, territories and distribution types are multi-select, terms can be perpetual or auto-renewing, and you can open a title and see every contract touching it. Nearly all of the form spec is built, including the fiddly parts like exclusivity windows and conditional royalty fields.
+
+The exception is revenue reporting. The notes say plainly that the royalties you receive are already your cut and you need to upload reports, not calculate them. What is built is a Royalty Calculator, and there is no way — in the interface or the API — to enter a revenue report at all. That single gap silently empties four other features that stakeholders asked for by name.
+
+42
+Met
+4
+Partial
+14
+Missing
+7
+Ruled out
+by stakeholders
+7
+Unverified
+or open
+What will come up in the meeting
+Four gaps are worth raising before anyone opens the app, because each one is a thing a named stakeholder asked for and will look for.
+
+1 · Revenue reports cannot be entered anywhere
+Source: Dashboard Notes · Obed Questions → Royalty Calculations
+
+Calculate royalties — the royalties we receive are already our cut. We do not need to calculate royalties… (add in file attachment to upload reports)
+Rights Dashboard Notes
+
+The app ships a Royalty Calculator that computes revenue shares — the opposite of the request. More importantly, there is no route, screen, or endpoint for creating a revenue report. GET /api/revenue-reports returns an empty list; POST returns 404. The data model expects revenue reports to exist, but nothing can create one.
+
+What this silently empties
+Dashboard tile “Upcoming Reports / Revenue reports due” — permanently 0
+Calendar legend entries Report due and Report overdue — never render
+Reports Hub Royalty Statements export — always empty
+The “revenue report expected” notification Obed asked for — can never fire
+2 · Season-level licensing has no way in
+Source: Obed Questions → Rights Availability
+
+A partner could only want season 1 so we would view this as “Partner licensed Season 1 of Show A”.
+Obed Questions
+
+The catalog knows about TV Series and every content record carries a seasons array — but the array is always empty, there is no interface for adding seasons to a series, and a contract can only link a whole title. A deal for Season 1 currently has to be recorded as a deal for the entire show, which is precisely the distinction Obed was drawing.
+
+3 · Financial visibility is not restricted by role
+Source: Dashboard Notes · Obed Questions → Permissions
+
+Make sure royalty info isn’t available to all departments, will need to set up permissions for certain departments (tiers of visibility for financial)
+Rights Dashboard Notes
+
+Obed also specified that Finance should have no ability to edit a contract, and that Sales should see availability and active contracts only. Sales restrictions were reported as implemented. The rest could not be checked, because the seeded Legal, Finance, and Sales users no longer exist — the account list now contains only Admin. Whatever the permission code does, none of it can currently be demonstrated to a stakeholder.
+
+4 · Notifications exist as a shell, not as alerts
+Source: Obed Questions → Notifications · Dashboard Notes
+
+The bell, the panel, Mark all read and the Clear all button Jacob asked for are all built. What is missing is anything that generates a notification. Of the four triggers Obed listed — contract expiring, revenue report expected, approval needed, contract signed by legal — only the first is even expressible in the current data model. There is no approval step and no signing step anywhere in the app, and revenue reports cannot exist (see 1).
+
+Contract forms
+The Rights Dashboard Form document is the most literal spec of the three, and it is the best-served: 36 of 40 fields are built, in both directions.
+
+Rights In · Rights Out
+Requirement	Status	Notes
+Add Contract → Rights In / Rights Out chooser	Met	Step 1 of the wizard, framed exactly as acquisition vs. distribution.
+Licensor / Licensee on both forms	Met	Auto-fills from the selected partner, correctly inverted per direction.
+Rights In platforms: TBN Broadcast, TBN+, Yippee	Met	All three present as checkboxes.
+YouTube platform + text box for channel	Partial	Checkbox present; the channel text box was not built.
+Socials broken out — Facebook, Instagram, TikTok, Other + account text box	Missing	A single “Socials” checkbox. The spec explicitly asked for the breakout when a deal is platform-specific.
+Grant of Rights: exclusivity, exclusivity start/end, “same as contract duration”	Met	All four controls built on the Rights In form.
+Marketing Rights text box	Met	
+Royalty type with conditional text boxes	Met	Revenue Share prompts “e.g. 70/30 split %”, Flat Fee prompts “License fee amount”, Other prompts “Details”.
+Payment terms Net 30 / 60 / 90	Met	
+Revenue reporting frequency — monthly, quarterly, annually	Met	Captured on the contract, though nothing consumes it yet — see blocker 1.
+Minimum payment threshold	Met	
+Auto Renew and Amendment checkboxes	Met	Auto-renew is modelled as an End Type, which also satisfies the “in perpetuity or auto renew” request.
+Platform as a non-mandatory text box (Rights Out)	Met	Exactly as J&J asked — free text, not required.
+Link to website	Met	Now validated to HTTP/HTTPS only.
+Contract document upload	Met	PDF / DOC / DOCX, plus a Documents tab on the contract.
+Notes section	Met	
+Department tags — Acquisition, Distribution	Met	On the form and as a filter on the contracts list, as the notes requested.
+DPO expansion	Later	Flagged in the form doc as a future item; not attempted.
+Content & catalog
+Requirement	Status	Notes
+A contract holds multiple pieces of content, not one contract per title	Met	The central conceptual fix J&J asked for, and it landed.
+Pull from the catalog: films, TV series, TBN FAST, TBN Linear, WoF FAST	Met	All five types present, exactly as named.
+View all content associated with a contract	Met	Content tab on the contract detail.
+Open a title and see every contract tied to it	Met	Linked Contracts on the content detail page, with direction, status, territory and distribution.
+Seasons on a TV series, licensable individually	Missing	See blocker 2.
+Checkboxes for cleans and captions	Met	Both on the Add Title form.
+Catalog scrolls when adding content to a contract	Met	The list is now a scrollable container — the reported bug is fixed.
+Content types updated for rights in	Met	
+Rights availability
+Requirement	Status	Notes
+Check rights against content, not partner	Met	The checker takes a title as its subject, as the notes asked.
+“Platform” relabelled to “Distribution Type”	Met	
+SVOD, TVOD, AVOD, FAST, Linear all supported	Met	Plus VOD and Broadcast; the same seven values on every screen.
+Multiple territories, incl. free text for others	Met	21 canonical territories plus an Other Territories field — beyond the Global / US / Canada / UK ask.
+Only flag conflicts where an exclusive deal exists	Met	Non-exclusive grants never block, which matches how TBN actually deals.
+Suggest alternative territories or platforms when unavailable	Missing	A conflict reports what blocks it but proposes nothing. Obed scoped this as exclusive-only, so it is low frequency — but it was asked for.
+Track rights holds / pending negotiations	Not needed	Obed: negotiations stay in email until finalised.
+Dashboard & calendar
+Requirement	Status	Notes
+Calendar of expiration dates, current month with next-month navigation	Met	
+Calendar also shows when a revenue report is expected	Partial	The legend has “Report due” and “Report overdue”, but nothing can populate them — see blocker 1.
+Expiring-soon window of 60 days	Met	Labelled “Within 60 days”, exactly as specified.
+Month, quarter and year views for different users	Met	This Month / This Quarter / This Year — covers Jordy, Kristina and Emanuel respectively.
+Separate calendars per platform (YouTube, TBN+, L&D, Broadcast) with colour coding	Missing	One combined calendar, colour-coded by event type rather than by platform or duration.
+Role-specific dashboard views	Not needed	Obed: revisit only if the site expands beyond L&D.
+Royalties & revenue
+Requirement	Status	Notes
+Upload revenue reports as file attachments	Missing	Blocker 1. The single largest gap in the build.
+Stop calculating royalties — the received figure is already TBN’s cut	Missing	The page is still titled Royalty Calculator and is built around computing a share.
+Royalty tab should calculate costs	Missing	No cost-side concept exists.
+Revenue share splits and flat fees	Met	Both captured per contract with free-text detail.
+Different structures per contract and partner	Met	Every financial term is per-contract.
+Royalty info restricted from all departments	Missing	Blocker 3.
+Review / approve royalty payments before sending	Missing	No approval state anywhere in the app.
+Advance payments and recoupment	Not needed	Obed: managed by accounting.
+Royalty statements out to rights holders	Not needed	Obed: only the Cold Water Media account, handled by accounting.
+Connect to the L&D aging report	Missing	An external integration; likely a separate scope conversation rather than a build gap.
+Reports, exports & contract lifecycle
+Requirement	Status	Notes
+Contract summaries, royalty statements, expiring-soon reports	Partial	All three exist; royalty statements can never populate.
+Export to Excel and PDF	Met	Both formats on all three report types.
+Sort reports by partner, content, status, royalty type, end date	Met	
+Sort reports by platform	Missing	No platform or territory column in the report table.
+Clickable Active / In Perpetuity / Expired / Auto-Renew filters	Met	Built as filter chips exactly as described.
+Licensor added to the contracts list columns	Met	Alongside partner, direction, status, territories, content and end date.
+Statuses: Active, Expired, In Perpetuity, Terminated	Met	Plus Draft. Expiry is now derived from the term dates automatically.
+Amendments as a subsection of an existing contract	Met	Dedicated tab with Add Amendment, under Partner → Contract → Amendment.
+Bulk import for the Rightsline migration	Partial	Works, but currently rejects any CSV that omits an optional column — flagged separately as a regression to fix before migration day.
+Archive old agreements	Met	Reversible, and archived contracts no longer affect rights checks.
+Approval workflow / DocuSign	Missing	Obed left this conditional on Kristina — worth confirming before it counts as a gap.
+Contract templates	Not needed	Obed: templates come from Legal or the partner.
+Permissions, notifications & audit
+Requirement	Status	Notes
+Admin — full access	Met	
+Legal — draft/review contracts, check rights availability	Unverified	No Legal user exists to test with.
+Finance — royalties and revenue, no contract editing	Unverified	No Finance user exists to test with.
+Sales — check availability, view active contracts	Unverified	Reported as implemented; the test user was deleted afterwards.
+International users need both rights in and rights out	Unverified	Depends on the role model above.
+External partner access	Not needed	Obed: not at this time.
+Notification triggers — expiring, report expected, approval needed, signed by legal	Missing	Blocker 4.
+In-app notifications with a clear-all button	Met	Bell, panel, Mark all read, Clear all.
+Bell links straight to the item, not just the tab	Unverified	Nothing generates notifications, so there was nothing to click through.
+Deadline reminders	Not needed	Obed: not currently.
+Remove IP address from the audit trail	Met	Confirmed gone from the audit record.
+Export audit logs	Missing	No export control on the Audit Log page. Obed routed this to Kristina.
+Retention period and compliance regime	Open	Three questions in the doc are marked for Kristina and are still unanswered — they may add requirements.
