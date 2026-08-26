@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { notificationsTable, contractsTable, partnersTable } from "@workspace/db";
+import { notificationsTable, contractsTable, partnersTable, revenueReportsTable, royaltyApprovalsTable } from "@workspace/db";
 import { usersTable } from "@workspace/db";
-import { eq, and, desc, count, lte, gte, lt, isNotNull } from "drizzle-orm";
+import { eq, and, or, desc, count, lte, gte, lt, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { authenticateToken } from "../lib/auth";
 import { sendNotificationEmail } from "../lib/email";
 import { logger } from "../lib/logger";
+import { canReceiveRevenueNotifications } from "../lib/notificationPolicy";
 
 const router = Router();
 router.use(authenticateToken);
@@ -14,13 +15,6 @@ const EXPIRY_WINDOW_DAYS = 60;
 
 function isoDate(d: Date) {
   return d.toISOString().split("T")[0];
-}
-
-function currentPeriodKey(frequency: string, now: Date): string {
-  const y = now.getFullYear();
-  if (frequency === "monthly") return `${y}-M${now.getMonth() + 1}`;
-  if (frequency === "quarterly") return `${y}-Q${Math.floor(now.getMonth() / 3) + 1}`;
-  return `${y}`;
 }
 
 // Generate notifications for the current user (idempotent via dedupeKey)
@@ -50,6 +44,12 @@ async function generateForUser(userId: string) {
   const existingKeys = new Set(existing.map((e) => e.dedupeKey).filter(Boolean));
 
   const toInsert: (typeof notificationsTable.$inferInsert)[] = [];
+  const [currentUser] = await db
+    .select({ role: usersTable.role })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  if (!currentUser) return;
 
   // 1. Contracts expiring within 60 days
   const expiring = await db
@@ -62,6 +62,7 @@ async function generateForUser(userId: string) {
     .leftJoin(partnersTable, eq(contractsTable.partnerId, partnersTable.id))
     .where(
       and(
+        eq(contractsTable.status, "active"),
         eq(contractsTable.endType, "date"),
         eq(contractsTable.archived, false),
         gte(contractsTable.endDate, isoDate(now)),
@@ -83,37 +84,87 @@ async function generateForUser(userId: string) {
     });
   }
 
-  // 2. Revenue reports expected this period (rights out with reporting frequency)
-  const reporting = await db
+  if (canReceiveRevenueNotifications(currentUser.role)) {
+    // 2. Scheduled revenue reports due within the alert window.
+    const expectedReports = await db
     .select({
-      id: contractsTable.id,
-      frequency: contractsTable.rightsOutReportingFrequency,
+      id: revenueReportsTable.id,
+      contractId: revenueReportsTable.contractId,
+      period: revenueReportsTable.period,
+      expectedDate: revenueReportsTable.expectedDate,
       partnerName: partnersTable.name,
     })
-    .from(contractsTable)
-    .leftJoin(partnersTable, eq(contractsTable.partnerId, partnersTable.id))
+    .from(revenueReportsTable)
+    .innerJoin(contractsTable, eq(contractsTable.id, revenueReportsTable.contractId))
+    .leftJoin(partnersTable, eq(partnersTable.id, contractsTable.partnerId))
     .where(
       and(
-        eq(contractsTable.direction, "rights_out"),
+        or(eq(revenueReportsTable.status, "expected"), eq(revenueReportsTable.status, "overdue")),
+        isNotNull(revenueReportsTable.expectedDate),
+        lte(revenueReportsTable.expectedDate, isoDate(cutoff)),
         eq(contractsTable.status, "active"),
         eq(contractsTable.archived, false)
       )
     );
 
-  for (const c of reporting) {
-    if (!c.frequency) continue;
-    const period = currentPeriodKey(c.frequency, now);
-    const key = `report_expected:${c.id}:${period}`;
-    if (existingKeys.has(key)) continue;
-    toInsert.push({
-      id: crypto.randomUUID(),
-      userId,
-      type: "report_expected",
-      title: `Revenue report expected from ${c.partnerName ?? "partner"}`,
-      message: `A ${c.frequency} revenue report is expected for the current period.`,
-      link: `/contracts/${c.id}`,
-      dedupeKey: key,
-    });
+    for (const report of expectedReports) {
+      const key = `report_expected:${report.id}:${report.expectedDate}`;
+      if (existingKeys.has(key)) continue;
+      toInsert.push({
+        id: crypto.randomUUID(),
+        userId,
+        type: "report_expected",
+        title: `Revenue report expected from ${report.partnerName ?? "partner"}`,
+        message: `The ${report.period} report is due ${report.expectedDate}.`,
+        link: `/royalties?contractId=${encodeURIComponent(report.contractId)}`,
+        dedupeKey: key,
+      });
+    }
+  }
+
+  // 3. Every admin/finance user receives one durable, direct notification per
+  // report awaiting review or approval.  The unique user/dedupe index makes
+  // this safe when several notification requests arrive concurrently.
+  if (canReceiveRevenueNotifications(currentUser.role)) {
+    const awaitingApproval = await db
+      .select({
+        reportId: revenueReportsTable.id,
+        contractId: revenueReportsTable.contractId,
+        period: revenueReportsTable.period,
+        partnerName: partnersTable.name,
+      })
+      .from(revenueReportsTable)
+      .leftJoin(royaltyApprovalsTable, eq(royaltyApprovalsTable.reportId, revenueReportsTable.id))
+      .leftJoin(contractsTable, eq(contractsTable.id, revenueReportsTable.contractId))
+      .leftJoin(partnersTable, eq(partnersTable.id, contractsTable.partnerId))
+      .where(and(
+        // Older reports may predate the approval row; they still need review.
+        // PostgreSQL's null behavior is handled by the separate query below.
+        ne(royaltyApprovalsTable.status, "approved"),
+      ));
+    const withoutApproval = await db
+      .select({
+        reportId: revenueReportsTable.id,
+        contractId: revenueReportsTable.contractId,
+        period: revenueReportsTable.period,
+        partnerName: partnersTable.name,
+      })
+      .from(revenueReportsTable)
+      .leftJoin(royaltyApprovalsTable, eq(royaltyApprovalsTable.reportId, revenueReportsTable.id))
+      .leftJoin(contractsTable, eq(contractsTable.id, revenueReportsTable.contractId))
+      .leftJoin(partnersTable, eq(partnersTable.id, contractsTable.partnerId))
+      .where(isNull(royaltyApprovalsTable.id));
+    for (const report of [...awaitingApproval, ...withoutApproval]) {
+      const key = `approval_needed:${report.reportId}`;
+      if (existingKeys.has(key)) continue;
+      toInsert.push({
+        id: crypto.randomUUID(), userId, type: "approval_needed",
+        title: `Revenue report needs approval: ${report.period}`,
+        message: `Review the report from ${report.partnerName ?? "partner"} before it is approved.`,
+        link: `/royalties?contractId=${encodeURIComponent(report.contractId)}`,
+        dedupeKey: key,
+      });
+    }
   }
 
   if (toInsert.length) {
@@ -146,6 +197,47 @@ async function generateForUser(userId: string) {
         }
       })();
     }
+  }
+}
+
+export async function runNotificationSweep() {
+  await db.execute(sql`
+    DELETE FROM notifications n
+    USING users u
+    WHERE n.user_id = u.id
+      AND u.role NOT IN ('admin', 'finance')
+      AND n.type IN ('report_expected', 'approval_needed')
+  `);
+  await db.execute(sql`
+    DELETE FROM notifications n
+    USING users u
+    WHERE n.user_id = u.id
+      AND u.role = 'sales'
+      AND n.type = 'contract_expiring'
+      AND NOT EXISTS (
+        SELECT 1 FROM contracts c
+        WHERE n.link = '/contracts/' || c.id
+          AND c.status = 'active'
+          AND c.archived = false
+          AND c.end_type = 'date'
+          AND c.end_date >= CURRENT_DATE
+      )
+  `);
+  const today = isoDate(new Date());
+  await db
+    .update(revenueReportsTable)
+    .set({ status: "overdue" })
+    .where(and(
+      eq(revenueReportsTable.status, "expected"),
+      isNotNull(revenueReportsTable.expectedDate),
+      lt(revenueReportsTable.expectedDate, today),
+    ));
+  const users = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.isActive, true));
+  for (const user of users) {
+    await generateForUser(user.id);
   }
 }
 

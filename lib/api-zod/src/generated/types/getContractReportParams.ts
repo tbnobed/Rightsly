@@ -12,5 +12,7 @@ direction?: GetContractReportDirection;
 status?: string;
 from?: Date;
 to?: Date;
+platform?: string;
+territory?: string;
 format?: GetContractReportFormat;
 };

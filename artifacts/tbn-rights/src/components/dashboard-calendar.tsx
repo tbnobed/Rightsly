@@ -37,8 +37,22 @@ const PLATFORM_STYLES: Record<string, { bar: string; label: string }> = {
 };
 const OTHER_PLATFORM_STYLE = { bar: "bg-slate-400", label: "Other" };
 
-function platformStyle(p: string) {
-  return PLATFORM_STYLES[p] ?? OTHER_PLATFORM_STYLE;
+const PLATFORM_GROUPS = {
+  youtube: { label: "YouTube", style: PLATFORM_STYLES.YouTube, matches: (platform: string) => platform.toLowerCase().includes("youtube") },
+  tbn_plus: { label: "TBN+", style: PLATFORM_STYLES["TBN+"], matches: (platform: string) => platform.toLowerCase() === "tbn+" },
+  learning_development: { label: "L&D", style: { bar: "bg-violet-500", label: "L&D" }, matches: (platform: string) => /(^|[\s/&-])(l&d|learning|development)([\s/&-]|$)/i.test(platform) },
+  broadcast: { label: "Broadcast", style: PLATFORM_STYLES["TBN Broadcast"], matches: (platform: string) => platform.toLowerCase().includes("broadcast") },
+} as const;
+
+type PlatformGroup = keyof typeof PLATFORM_GROUPS;
+
+function platformGroup(platform: string): PlatformGroup | "other" {
+  return (Object.keys(PLATFORM_GROUPS) as PlatformGroup[]).find((key) => PLATFORM_GROUPS[key].matches(platform)) ?? "other";
+}
+
+function platformStyle(platform: string) {
+  const group = platformGroup(platform);
+  return group === "other" ? OTHER_PLATFORM_STYLE : PLATFORM_GROUPS[group].style;
 }
 
 function spanCoversDay(span: RightsInSpan, dayKey: string) {
@@ -47,12 +61,13 @@ function spanCoversDay(span: RightsInSpan, dayKey: string) {
   return true; // perpetuity / auto-renew
 }
 
-export function DashboardCalendar() {
+export function DashboardCalendar({ period = "month" }: { period?: "month" | "quarter" | "year" }) {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState<Date>(() => new Date());
   const [mode, setMode] = useState<"events" | "rights_in">("events");
+  const [platformFilter, setPlatformFilter] = useState<PlatformGroup | "all">("all");
 
-  const params = { period: "month" as const, referenceDate: format(month, "yyyy-MM-dd") };
+  const params = { period, referenceDate: format(month, "yyyy-MM-dd") };
   const { data, isLoading } = useGetDashboard(params, {
     query: { queryKey: getGetDashboardQueryKey(params) },
   });
@@ -79,6 +94,12 @@ export function DashboardCalendar() {
   );
 
   const selectedEvents = eventsByDay.get(format(selectedDay, "yyyy-MM-dd")) ?? [];
+  const matchesPlatformFilter = (platform: string) =>
+    platformFilter === "all" || platformGroup(platform) === platformFilter;
+  const filteredSpans = (dayKey: string) => spans.filter((span) =>
+    spanCoversDay(span, dayKey) &&
+    (platformFilter === "all" || span.platforms.some(matchesPlatformFilter))
+  );
 
   return (
     <div className="space-y-4">
@@ -96,6 +117,19 @@ export function DashboardCalendar() {
               <SelectItem value="rights_in">Rights In by platform</SelectItem>
             </SelectContent>
           </Select>
+          {mode === "rights_in" && (
+            <Select value={platformFilter} onValueChange={(v) => setPlatformFilter(v as PlatformGroup | "all")}>
+              <SelectTrigger className="h-8 w-32 text-xs bg-white" data-testid="select-calendar-platform">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All platforms</SelectItem>
+                {(Object.keys(PLATFORM_GROUPS) as PlatformGroup[]).map((key) => (
+                  <SelectItem key={key} value={key}>{PLATFORM_GROUPS[key].label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonth((m) => { const next = addMonths(m, -1); setSelectedDay(next); return next; })} data-testid="button-calendar-prev">
             <ChevronLeft className="w-4 h-4" />
           </Button>
@@ -155,8 +189,10 @@ export function DashboardCalendar() {
                     </div>
                   )}
                   {mode === "rights_in" && (() => {
-                    const daySpans = spans.filter((s) => spanCoversDay(s, key));
-                    const platforms = [...new Set(daySpans.flatMap((s) => (s.platforms.length ? s.platforms : ["Other"])))];
+                    const daySpans = filteredSpans(key);
+                    const platforms = [...new Set(daySpans.flatMap((s) =>
+                      s.platforms.length ? s.platforms.filter(matchesPlatformFilter) : platformFilter === "all" ? ["Other"] : []
+                    ))];
                     return platforms.length > 0 ? (
                       <div className="flex flex-col gap-0.5 mt-1">
                         {platforms.slice(0, 3).map((p) => (
@@ -180,7 +216,7 @@ export function DashboardCalendar() {
                     <span className={`w-2 h-2 rounded-full ${dot}`} /> {label}
                   </span>
                 ))
-              : [...Object.values(PLATFORM_STYLES), OTHER_PLATFORM_STYLE].map(({ bar, label }) => (
+              : [...Object.values(PLATFORM_GROUPS).map(({ style }) => style), OTHER_PLATFORM_STYLE].map(({ bar, label }) => (
                   <span key={label} className="flex items-center gap-1.5">
                     <span className={`w-4 h-1 rounded-full ${bar}`} /> {label}
                   </span>
@@ -194,7 +230,7 @@ export function DashboardCalendar() {
             {mode === "rights_in" ? (
               (() => {
                 const dayKey = format(selectedDay, "yyyy-MM-dd");
-                const daySpans = spans.filter((s) => spanCoversDay(s, dayKey));
+                const daySpans = filteredSpans(dayKey);
                 return daySpans.length > 0 ? (
                   <div className="space-y-2">
                     {daySpans.map((span) => (
@@ -206,7 +242,7 @@ export function DashboardCalendar() {
                           </p>
                         </div>
                         <div className="flex flex-wrap gap-1 justify-end max-w-48">
-                          {(span.platforms.length ? span.platforms : ["Other"]).map((p) => (
+                          {(span.platforms.length ? span.platforms.filter(matchesPlatformFilter) : ["Other"]).map((p) => (
                             <Badge key={p} variant="outline" className="text-[10px] shrink-0 flex items-center gap-1">
                               <span className={`w-2 h-2 rounded-full ${platformStyle(p).bar}`} /> {p}
                             </Badge>

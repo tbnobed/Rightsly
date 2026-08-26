@@ -98,7 +98,7 @@ export default function Dashboard() {
                 <CardDescription>Contract starts, expirations, and report due dates</CardDescription>
               </CardHeader>
               <CardContent>
-                <DashboardCalendar />
+                <DashboardCalendar period={period} />
               </CardContent>
             </Card>
 

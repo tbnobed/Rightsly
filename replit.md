@@ -9,6 +9,7 @@ _Replace the heading above with the project's name, and this line with one sente
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/db run preflight` — check orphan/duplicate rows before schema reconciliation
 - Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
@@ -49,6 +50,10 @@ _Populate as you build — sharp edges, "always run X before Y" rules._
 Authentik OIDC SSO and SendGrid email are configured entirely via environment
 variables (no Replit-specific APIs), so the same build runs on the customer's
 Ubuntu server.
+
+Database reconciliation is a hard deployment prerequisite. Replit deployments
+must use the managed Publish schema-diff step; self-hosted deployments must
+follow `docs/database-upgrade.md` before starting the API.
 
 ### Required environment variables
 

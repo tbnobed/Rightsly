@@ -6,9 +6,11 @@
  */
 import type { RightsCheckResultConflictsItem } from './rightsCheckResultConflictsItem';
 import type { RightsCheckResultGrantsItem } from './rightsCheckResultGrantsItem';
+import type { RightsCheckResultSuggestions } from './rightsCheckResultSuggestions';
 
 export interface RightsCheckResult {
   available: boolean;
   conflicts: RightsCheckResultConflictsItem[];
   grants: RightsCheckResultGrantsItem[];
+  suggestions: RightsCheckResultSuggestions;
 }

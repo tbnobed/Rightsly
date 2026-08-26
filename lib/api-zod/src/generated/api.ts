@@ -303,6 +303,7 @@ export const ListContractsResponse = zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
   "partnerId": zod.string().optional(),
+  "platform": zod.string().nullish(),
   "partnerName": zod.string().optional(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
@@ -348,6 +349,7 @@ export const CreateContractBody = zod.object({
   "youtubeChannel": zod.string().nullish(),
   "socialPlatforms": zod.array(zod.string()).optional(),
   "socialHandle": zod.string().nullish(),
+  "socialAccounts": zod.record(zod.string(), zod.string()).optional(),
   "grantOfRights": zod.string().nullish(),
   "exclusivityStartDate": zod.coerce.date().nullish(),
   "exclusivityEndDate": zod.coerce.date().nullish(),
@@ -362,6 +364,7 @@ export const CreateContractBody = zod.object({
   "minPaymentThreshold": zod.number().nullish()
 }).nullish(),
   "contentItemIds": zod.array(zod.string()).optional(),
+  "seasonIds": zod.array(zod.string()).optional(),
   "departmentTags": zod.array(zod.string()).optional()
 })
 
@@ -393,6 +396,7 @@ export const CreateContractResponse = zod.object({
   "youtubeChannel": zod.string().nullish(),
   "socialPlatforms": zod.array(zod.string()).optional(),
   "socialHandle": zod.string().nullish(),
+  "socialAccounts": zod.record(zod.string(), zod.string()).optional(),
   "grantOfRights": zod.string().nullish(),
   "exclusivityStartDate": zod.coerce.date().nullish(),
   "exclusivityEndDate": zod.coerce.date().nullish(),
@@ -425,6 +429,14 @@ export const CreateContractResponse = zod.object({
   "hasCaptions": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
+})).optional(),
+  "selectedSeasons": zod.array(zod.object({
+  "id": zod.string(),
+  "contentItemId": zod.string(),
+  "seasonNumber": zod.number(),
+  "title": zod.string().nullish(),
+  "year": zod.number().nullish(),
+  "episodeCount": zod.number().nullish()
 })).optional(),
   "amendments": zod.array(zod.object({
   "id": zod.string(),
@@ -476,6 +488,7 @@ export const GetContractResponse = zod.object({
   "youtubeChannel": zod.string().nullish(),
   "socialPlatforms": zod.array(zod.string()).optional(),
   "socialHandle": zod.string().nullish(),
+  "socialAccounts": zod.record(zod.string(), zod.string()).optional(),
   "grantOfRights": zod.string().nullish(),
   "exclusivityStartDate": zod.coerce.date().nullish(),
   "exclusivityEndDate": zod.coerce.date().nullish(),
@@ -508,6 +521,14 @@ export const GetContractResponse = zod.object({
   "hasCaptions": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
+})).optional(),
+  "selectedSeasons": zod.array(zod.object({
+  "id": zod.string(),
+  "contentItemId": zod.string(),
+  "seasonNumber": zod.number(),
+  "title": zod.string().nullish(),
+  "year": zod.number().nullish(),
+  "episodeCount": zod.number().nullish()
 })).optional(),
   "amendments": zod.array(zod.object({
   "id": zod.string(),
@@ -553,6 +574,7 @@ export const UpdateContractBody = zod.object({
   "youtubeChannel": zod.string().nullish(),
   "socialPlatforms": zod.array(zod.string()).optional(),
   "socialHandle": zod.string().nullish(),
+  "socialAccounts": zod.record(zod.string(), zod.string()).optional(),
   "grantOfRights": zod.string().nullish(),
   "exclusivityStartDate": zod.coerce.date().nullish(),
   "exclusivityEndDate": zod.coerce.date().nullish(),
@@ -567,6 +589,7 @@ export const UpdateContractBody = zod.object({
   "minPaymentThreshold": zod.number().nullish()
 }).nullish(),
   "contentItemIds": zod.array(zod.string()).optional(),
+  "seasonIds": zod.array(zod.string()).optional(),
   "departmentTags": zod.array(zod.string()).optional(),
   "archived": zod.boolean().optional()
 })
@@ -599,6 +622,7 @@ export const UpdateContractResponse = zod.object({
   "youtubeChannel": zod.string().nullish(),
   "socialPlatforms": zod.array(zod.string()).optional(),
   "socialHandle": zod.string().nullish(),
+  "socialAccounts": zod.record(zod.string(), zod.string()).optional(),
   "grantOfRights": zod.string().nullish(),
   "exclusivityStartDate": zod.coerce.date().nullish(),
   "exclusivityEndDate": zod.coerce.date().nullish(),
@@ -631,6 +655,14 @@ export const UpdateContractResponse = zod.object({
   "hasCaptions": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
+})).optional(),
+  "selectedSeasons": zod.array(zod.object({
+  "id": zod.string(),
+  "contentItemId": zod.string(),
+  "seasonNumber": zod.number(),
+  "title": zod.string().nullish(),
+  "year": zod.number().nullish(),
+  "episodeCount": zod.number().nullish()
 })).optional(),
   "amendments": zod.array(zod.object({
   "id": zod.string(),
@@ -828,10 +860,14 @@ export const ListContractRevenueReportsResponseItem = zod.object({
   "contractId": zod.string(),
   "partnerName": zod.string().nullish(),
   "period": zod.string(),
+  "periodStart": zod.coerce.date().nullish(),
+  "periodEnd": zod.coerce.date().nullish(),
   "expectedDate": zod.coerce.date().nullish(),
   "receivedDate": zod.coerce.date().nullish(),
-  "amount": zod.number().nullish(),
+  "amountReceived": zod.number().nullish(),
+  "costAmount": zod.number().nullish(),
   "status": zod.enum(['expected', 'received', 'overdue']),
+  "scheduleGenerated": zod.boolean().optional(),
   "documentPath": zod.string().nullish(),
   "documentName": zod.string().nullish(),
   "createdAt": zod.coerce.date()
@@ -846,12 +882,22 @@ export const CreateRevenueReportParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const createRevenueReportBodyAmountReceivedMin = 0;
+
+export const createRevenueReportBodyCostAmountMin = 0;
+
+
+
 export const CreateRevenueReportBody = zod.object({
   "period": zod.string(),
+  "periodStart": zod.coerce.date().nullish(),
+  "periodEnd": zod.coerce.date().nullish(),
   "expectedDate": zod.coerce.date().nullish(),
   "receivedDate": zod.coerce.date().nullish(),
-  "amount": zod.number().nullish(),
-  "status": zod.enum(['expected', 'received', 'overdue'])
+  "amountReceived": zod.number().min(createRevenueReportBodyAmountReceivedMin).nullish(),
+  "costAmount": zod.number().min(createRevenueReportBodyCostAmountMin).nullish(),
+  "status": zod.enum(['expected', 'received', 'overdue']),
+  "scheduleGenerated": zod.boolean().optional()
 })
 
 export const CreateRevenueReportResponse = zod.object({
@@ -859,10 +905,14 @@ export const CreateRevenueReportResponse = zod.object({
   "contractId": zod.string(),
   "partnerName": zod.string().nullish(),
   "period": zod.string(),
+  "periodStart": zod.coerce.date().nullish(),
+  "periodEnd": zod.coerce.date().nullish(),
   "expectedDate": zod.coerce.date().nullish(),
   "receivedDate": zod.coerce.date().nullish(),
-  "amount": zod.number().nullish(),
+  "amountReceived": zod.number().nullish(),
+  "costAmount": zod.number().nullish(),
   "status": zod.enum(['expected', 'received', 'overdue']),
+  "scheduleGenerated": zod.boolean().optional(),
   "documentPath": zod.string().nullish(),
   "documentName": zod.string().nullish(),
   "createdAt": zod.coerce.date()
@@ -888,10 +938,14 @@ export const ListRevenueReportsResponse = zod.object({
   "contractId": zod.string(),
   "partnerName": zod.string().nullish(),
   "period": zod.string(),
+  "periodStart": zod.coerce.date().nullish(),
+  "periodEnd": zod.coerce.date().nullish(),
   "expectedDate": zod.coerce.date().nullish(),
   "receivedDate": zod.coerce.date().nullish(),
-  "amount": zod.number().nullish(),
+  "amountReceived": zod.number().nullish(),
+  "costAmount": zod.number().nullish(),
   "status": zod.enum(['expected', 'received', 'overdue']),
+  "scheduleGenerated": zod.boolean().optional(),
   "documentPath": zod.string().nullish(),
   "documentName": zod.string().nullish(),
   "createdAt": zod.coerce.date()
@@ -909,11 +963,18 @@ export const UpdateRevenueReportParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const updateRevenueReportBodyAmountReceivedMin = 0;
+
+export const updateRevenueReportBodyCostAmountMin = 0;
+
+
+
 export const UpdateRevenueReportBody = zod.object({
   "period": zod.string().optional(),
   "expectedDate": zod.coerce.date().nullish(),
   "receivedDate": zod.coerce.date().nullish(),
-  "amount": zod.number().nullish(),
+  "amountReceived": zod.number().min(updateRevenueReportBodyAmountReceivedMin).nullish(),
+  "costAmount": zod.number().min(updateRevenueReportBodyCostAmountMin).nullish(),
   "status": zod.enum(['expected', 'received', 'overdue']).optional(),
   "documentPath": zod.string().nullish(),
   "documentName": zod.string().nullish()
@@ -924,10 +985,14 @@ export const UpdateRevenueReportResponse = zod.object({
   "contractId": zod.string(),
   "partnerName": zod.string().nullish(),
   "period": zod.string(),
+  "periodStart": zod.coerce.date().nullish(),
+  "periodEnd": zod.coerce.date().nullish(),
   "expectedDate": zod.coerce.date().nullish(),
   "receivedDate": zod.coerce.date().nullish(),
-  "amount": zod.number().nullish(),
+  "amountReceived": zod.number().nullish(),
+  "costAmount": zod.number().nullish(),
   "status": zod.enum(['expected', 'received', 'overdue']),
+  "scheduleGenerated": zod.boolean().optional(),
   "documentPath": zod.string().nullish(),
   "documentName": zod.string().nullish(),
   "createdAt": zod.coerce.date()
@@ -947,61 +1012,61 @@ export const DeleteRevenueReportResponse = zod.object({
 
 
 /**
- * @summary Get royalty calculations for a contract (Finance/Admin)
+ * @summary Get revenue reports and review status for a contract (Finance/Admin)
  */
-export const GetRoyaltyCalcParams = zod.object({
+export const GetRevenueReviewQueueParams = zod.object({
   "contractId": zod.coerce.string()
 })
 
-export const GetRoyaltyCalcResponse = zod.object({
+export const GetRevenueReviewQueueResponse = zod.object({
   "contractId": zod.string(),
-  "partnerName": zod.string().optional(),
-  "royaltyType": zod.string().nullish(),
-  "royaltyDetails": zod.string().nullish(),
-  "calculations": zod.array(zod.object({
-  "reportId": zod.string(),
+  "partnerName": zod.string(),
+  "reports": zod.array(zod.object({
+  "id": zod.string(),
+  "contractId": zod.string(),
   "period": zod.string(),
-  "revenueAmount": zod.number().nullable(),
-  "sharePercentage": zod.number().nullish(),
-  "amountOwed": zod.number().nullable(),
+  "expectedDate": zod.coerce.date().nullish(),
+  "receivedDate": zod.coerce.date().nullish(),
+  "amountReceived": zod.number().nullish(),
+  "costAmount": zod.number().nullish(),
+  "status": zod.enum(['expected', 'received', 'overdue']),
   "reviewStatus": zod.enum(['pending', 'reviewed', 'approved']),
   "reviewedBy": zod.string().nullish(),
   "reviewedAt": zod.coerce.date().nullish(),
   "documentPath": zod.string().nullish(),
-  "documentName": zod.string().nullish()
+  "documentName": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
 }))
 })
 
 
 /**
- * @summary Approve or review a royalty calculation (Finance/Admin)
+ * @summary Mark a revenue report reviewed or approved (Finance/Admin)
  */
-export const ApproveRoyaltyParams = zod.object({
+export const ReviewRevenueReportParams = zod.object({
   "contractId": zod.coerce.string()
 })
 
-export const ApproveRoyaltyBody = zod.object({
+export const ReviewRevenueReportBody = zod.object({
   "reportId": zod.string(),
-  "status": zod.enum(['pending', 'reviewed', 'approved'])
+  "status": zod.enum(['reviewed', 'approved'])
 })
 
-export const ApproveRoyaltyResponse = zod.object({
+export const ReviewRevenueReportResponse = zod.object({
+  "id": zod.string(),
   "contractId": zod.string(),
-  "partnerName": zod.string().optional(),
-  "royaltyType": zod.string().nullish(),
-  "royaltyDetails": zod.string().nullish(),
-  "calculations": zod.array(zod.object({
-  "reportId": zod.string(),
   "period": zod.string(),
-  "revenueAmount": zod.number().nullable(),
-  "sharePercentage": zod.number().nullish(),
-  "amountOwed": zod.number().nullable(),
+  "expectedDate": zod.coerce.date().nullish(),
+  "receivedDate": zod.coerce.date().nullish(),
+  "amountReceived": zod.number().nullish(),
+  "costAmount": zod.number().nullish(),
+  "status": zod.enum(['expected', 'received', 'overdue']),
   "reviewStatus": zod.enum(['pending', 'reviewed', 'approved']),
   "reviewedBy": zod.string().nullish(),
   "reviewedAt": zod.coerce.date().nullish(),
   "documentPath": zod.string().nullish(),
-  "documentName": zod.string().nullish()
-}))
+  "documentName": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
 })
 
 
@@ -1056,6 +1121,7 @@ export const CreateContentBody = zod.object({
   "hasCleans": zod.boolean().optional(),
   "hasCaptions": zod.boolean().optional(),
   "seasons": zod.array(zod.object({
+  "id": zod.string().optional(),
   "seasonNumber": zod.number(),
   "title": zod.string().nullish(),
   "year": zod.number().nullish(),
@@ -1129,6 +1195,7 @@ export const UpdateContentBody = zod.object({
   "hasCleans": zod.boolean().optional(),
   "hasCaptions": zod.boolean().optional(),
   "seasons": zod.array(zod.object({
+  "id": zod.string().optional(),
   "seasonNumber": zod.number(),
   "title": zod.string().nullish(),
   "year": zod.number().nullish(),
@@ -1181,6 +1248,7 @@ export const GetContentContractsResponseItem = zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
   "partnerId": zod.string().optional(),
+  "platform": zod.string().nullish(),
   "partnerName": zod.string().optional(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
@@ -1204,7 +1272,8 @@ export const RightsCheckQueryParams = zod.object({
   "contentItemId": zod.coerce.string(),
   "territory": zod.coerce.string(),
   "distributionType": zod.coerce.string(),
-  "date": zod.date()
+  "date": zod.date(),
+  "seasonId": zod.coerce.string().optional()
 })
 
 export const RightsCheckResponse = zod.object({
@@ -1224,8 +1293,13 @@ export const RightsCheckResponse = zod.object({
   "territories": zod.array(zod.string()).optional(),
   "distributionTypes": zod.array(zod.string()).optional(),
   "startDate": zod.coerce.date().nullish(),
-  "endDate": zod.coerce.date().nullish()
-}))
+  "endDate": zod.coerce.date().nullish(),
+  "seasonIds": zod.array(zod.string()).optional()
+})),
+  "suggestions": zod.object({
+  "availableTerritories": zod.array(zod.string()),
+  "availableDistributionTypes": zod.array(zod.string())
+})
 })
 
 
@@ -1259,6 +1333,7 @@ export const GetDashboardResponse = zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
   "partnerId": zod.string().optional(),
+  "platform": zod.string().nullish(),
   "partnerName": zod.string().optional(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
@@ -1288,6 +1363,7 @@ export const GetDashboardResponse = zod.object({
  */
 export const listAuditLogsQueryPageDefault = 1;
 export const listAuditLogsQueryPageSizeDefault = 50;
+export const listAuditLogsQueryFormatDefault = `json`;
 
 export const ListAuditLogsQueryParams = zod.object({
   "page": zod.coerce.number().default(listAuditLogsQueryPageDefault),
@@ -1296,7 +1372,8 @@ export const ListAuditLogsQueryParams = zod.object({
   "entityType": zod.coerce.string().optional(),
   "action": zod.coerce.string().optional(),
   "from": zod.date().optional(),
-  "to": zod.date().optional()
+  "to": zod.date().optional(),
+  "format": zod.enum(['json', 'csv']).default(listAuditLogsQueryFormatDefault)
 })
 
 export const ListAuditLogsResponse = zod.object({
@@ -1352,6 +1429,8 @@ export const GetContractReportQueryParams = zod.object({
   "status": zod.coerce.string().optional(),
   "from": zod.date().optional(),
   "to": zod.date().optional(),
+  "platform": zod.coerce.string().optional(),
+  "territory": zod.coerce.string().optional(),
   "format": zod.enum(['json', 'xlsx', 'pdf']).default(getContractReportQueryFormatDefault)
 })
 
@@ -1360,6 +1439,7 @@ export const GetContractReportResponse = zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
   "partnerId": zod.string().optional(),
+  "platform": zod.string().nullish(),
   "partnerName": zod.string().optional(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
@@ -1393,6 +1473,7 @@ export const GetExpiringReportResponse = zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
   "partnerId": zod.string().optional(),
+  "platform": zod.string().nullish(),
   "partnerName": zod.string().optional(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
@@ -1428,10 +1509,14 @@ export const GetRoyaltyReportResponse = zod.object({
   "contractId": zod.string(),
   "partnerName": zod.string().nullish(),
   "period": zod.string(),
+  "periodStart": zod.coerce.date().nullish(),
+  "periodEnd": zod.coerce.date().nullish(),
   "expectedDate": zod.coerce.date().nullish(),
   "receivedDate": zod.coerce.date().nullish(),
-  "amount": zod.number().nullish(),
+  "amountReceived": zod.number().nullish(),
+  "costAmount": zod.number().nullish(),
   "status": zod.enum(['expected', 'received', 'overdue']),
+  "scheduleGenerated": zod.boolean().optional(),
   "documentPath": zod.string().nullish(),
   "documentName": zod.string().nullish(),
   "createdAt": zod.coerce.date()

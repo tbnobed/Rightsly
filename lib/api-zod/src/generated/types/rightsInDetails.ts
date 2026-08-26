@@ -4,12 +4,14 @@
  * Api
  * OpenAPI spec version: 0.1.0
  */
+import type { RightsInDetailsSocialAccounts } from './rightsInDetailsSocialAccounts';
 
 export interface RightsInDetails {
   platforms?: string[];
   youtubeChannel?: string | null;
   socialPlatforms?: string[];
   socialHandle?: string | null;
+  socialAccounts?: RightsInDetailsSocialAccounts;
   grantOfRights?: string | null;
   exclusivityStartDate?: Date | null;
   exclusivityEndDate?: Date | null;

@@ -8,11 +8,13 @@ import {
   boolean,
   numeric,
   integer,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { partnersTable } from "./partners";
 import { usersTable } from "./users";
+import { contentItemsTable, seasonsTable } from "./content";
 
 export const contractDirectionEnum = pgEnum("contract_direction", ["rights_in", "rights_out"]);
 export const contractStatusEnum = pgEnum("contract_status", [
@@ -56,6 +58,7 @@ export const contractsTable = pgTable("contracts", {
   rightsInYoutubeChannel: text("rights_in_youtube_channel"),
   rightsInSocialPlatforms: json("rights_in_social_platforms").$type<string[]>(),
   rightsInSocialHandle: text("rights_in_social_handle"),
+  rightsInSocialAccounts: json("rights_in_social_accounts").$type<Record<string, string>>(),
   rightsInGrantOfRights: text("rights_in_grant_of_rights"),
   rightsInExclusivityStartDate: date("rights_in_exclusivity_start_date"),
   rightsInExclusivityEndDate: date("rights_in_exclusivity_end_date"),
@@ -78,8 +81,23 @@ export const contractContentTable = pgTable("contract_content", {
   contractId: text("contract_id")
     .notNull()
     .references(() => contractsTable.id, { onDelete: "cascade" }),
-  contentItemId: text("content_item_id").notNull(),
+  contentItemId: text("content_item_id")
+    .notNull()
+    .references(() => contentItemsTable.id, { onDelete: "restrict" }),
 });
+
+// Existing contract_content rows continue to mean the entire title is licensed.
+// Selected TV seasons are stored separately so legacy title rights are unchanged.
+export const contractSeasonsTable = pgTable("contract_seasons", {
+  contractId: text("contract_id")
+    .notNull()
+    .references(() => contractsTable.id, { onDelete: "cascade" }),
+  seasonId: text("season_id")
+    .notNull()
+    .references(() => seasonsTable.id, { onDelete: "restrict" }),
+}, (table) => [
+  uniqueIndex("contract_seasons_contract_season_idx").on(table.contractId, table.seasonId),
+]);
 
 export const amendmentsTable = pgTable("amendments", {
   id: text("id").primaryKey(),
@@ -120,4 +138,5 @@ export type InsertContract = z.infer<typeof insertContractSchema>;
 export type Contract = typeof contractsTable.$inferSelect;
 export type Amendment = typeof amendmentsTable.$inferSelect;
 export type ContractContent = typeof contractContentTable.$inferSelect;
+export type ContractSeason = typeof contractSeasonsTable.$inferSelect;
 export type ContractAttachment = typeof contractAttachmentsTable.$inferSelect;

@@ -4,6 +4,7 @@ import { contractsTable, revenueReportsTable, partnersTable } from "@workspace/d
 import { eq, and, lte, gte, count, sql } from "drizzle-orm";
 import { authenticateToken } from "../lib/auth";
 import { displayContractStatus } from "../lib/contractStatus";
+import { salesVisibleContractPredicate } from "../lib/contractVisibility";
 
 const router = Router();
 router.use(authenticateToken);
@@ -11,6 +12,8 @@ router.use(authenticateToken);
 // GET /api/dashboard
 router.get("/", async (req, res) => {
   const period = (req.query.period as string) || "month";
+  const canViewFinancials = req.user?.role === "admin" || req.user?.role === "finance";
+  const salesOnly = req.user?.role === "sales";
 
   // Date-only, timezone-stable period boundaries (all math in UTC).
   const refParam = req.query.referenceDate as string | undefined;
@@ -60,11 +63,13 @@ router.get("/", async (req, res) => {
             gte(contractsTable.endDate, today)
           )
         ),
-      db
+      canViewFinancials ? db
         .select({ upcoming: count() })
         .from(revenueReportsTable)
-        .where(and(eq(revenueReportsTable.status, "expected"), lte(revenueReportsTable.expectedDate, in60DaysStr))),
-      db.select({ drafts: count() }).from(contractsTable).where(and(eq(contractsTable.status, "draft"), eq(contractsTable.archived, false))),
+        .where(and(eq(revenueReportsTable.status, "expected"), lte(revenueReportsTable.expectedDate, in60DaysStr))) : Promise.resolve([{ upcoming: 0 }]),
+      salesOnly
+        ? Promise.resolve([{ drafts: 0 }])
+        : db.select({ drafts: count() }).from(contractsTable).where(and(eq(contractsTable.status, "draft"), eq(contractsTable.archived, false))),
       db.select({ rightsIn: count() }).from(contractsTable).where(and(eq(contractsTable.direction, "rights_in"), eq(contractsTable.status, "active"), eq(contractsTable.archived, false), sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})`)),
       db.select({ rightsOut: count() }).from(contractsTable).where(and(eq(contractsTable.direction, "rights_out"), eq(contractsTable.status, "active"), eq(contractsTable.archived, false), sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})`)),
     ]);
@@ -83,7 +88,10 @@ router.get("/", async (req, res) => {
       .where(
         and(
           gte(contractsTable.startDate, startStr),
-          lte(contractsTable.startDate, endStr)
+          lte(contractsTable.startDate, endStr),
+          salesOnly ? eq(contractsTable.status, "active") : undefined,
+          salesOnly ? eq(contractsTable.archived, false) : undefined,
+          salesOnly ? sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})` : undefined,
         )
       ),
     db
@@ -110,10 +118,13 @@ router.get("/", async (req, res) => {
         and(
           eq(contractsTable.endType, "date"),
           gte(contractsTable.endDate, startStr),
-          lte(contractsTable.endDate, endStr)
+          lte(contractsTable.endDate, endStr),
+          salesOnly ? eq(contractsTable.status, "active") : undefined,
+          salesOnly ? eq(contractsTable.archived, false) : undefined,
+          salesOnly ? gte(contractsTable.endDate, today) : undefined,
         )
       ),
-    db
+    canViewFinancials ? db
       .select()
       .from(revenueReportsTable)
       .leftJoin(contractsTable, eq(revenueReportsTable.contractId, contractsTable.id))
@@ -123,7 +134,7 @@ router.get("/", async (req, res) => {
           gte(revenueReportsTable.expectedDate, startStr),
           lte(revenueReportsTable.expectedDate, endStr)
         )
-      ),
+      ) : Promise.resolve([]),
   ]);
 
   // Rights In contracts overlapping the period (for platform-coded calendar)
@@ -143,7 +154,7 @@ router.get("/", async (req, res) => {
         eq(contractsTable.direction, "rights_in"),
         eq(contractsTable.status, "active"),
         eq(contractsTable.archived, false),
-        eq(contractsTable.archived, false),
+        salesOnly ? salesVisibleContractPredicate(today) : undefined,
         lte(contractsTable.startDate, endStr),
         sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${startStr})`
       )
@@ -173,6 +184,7 @@ router.get("/", async (req, res) => {
     .where(
       and(
         eq(contractsTable.status, "active"),
+        eq(contractsTable.archived, false),
         eq(contractsTable.endType, "date"),
         lte(contractsTable.endDate, in60DaysStr),
         gte(contractsTable.endDate, today)
@@ -217,7 +229,10 @@ router.get("/", async (req, res) => {
     totalRightsIn: Number(rightsIn),
     totalRightsOut: Number(rightsOut),
     calendarEvents,
-    expiringSoonContracts: expiringSoonContracts.map((contract) => displayContractStatus(contract)),
+    expiringSoonContracts: expiringSoonContracts.map((contract) => displayContractStatus({
+      ...contract,
+      royaltyType: canViewFinancials ? contract.royaltyType : null,
+    })),
     rightsInSpans: rightsInSpans.map((s) => ({
       ...s,
       platforms: (s.platforms as string[] | null) ?? [],

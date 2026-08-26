@@ -10,7 +10,10 @@ export interface UpdateRevenueReportRequest {
   period?: string;
   expectedDate?: Date | null;
   receivedDate?: Date | null;
-  amount?: number | null;
+  /** @minimum 0 */
+  amountReceived?: number | null;
+  /** @minimum 0 */
+  costAmount?: number | null;
   status?: UpdateRevenueReportRequestStatus;
   documentPath?: string | null;
   documentName?: string | null;

@@ -8,8 +8,14 @@ import type { CreateRevenueReportRequestStatus } from './createRevenueReportRequ
 
 export interface CreateRevenueReportRequest {
   period: string;
+  periodStart?: Date | null;
+  periodEnd?: Date | null;
   expectedDate?: Date | null;
   receivedDate?: Date | null;
-  amount?: number | null;
+  /** @minimum 0 */
+  amountReceived?: number | null;
+  /** @minimum 0 */
+  costAmount?: number | null;
   status: CreateRevenueReportRequestStatus;
+  scheduleGenerated?: boolean;
 }

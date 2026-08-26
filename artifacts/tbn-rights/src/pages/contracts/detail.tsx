@@ -246,12 +246,12 @@ export default function ContractDetail() {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full max-w-xl grid-cols-5 bg-slate-200/50 p-1">
+        <TabsList className={`grid w-full max-w-xl ${user?.role === "admin" || user?.role === "finance" ? "grid-cols-5" : "grid-cols-4"} bg-slate-200/50 p-1`}>
           <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
           <TabsTrigger value="content" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Content</TabsTrigger>
           <TabsTrigger value="documents" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Documents</TabsTrigger>
           <TabsTrigger value="amendments" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Amendments</TabsTrigger>
-          <TabsTrigger value="financials" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Financials</TabsTrigger>
+          {(user?.role === "admin" || user?.role === "finance") && <TabsTrigger value="financials" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Financials</TabsTrigger>}
         </TabsList>
         
         <TabsContent value="overview" className="mt-6 space-y-6">
@@ -350,6 +350,9 @@ export default function ContractDetail() {
                         <div><span className="block text-slate-500">YouTube Channel</span><span className="font-medium">{contract.rightsInDetails.youtubeChannel || "Not specified"}</span></div>
                         <div><span className="block text-slate-500">Social Platforms</span><span className="font-medium">{contract.rightsInDetails.socialPlatforms?.join(", ") || "Not specified"}</span></div>
                         <div><span className="block text-slate-500">Social Handle</span><span className="font-medium">{contract.rightsInDetails.socialHandle || "Not specified"}</span></div>
+                        {Object.entries((contract.rightsInDetails as any).socialAccounts ?? {}).map(([platform, account]) => (
+                          <div key={platform}><span className="block text-slate-500">{platform} Account</span><span className="font-medium">{String(account)}</span></div>
+                        ))}
                         <div><span className="block text-slate-500">Exclusivity</span><span className="font-medium">{contract.rightsInDetails.exclusivitySameAsDuration ? "Same as agreement duration" : [contract.rightsInDetails.exclusivityStartDate, contract.rightsInDetails.exclusivityEndDate].filter(Boolean).join(" – ") || "Not specified"}</span></div>
                       </div>
                       {contract.rightsInDetails.marketingRights && (
@@ -429,6 +432,18 @@ export default function ContractDetail() {
                 <div className="p-8 text-center text-slate-500 flex flex-col items-center justify-center">
                   <Film className="w-8 h-8 text-slate-300 mb-2" />
                   <p>No content items linked to this contract yet.</p>
+                </div>
+              )}
+              {(contract as any).selectedSeasons?.length > 0 && (
+                <div className="border-t border-slate-100 p-4 bg-indigo-50/40">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700 mb-2">Selected season scope</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(contract as any).selectedSeasons.map((season: any) => (
+                      <Badge key={season.id} variant="outline" className="bg-white border-indigo-200 text-indigo-800">
+                        Season {season.seasonNumber}{season.title ? ` · ${season.title}` : ""}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -511,7 +526,7 @@ export default function ContractDetail() {
           </Card>
         </TabsContent>
         
-        <TabsContent value="financials" className="mt-6">
+        {(user?.role === "admin" || user?.role === "finance") && <TabsContent value="financials" className="mt-6">
           <div className="p-8 bg-white border border-slate-200 rounded-lg shadow-sm">
             <h3 className="text-lg font-semibold text-slate-900 mb-5">Financial Terms</h3>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">
@@ -526,7 +541,7 @@ export default function ContractDetail() {
               </Button>
             </div>
           </div>
-        </TabsContent>
+        </TabsContent>}
       </Tabs>
 
       <Dialog open={amendmentOpen} onOpenChange={handleAmendmentOpenChange}>

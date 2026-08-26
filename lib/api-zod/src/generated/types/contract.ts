@@ -13,6 +13,7 @@ import type { ContractRoyaltyType } from './contractRoyaltyType';
 import type { ContractStatus } from './contractStatus';
 import type { RightsInDetails } from './rightsInDetails';
 import type { RightsOutDetails } from './rightsOutDetails';
+import type { Season } from './season';
 
 export interface Contract {
   id: string;
@@ -40,6 +41,7 @@ export interface Contract {
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
   contentItems?: ContentItem[];
+  selectedSeasons?: Season[];
   amendments?: Amendment[];
   createdAt: Date;
   updatedAt?: Date;

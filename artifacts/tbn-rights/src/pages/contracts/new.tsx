@@ -29,10 +29,11 @@ import {
 import { ArrowRight, Briefcase, FileDown, FileUp, ChevronLeft, Upload, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useAuth } from "@/contexts/auth";
 import { DISTRIBUTION_OPTIONS, TERRITORY_OPTIONS } from "@/lib/rights-options";
 
 const DEPARTMENT_OPTIONS = ["Acquisition", "Distribution"] as const;
-const RIGHTS_IN_PLATFORMS = ["TBN Broadcast", "TBN+", "YouTube", "Socials", "Yippee"] as const;
+const RIGHTS_IN_PLATFORMS = ["TBN Broadcast", "TBN+", "YouTube", "Socials", "Yippee", "L&D"] as const;
 const SOCIAL_PLATFORMS = ["All Socials", "Facebook", "Instagram", "TikTok", "Other"] as const;
 
 const formSchema = z.object({
@@ -57,6 +58,7 @@ const formSchema = z.object({
   riYoutubeChannel: z.string().optional(),
   riSocialPlatforms: z.array(z.string()).default([]),
   riSocialHandle: z.string().optional(),
+  riSocialAccounts: z.record(z.string(), z.string()).default({}),
   riGrantOfRights: z.string().optional(),
   riExclusivitySameAsDuration: z.boolean().default(false),
   riExclusivityStartDate: z.string().optional(),
@@ -101,6 +103,7 @@ function toggleArrayValue(current: string[], value: string, checked: boolean) {
 }
 
 export default function NewContractWizard() {
+  const { user } = useAuth();
   const { id } = useParams<{ id?: string }>();
   const isEditing = !!id;
   const [step, setStep] = useState<1 | 2>(isEditing ? 2 : 1);
@@ -129,6 +132,7 @@ export default function NewContractWizard() {
   const [contentSearch, setContentSearch] = useState("");
   const debouncedContentSearch = useDebounce(contentSearch, 300);
   const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
+  const [selectedSeasonIds, setSelectedSeasonIds] = useState<string[]>([]);
 
   const contentParams = { pageSize: 200, search: debouncedContentSearch || undefined };
   const { data: contentData, isLoading: contentLoading } = useListContent(contentParams, {
@@ -150,6 +154,7 @@ export default function NewContractWizard() {
       departmentTags: [],
       riPlatforms: [],
       riSocialPlatforms: [],
+       riSocialAccounts: {},
       riExclusivitySameAsDuration: false,
       roAutoRenew: false,
       roHasAmendment: false,
@@ -178,6 +183,7 @@ export default function NewContractWizard() {
     setDirection(existingContract.direction as CreateContractRequestDirection);
     setStep(2);
     setSelectedContentIds(existingContract.contentItems?.map((item) => item.id) ?? []);
+    setSelectedSeasonIds((existingContract as any).selectedSeasons?.map((season: { id: string }) => season.id) ?? []);
     form.reset({
       partnerId: existingContract.partnerId,
       licensor: existingContract.licensor ?? "",
@@ -199,6 +205,7 @@ export default function NewContractWizard() {
       riYoutubeChannel: ri?.youtubeChannel ?? "",
       riSocialPlatforms: ri?.socialPlatforms ?? [],
       riSocialHandle: ri?.socialHandle ?? "",
+      riSocialAccounts: (ri as any)?.socialAccounts ?? {},
       riGrantOfRights: ri?.grantOfRights ?? "",
       riExclusivitySameAsDuration: ri?.exclusivitySameAsDuration ?? false,
       riExclusivityStartDate: ri?.exclusivityStartDate ?? "",
@@ -219,6 +226,10 @@ export default function NewContractWizard() {
 
   const toggleContent = (id: string, checked: boolean) => {
     setSelectedContentIds((prev) => toggleArrayValue(prev, id, checked));
+    if (!checked) {
+      const item = contentItems.find((content) => content.id === id);
+      setSelectedSeasonIds((prev) => prev.filter((seasonId) => !item?.seasons?.some((season) => season.id === seasonId)));
+    }
   };
   const focusFirstInvalid = () => {
     requestAnimationFrame(() => {
@@ -253,7 +264,7 @@ export default function NewContractWizard() {
     if (!direction) return;
 
     try {
-      const requestData: CreateContractRequest = {
+      const requestData: CreateContractRequest & { seasonIds?: string[] } = {
         direction,
         partnerId: values.partnerId,
         licensor: values.licensor || null,
@@ -265,14 +276,17 @@ export default function NewContractWizard() {
         territories: values.territories,
         otherTerritories: values.otherTerritories || null,
         distributionTypes: values.distributionTypes,
-        royaltyType: values.royaltyType || null,
-        royaltyDetails: values.royaltyDetails || null,
-        paymentTerms: values.paymentTerms || null,
         websiteLink: values.websiteLink || null,
         notes: values.notes || null,
         departmentTags: values.departmentTags,
         contentItemIds: selectedContentIds,
+        seasonIds: selectedSeasonIds,
       };
+      if (user?.role === "admin" || user?.role === "finance") {
+        requestData.royaltyType = values.royaltyType || null;
+        requestData.royaltyDetails = values.royaltyDetails || null;
+        requestData.paymentTerms = values.paymentTerms || null;
+      }
 
       if (direction === "rights_in") {
         requestData.rightsInDetails = {
@@ -280,12 +294,13 @@ export default function NewContractWizard() {
           youtubeChannel: values.riPlatforms.includes("YouTube") ? values.riYoutubeChannel || null : null,
           socialPlatforms: values.riPlatforms.includes("Socials") ? values.riSocialPlatforms : [],
           socialHandle: values.riPlatforms.includes("Socials") ? values.riSocialHandle || null : null,
+          socialAccounts: values.riPlatforms.includes("Socials") ? values.riSocialAccounts : {},
           grantOfRights: values.riGrantOfRights || null,
           exclusivitySameAsDuration: values.riExclusivitySameAsDuration,
           exclusivityStartDate: values.riExclusivitySameAsDuration ? null : values.riExclusivityStartDate || null,
           exclusivityEndDate: values.riExclusivitySameAsDuration ? null : values.riExclusivityEndDate || null,
           marketingRights: values.riMarketingRights || null,
-        };
+        } as any;
       } else {
         requestData.platform = values.platform || null;
         requestData.rightsOutDetails = {
@@ -293,10 +308,10 @@ export default function NewContractWizard() {
           hasAmendment: values.roHasAmendment,
           exclusivity: values.roExclusivity || null,
           reportingFrequency: values.roReportingFrequency || null,
-          minPaymentThreshold:
+          ...((user?.role === "admin" || user?.role === "finance") ? { minPaymentThreshold:
             values.roMinPaymentThreshold && values.roMinPaymentThreshold !== ""
               ? Number(values.roMinPaymentThreshold)
-              : null,
+              : null } : {}),
         };
       }
 
@@ -739,12 +754,27 @@ export default function NewContractWizard() {
                           </FormItem>
                         )}
                       />
+                      {form.watch("riSocialPlatforms")?.filter((platform) => platform !== "All Socials").map((platform) => (
+                        <FormField
+                          key={platform}
+                          control={form.control}
+                          name={`riSocialAccounts.${platform}`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{platform} account</FormLabel>
+                              <FormControl>
+                                <Input placeholder={`@${platform.toLowerCase()} account`} {...field} value={field.value || ""} data-testid={`input-social-account-${platform.toLowerCase()}`} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      ))}
                       <FormField
                         control={form.control}
                         name="riSocialHandle"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Social Handle</FormLabel>
+                            <FormLabel>Shared Social Handle (legacy fallback)</FormLabel>
                             <FormControl>
                               <Input placeholder="@handle" {...field} value={field.value || ''} data-testid="input-social-handle" />
                             </FormControl>
@@ -946,9 +976,10 @@ export default function NewContractWizard() {
           {/* Financials */}
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-              <CardTitle className="text-lg">Financials</CardTitle>
+              <CardTitle className="text-lg">Financials &amp; Reference</CardTitle>
             </CardHeader>
             <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {(user?.role === "admin" || user?.role === "finance") && <>
               <FormField
                 control={form.control}
                 name="royaltyType"
@@ -1016,6 +1047,7 @@ export default function NewContractWizard() {
                   )}
                 />
               )}
+              </>}
               <FormField
                 control={form.control}
                 name="websiteLink"
@@ -1059,24 +1091,35 @@ export default function NewContractWizard() {
                   <div className="p-6 text-center text-slate-400 text-sm">No content found.</div>
                 ) : (
                   contentItems.map((item) => (
-                    <label
+                    <div
                       key={item.id}
-                      className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors cursor-pointer"
+                      className="p-3 hover:bg-slate-50 transition-colors"
                       data-testid={`row-content-${item.id}`}
                     >
-                      <Checkbox
-                        checked={selectedContentIds.includes(item.id)}
-                        onCheckedChange={(c) => toggleContent(item.id, c === true)}
-                        data-testid={`checkbox-content-${item.id}`}
-                      />
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-900 truncate">{item.title}</p>
-                        <p className="text-xs text-slate-500">
-                          {item.type}
-                          {item.year ? ` · ${item.year}` : ""}
-                        </p>
-                      </div>
-                    </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <Checkbox
+                          checked={selectedContentIds.includes(item.id)}
+                          onCheckedChange={(c) => toggleContent(item.id, c === true)}
+                          data-testid={`checkbox-content-${item.id}`}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-900 truncate">{item.title}</p>
+                          <p className="text-xs text-slate-500">{item.type}{item.year ? ` · ${item.year}` : ""}</p>
+                        </div>
+                      </label>
+                      {item.type === "TVSeries" && selectedContentIds.includes(item.id) && (item.seasons?.length ?? 0) > 0 && (
+                        <div className="ml-7 mt-3 grid grid-cols-2 gap-2 text-sm">
+                          {(item.seasons ?? []).map((season) => (
+                            <label key={season.id} className="flex items-center gap-2 text-slate-600">
+                              <Checkbox checked={selectedSeasonIds.includes(season.id)}
+                                onCheckedChange={(checked) => setSelectedSeasonIds((prev) => toggleArrayValue(prev, season.id, checked === true))}
+                                data-testid={`checkbox-season-${season.id}`} />
+                              Season {season.seasonNumber}{season.title ? ` · ${season.title}` : ""}
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ))
                 )}
               </div>

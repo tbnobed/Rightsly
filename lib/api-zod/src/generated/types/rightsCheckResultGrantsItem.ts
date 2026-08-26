@@ -14,4 +14,5 @@ export type RightsCheckResultGrantsItem = {
   distributionTypes?: string[];
   startDate?: Date | null;
   endDate?: Date | null;
+  seasonIds?: string[];
 };

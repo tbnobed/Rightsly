@@ -69,14 +69,15 @@ import type {
   PaginatedRevenueReports,
   Partner,
   RevenueReport,
+  RevenueReviewQueue,
+  ReviewRevenueReportRequest,
+  ReviewedRevenueReport,
   RightsCheckParams,
   RightsCheckResult,
-  RoyaltyCalcResult,
   UpdateContentItemRequest,
   UpdateContractRequest,
   UpdatePartnerRequest,
   UpdateRevenueReportRequest,
-  UpdateRoyaltyStatusRequest,
   UpdateUserRequest,
   UploadUrlRequest,
   UploadUrlResponse,
@@ -2576,7 +2577,7 @@ export const useDeleteRevenueReport = <TError = ErrorType<unknown>,
       return useMutation(getDeleteRevenueReportMutationOptions(options));
     }
 
-export const getGetRoyaltyCalcUrl = (contractId: string,) => {
+export const getGetRevenueReviewQueueUrl = (contractId: string,) => {
 
 
 
@@ -2585,11 +2586,11 @@ export const getGetRoyaltyCalcUrl = (contractId: string,) => {
 }
 
 /**
- * @summary Get royalty calculations for a contract (Finance/Admin)
+ * @summary Get revenue reports and review status for a contract (Finance/Admin)
  */
-export const getRoyaltyCalc = async (contractId: string, options?: RequestInit): Promise<RoyaltyCalcResult> => {
+export const getRevenueReviewQueue = async (contractId: string, options?: RequestInit): Promise<RevenueReviewQueue> => {
 
-  return customFetch<RoyaltyCalcResult>(getGetRoyaltyCalcUrl(contractId),
+  return customFetch<RevenueReviewQueue>(getGetRevenueReviewQueueUrl(contractId),
   {
     ...options,
     method: 'GET'
@@ -2602,45 +2603,45 @@ export const getRoyaltyCalc = async (contractId: string, options?: RequestInit):
 
 
 
-export const getGetRoyaltyCalcQueryKey = (contractId: string,) => {
+export const getGetRevenueReviewQueueQueryKey = (contractId: string,) => {
     return [
     `/api/royalties/${contractId}`
     ] as const;
     }
 
 
-export const getGetRoyaltyCalcQueryOptions = <TData = Awaited<ReturnType<typeof getRoyaltyCalc>>, TError = ErrorType<unknown>>(contractId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRoyaltyCalc>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetRevenueReviewQueueQueryOptions = <TData = Awaited<ReturnType<typeof getRevenueReviewQueue>>, TError = ErrorType<unknown>>(contractId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueReviewQueue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetRoyaltyCalcQueryKey(contractId);
+  const queryKey =  queryOptions?.queryKey ?? getGetRevenueReviewQueueQueryKey(contractId);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRoyaltyCalc>>> = ({ signal }) => getRoyaltyCalc(contractId, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRevenueReviewQueue>>> = ({ signal }) => getRevenueReviewQueue(contractId, { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: contractId !== null && contractId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRoyaltyCalc>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: contractId !== null && contractId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRevenueReviewQueue>>, TError, TData> & { queryKey: QueryKey }
 }
 
-export type GetRoyaltyCalcQueryResult = NonNullable<Awaited<ReturnType<typeof getRoyaltyCalc>>>
-export type GetRoyaltyCalcQueryError = ErrorType<unknown>
+export type GetRevenueReviewQueueQueryResult = NonNullable<Awaited<ReturnType<typeof getRevenueReviewQueue>>>
+export type GetRevenueReviewQueueQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get royalty calculations for a contract (Finance/Admin)
+ * @summary Get revenue reports and review status for a contract (Finance/Admin)
  */
 
-export function useGetRoyaltyCalc<TData = Awaited<ReturnType<typeof getRoyaltyCalc>>, TError = ErrorType<unknown>>(
- contractId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRoyaltyCalc>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetRevenueReviewQueue<TData = Awaited<ReturnType<typeof getRevenueReviewQueue>>, TError = ErrorType<unknown>>(
+ contractId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRevenueReviewQueue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetRoyaltyCalcQueryOptions(contractId,options)
+  const queryOptions = getGetRevenueReviewQueueQueryOptions(contractId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -2653,7 +2654,7 @@ export function useGetRoyaltyCalc<TData = Awaited<ReturnType<typeof getRoyaltyCa
 
 
 
-export const getApproveRoyaltyUrl = (contractId: string,) => {
+export const getReviewRevenueReportUrl = (contractId: string,) => {
 
 
 
@@ -2662,17 +2663,17 @@ export const getApproveRoyaltyUrl = (contractId: string,) => {
 }
 
 /**
- * @summary Approve or review a royalty calculation (Finance/Admin)
+ * @summary Mark a revenue report reviewed or approved (Finance/Admin)
  */
-export const approveRoyalty = async (contractId: string,
-    updateRoyaltyStatusRequest: UpdateRoyaltyStatusRequest, options?: RequestInit): Promise<RoyaltyCalcResult> => {
+export const reviewRevenueReport = async (contractId: string,
+    reviewRevenueReportRequest: ReviewRevenueReportRequest, options?: RequestInit): Promise<ReviewedRevenueReport> => {
 
-  return customFetch<RoyaltyCalcResult>(getApproveRoyaltyUrl(contractId),
+  return customFetch<ReviewedRevenueReport>(getReviewRevenueReportUrl(contractId),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(updateRoyaltyStatusRequest)
+    body: JSON.stringify(reviewRevenueReportRequest)
   }
 );}
 
@@ -2680,11 +2681,11 @@ export const approveRoyalty = async (contractId: string,
 
 
 
-export const getApproveRoyaltyMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveRoyalty>>, TError,{contractId: string;data: BodyType<UpdateRoyaltyStatusRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof approveRoyalty>>, TError,{contractId: string;data: BodyType<UpdateRoyaltyStatusRequest>}, TContext> => {
+export const getReviewRevenueReportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewRevenueReport>>, TError,{contractId: string;data: BodyType<ReviewRevenueReportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewRevenueReport>>, TError,{contractId: string;data: BodyType<ReviewRevenueReportRequest>}, TContext> => {
 
-const mutationKey = ['approveRoyalty'];
+const mutationKey = ['reviewRevenueReport'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -2694,10 +2695,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveRoyalty>>, {contractId: string;data: BodyType<UpdateRoyaltyStatusRequest>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewRevenueReport>>, {contractId: string;data: BodyType<ReviewRevenueReportRequest>}> = (props) => {
           const {contractId,data} = props ?? {};
 
-          return  approveRoyalty(contractId,data,requestOptions)
+          return  reviewRevenueReport(contractId,data,requestOptions)
         }
 
 
@@ -2707,22 +2708,22 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type ApproveRoyaltyMutationResult = NonNullable<Awaited<ReturnType<typeof approveRoyalty>>>
-    export type ApproveRoyaltyMutationBody = BodyType<UpdateRoyaltyStatusRequest>
-    export type ApproveRoyaltyMutationError = ErrorType<unknown>
+    export type ReviewRevenueReportMutationResult = NonNullable<Awaited<ReturnType<typeof reviewRevenueReport>>>
+    export type ReviewRevenueReportMutationBody = BodyType<ReviewRevenueReportRequest>
+    export type ReviewRevenueReportMutationError = ErrorType<unknown>
 
     /**
- * @summary Approve or review a royalty calculation (Finance/Admin)
+ * @summary Mark a revenue report reviewed or approved (Finance/Admin)
  */
-export const useApproveRoyalty = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveRoyalty>>, TError,{contractId: string;data: BodyType<UpdateRoyaltyStatusRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useReviewRevenueReport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewRevenueReport>>, TError,{contractId: string;data: BodyType<ReviewRevenueReportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof approveRoyalty>>,
+        Awaited<ReturnType<typeof reviewRevenueReport>>,
         TError,
-        {contractId: string;data: BodyType<UpdateRoyaltyStatusRequest>},
+        {contractId: string;data: BodyType<ReviewRevenueReportRequest>},
         TContext
       > => {
-      return useMutation(getApproveRoyaltyMutationOptions(options));
+      return useMutation(getReviewRevenueReportMutationOptions(options));
     }
 
 export const getListContentUrl = (params?: ListContentParams,) => {
@@ -3363,9 +3364,9 @@ export const getListAuditLogsUrl = (params?: ListAuditLogsParams,) => {
 /**
  * @summary List audit logs (admin only)
  */
-export const listAuditLogs = async (params?: ListAuditLogsParams, options?: RequestInit): Promise<PaginatedAuditLogs> => {
+export const listAuditLogs = async (params?: ListAuditLogsParams, options?: RequestInit): Promise<PaginatedAuditLogs | string> => {
 
-  return customFetch<PaginatedAuditLogs>(getListAuditLogsUrl(params),
+  return customFetch<PaginatedAuditLogs | string>(getListAuditLogsUrl(params),
   {
     ...options,
     method: 'GET'

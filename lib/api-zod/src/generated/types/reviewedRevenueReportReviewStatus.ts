@@ -5,10 +5,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type UpdateRoyaltyStatusRequestStatus = typeof UpdateRoyaltyStatusRequestStatus[keyof typeof UpdateRoyaltyStatusRequestStatus];
+export type ReviewedRevenueReportReviewStatus = typeof ReviewedRevenueReportReviewStatus[keyof typeof ReviewedRevenueReportReviewStatus];
 
 
-export const UpdateRoyaltyStatusRequestStatus = {
+export const ReviewedRevenueReportReviewStatus = {
   pending: 'pending',
   reviewed: 'reviewed',
   approved: 'approved',

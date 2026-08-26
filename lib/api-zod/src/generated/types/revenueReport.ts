@@ -11,10 +11,14 @@ export interface RevenueReport {
   contractId: string;
   partnerName?: string | null;
   period: string;
+  periodStart?: Date | null;
+  periodEnd?: Date | null;
   expectedDate?: Date | null;
   receivedDate?: Date | null;
-  amount?: number | null;
+  amountReceived?: number | null;
+  costAmount?: number | null;
   status: RevenueReportStatus;
+  scheduleGenerated?: boolean;
   documentPath?: string | null;
   documentName?: string | null;
   createdAt: Date;

@@ -8,8 +8,9 @@ import { FileDown, FileText, CalendarClock, DollarSign, Filter, ArrowUp, ArrowDo
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
-type SortField = "partner" | "contentCount" | "status" | "royaltyType" | "endDate";
+type SortField = "partner" | "contentCount" | "status" | "platform" | "territory" | "royaltyType" | "endDate";
 type SortDir = "asc" | "desc";
+type ReportContract = ContractListItem & { platform?: string | null };
 
 function trailingQuarters() {
   const now = new Date();
@@ -56,6 +57,8 @@ export default function Reports() {
   const [royaltyPeriod, setRoyaltyPeriod] = useState(royaltyPeriods[0].value);
   const [contractDirection, setContractDirection] = useState("all");
   const [contractStatus, setContractStatus] = useState("active");
+  const [contractPlatform, setContractPlatform] = useState("all");
+  const [contractTerritory, setContractTerritory] = useState("all");
   const [expiringDays, setExpiringDays] = useState("90");
   const [royaltyStatus, setRoyaltyStatus] = useState("all");
 
@@ -79,17 +82,17 @@ export default function Reports() {
   };
 
   const rows = useMemo(() => {
-    const data: ContractListItem[] = contractReport?.data ?? [];
-    const filtered = activeFilters.length === 0
-      ? data
-      : data.filter((c) =>
-          activeFilters.some((f) =>
-            f === "auto_renew" ? c.endType === "auto_renew" : c.status === f
-          )
-        );
+    const data: ReportContract[] = (contractReport?.data ?? []) as ReportContract[];
+    const filtered = data.filter((c) =>
+        (activeFilters.length === 0 || activeFilters.some((f) =>
+          f === "auto_renew" ? c.endType === "auto_renew" : c.status === f
+        )) &&
+        (contractPlatform === "all" || c.platform === contractPlatform) &&
+        (contractTerritory === "all" || c.territories?.includes(contractTerritory))
+      );
 
     const dirMul = sortDir === "asc" ? 1 : -1;
-    const compare = (a: ContractListItem, b: ContractListItem) => {
+    const compare = (a: ReportContract, b: ReportContract) => {
       switch (sortField) {
         case "partner":
           return (a.partnerName || "").localeCompare(b.partnerName || "") * dirMul;
@@ -97,6 +100,10 @@ export default function Reports() {
           return ((a.contentCount || 0) - (b.contentCount || 0)) * dirMul;
         case "status":
           return (a.status || "").localeCompare(b.status || "") * dirMul;
+        case "platform":
+          return (a.platform || "").localeCompare(b.platform || "") * dirMul;
+        case "territory":
+          return (a.territories?.join(", ") || "").localeCompare(b.territories?.join(", ") || "") * dirMul;
         case "royaltyType":
           return (a.royaltyType || "").localeCompare(b.royaltyType || "") * dirMul;
         case "endDate": {
@@ -109,7 +116,16 @@ export default function Reports() {
       }
     };
     return [...filtered].sort(compare);
-  }, [contractReport, activeFilters, sortField, sortDir]);
+  }, [contractReport, activeFilters, contractPlatform, contractTerritory, sortField, sortDir]);
+
+  const platformOptions = useMemo(() =>
+    [...new Set(((contractReport?.data ?? []) as ReportContract[]).map((contract) => contract.platform).filter((platform): platform is string => Boolean(platform)))].sort(),
+    [contractReport],
+  );
+  const territoryOptions = useMemo(() =>
+    [...new Set((contractReport?.data ?? []).flatMap((contract) => contract.territories ?? []))].sort(),
+    [contractReport],
+  );
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3 h-3 inline ml-1 text-slate-400" />;
@@ -129,6 +145,8 @@ export default function Reports() {
       if (type === "contracts") {
         if (contractDirection !== "all") params.set("direction", contractDirection);
         if (contractStatus !== "all") params.set("status", contractStatus);
+        if (contractPlatform !== "all") params.set("platform", contractPlatform);
+        if (contractTerritory !== "all") params.set("territory", contractTerritory);
       } else if (type === "expiring") {
         params.set("withinDays", expiringDays);
       } else {
@@ -201,6 +219,30 @@ export default function Reports() {
                   <SelectItem value="all">All Directions</SelectItem>
                   <SelectItem value="rights_in">Rights In Only</SelectItem>
                   <SelectItem value="rights_out">Rights Out Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-500 uppercase">Platform Filter</label>
+              <Select value={contractPlatform} onValueChange={setContractPlatform}>
+                <SelectTrigger className="bg-white" data-testid="select-contract-report-platform">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Platforms</SelectItem>
+                  {platformOptions.map((platform) => <SelectItem key={platform} value={platform}>{platform}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-500 uppercase">Territory Filter</label>
+              <Select value={contractTerritory} onValueChange={setContractTerritory}>
+                <SelectTrigger className="bg-white" data-testid="select-contract-report-territory">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Territories</SelectItem>
+                  {territoryOptions.map((territory) => <SelectItem key={territory} value={territory}>{territory}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -376,6 +418,12 @@ export default function Reports() {
                   <th className="px-6 py-4 font-medium cursor-pointer select-none" onClick={() => toggleSort('status')} data-testid="sort-status">
                     Status <SortIcon field="status" />
                   </th>
+                  <th className="px-6 py-4 font-medium cursor-pointer select-none" onClick={() => toggleSort('platform')} data-testid="sort-platform">
+                    Platform <SortIcon field="platform" />
+                  </th>
+                  <th className="px-6 py-4 font-medium cursor-pointer select-none" onClick={() => toggleSort('territory')} data-testid="sort-territory">
+                    Territories <SortIcon field="territory" />
+                  </th>
                   <th className="px-6 py-4 font-medium cursor-pointer select-none" onClick={() => toggleSort('royaltyType')} data-testid="sort-royalty-type">
                     Royalty Type <SortIcon field="royaltyType" />
                   </th>
@@ -386,9 +434,9 @@ export default function Reports() {
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
                 {isLoadingReport ? (
-                  <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">Loading report...</td></tr>
+                  <tr><td colSpan={7} className="px-6 py-8 text-center text-slate-500">Loading report...</td></tr>
                 ) : rows.length === 0 ? (
-                  <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-500">No results match the selected filters.</td></tr>
+                  <tr><td colSpan={7} className="px-6 py-8 text-center text-slate-500">No results match the selected filters.</td></tr>
                 ) : (
                   rows.map((row) => (
                     <tr key={row.id} className="hover:bg-slate-50/80 transition-colors" data-testid={`row-report-${row.id}`}>
@@ -397,6 +445,8 @@ export default function Reports() {
                         <span className="font-medium bg-slate-100 px-2 py-0.5 rounded text-xs text-slate-600">{row.contentCount || 0}</span>
                       </td>
                       <td className="px-6 py-4 capitalize text-slate-600">{(row.status || '').replace(/_/g, ' ')}</td>
+                      <td className="px-6 py-4 text-slate-600">{row.platform || '—'}</td>
+                      <td className="px-6 py-4 text-slate-600">{row.territories?.join(', ') || '—'}</td>
                       <td className="px-6 py-4 capitalize text-slate-600">{row.royaltyType ? row.royaltyType.replace(/_/g, ' ') : '—'}</td>
                       <td className="px-6 py-4 text-slate-600">
                         {row.endType === 'perpetuity' ? (

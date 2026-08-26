@@ -10,4 +10,5 @@ contentItemId: string;
 territory: string;
 distributionType: string;
 date: Date;
+seasonId?: string;
 };

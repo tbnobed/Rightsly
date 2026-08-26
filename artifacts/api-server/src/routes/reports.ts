@@ -10,7 +10,7 @@ const router = Router();
 router.use(authenticateToken);
 
 async function getContractsData(params: any) {
-  const { direction, status, from, to } = params;
+  const { direction, status, from, to, platform, territory, salesOnly } = params;
   const today = new Date().toISOString().split("T")[0];
   const conditions: any[] = [];
   if (direction && direction !== "all") conditions.push(eq(contractsTable.direction, direction));
@@ -37,6 +37,11 @@ async function getContractsData(params: any) {
   }
   if (from) conditions.push(gte(contractsTable.startDate, from));
   if (to) conditions.push(lte(contractsTable.endDate, to));
+  if (salesOnly) {
+    conditions.push(eq(contractsTable.status, "active"));
+    conditions.push(eq(contractsTable.archived, false));
+    conditions.push(sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})`);
+  }
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
   return db
@@ -52,6 +57,8 @@ async function getContractsData(params: any) {
       endType: contractsTable.endType,
       endDate: contractsTable.endDate,
       territories: contractsTable.territories,
+      platform: contractsTable.platform,
+      rightsInPlatforms: contractsTable.rightsInPlatforms,
       distributionTypes: contractsTable.distributionTypes,
       royaltyType: contractsTable.royaltyType,
       contentCount: sql<number>`(select count(*) from contract_content where contract_content.contract_id = ${contractsTable.id})`.mapWith(Number),
@@ -60,13 +67,33 @@ async function getContractsData(params: any) {
     .from(contractsTable)
     .leftJoin(partnersTable, eq(contractsTable.partnerId, partnersTable.id))
     .where(where)
-    .orderBy(desc(contractsTable.createdAt));
+    .orderBy(desc(contractsTable.createdAt))
+    .then((contracts) => contracts.map((contract) => ({
+      ...contract,
+      platform: contract.platform || contract.rightsInPlatforms?.join(", ") || null,
+    })).filter((contract) =>
+      (!platform || contract.platform?.split(", ").includes(platform)) &&
+      (!territory || (contract.territories as string[]).includes(territory))
+    ));
 }
 
 // GET /api/reports/contracts
 router.get("/contracts", async (req, res) => {
-  const { direction, status, from, to, format } = req.query as Record<string, string>;
-  const data = (await getContractsData({ direction, status, from, to })).map((contract) => displayContractStatus(contract));
+  const { direction, status, from, to, platform, territory, format } = req.query as Record<string, string>;
+  const canViewFinancials = req.user?.role === "admin" || req.user?.role === "finance";
+  const data = (await getContractsData({
+    direction,
+    status,
+    from,
+    to,
+    platform,
+    territory,
+    salesOnly: req.user?.role === "sales",
+  }))
+    .map((contract) => displayContractStatus({
+      ...contract,
+      royaltyType: canViewFinancials ? contract.royaltyType : null,
+    }));
 
   if (format === "xlsx") {
     const ExcelJS = await import("exceljs");
@@ -79,13 +106,15 @@ router.get("/contracts", async (req, res) => {
       { header: "Status", key: "status", width: 15 },
       { header: "Start Date", key: "startDate", width: 12 },
       { header: "End Date", key: "endDate", width: 12 },
+      { header: "Platform", key: "platform", width: 20 },
       { header: "Territories", key: "territories", width: 20 },
       { header: "Distribution Types", key: "distributionTypes", width: 25 },
       { header: "Royalty Type", key: "royaltyType", width: 15 },
     ];
     data.forEach((row) => ws.addRow({
       ...row,
-      territories: (row.territories as string[]).join(", "),
+        platform: row.platform ?? "",
+        territories: (row.territories as string[]).join(", "),
       distributionTypes: (row.distributionTypes as string[]).join(", "),
     }));
 
@@ -105,11 +134,17 @@ router.get("/contracts", async (req, res) => {
         { header: "Status", key: "status", width: 2 },
         { header: "Start Date", key: "startDate", width: 2 },
         { header: "End Date", key: "endDate", width: 2 },
+        { header: "Platform", key: "platform", width: 2 },
         { header: "Territories", key: "territories", width: 3 },
         { header: "Distribution Types", key: "distributionTypes", width: 3 },
         { header: "Royalty Type", key: "royaltyType", width: 2 },
       ],
-      rows: data,
+      rows: data.map((row) => ({
+        ...row,
+        platform: row.platform ?? "",
+        territories: (row.territories as string[]).join(", "),
+        distributionTypes: (row.distributionTypes as string[]).join(", "),
+      })),
     });
     return;
   }
@@ -146,12 +181,18 @@ router.get("/expiring", async (req, res) => {
     .where(
       and(
         eq(contractsTable.status, "active"),
+        eq(contractsTable.archived, false),
         eq(contractsTable.endType, "date"),
         lte(contractsTable.endDate, cutoff.toISOString().split("T")[0]),
         gte(contractsTable.endDate, new Date().toISOString().split("T")[0])
       )
     )
     .orderBy(contractsTable.endDate);
+  const canViewFinancials = req.user?.role === "admin" || req.user?.role === "finance";
+  const visibleData = data.map((contract) => ({
+    ...contract,
+    royaltyType: canViewFinancials ? contract.royaltyType : null,
+  }));
 
   if (format === "xlsx") {
     const ExcelJS = await import("exceljs");
@@ -164,7 +205,7 @@ router.get("/expiring", async (req, res) => {
       { header: "End Date", key: "endDate", width: 12 },
       { header: "Territories", key: "territories", width: 20 },
     ];
-    data.forEach((row) => ws.addRow({ ...row, territories: (row.territories as string[]).join(", ") }));
+    visibleData.forEach((row) => ws.addRow({ ...row, territories: (row.territories as string[]).join(", ") }));
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename=expiring-contracts-${new Date().toISOString().split("T")[0]}.xlsx`);
     await wb.xlsx.write(res);
@@ -183,12 +224,12 @@ router.get("/expiring", async (req, res) => {
         { header: "End Date", key: "endDate", width: 2 },
         { header: "Territories", key: "territories", width: 3 },
       ],
-      rows: data,
+      rows: visibleData,
     });
     return;
   }
 
-  res.json({ data: data.map((contract) => displayContractStatus(contract)).map(d => ({ ...d, contentCount: 0 })), generatedAt: new Date().toISOString() });
+  res.json({ data: visibleData.map((contract) => displayContractStatus(contract)).map(d => ({ ...d, contentCount: 0 })), generatedAt: new Date().toISOString() });
 });
 
 // GET /api/reports/royalties
@@ -209,7 +250,8 @@ router.get("/royalties", requireRole("admin", "finance"), async (req, res) => {
       period: revenueReportsTable.period,
       expectedDate: revenueReportsTable.expectedDate,
       receivedDate: revenueReportsTable.receivedDate,
-      amount: revenueReportsTable.amount,
+      amountReceived: sql<string | null>`coalesce(${revenueReportsTable.amountReceived}, ${revenueReportsTable.amount})`,
+      costAmount: revenueReportsTable.costAmount,
       status: revenueReportsTable.status,
       createdAt: revenueReportsTable.createdAt,
       partnerName: partnersTable.name,
@@ -229,10 +271,15 @@ router.get("/royalties", requireRole("admin", "finance"), async (req, res) => {
       { header: "Period", key: "period", width: 15 },
       { header: "Expected Date", key: "expectedDate", width: 15 },
       { header: "Received Date", key: "receivedDate", width: 15 },
-      { header: "Amount", key: "amount", width: 15 },
+      { header: "Amount Received", key: "amountReceived", width: 18 },
+      { header: "Cost Amount", key: "costAmount", width: 15 },
       { header: "Status", key: "status", width: 12 },
     ];
-    data.forEach((row) => ws.addRow({ ...row, amount: row.amount ? Number(row.amount) : null }));
+    data.forEach((row) => ws.addRow({
+      ...row,
+      amountReceived: row.amountReceived ? Number(row.amountReceived) : null,
+      costAmount: row.costAmount ? Number(row.costAmount) : null,
+    }));
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename=royalty-statements-${new Date().toISOString().split("T")[0]}.xlsx`);
     await wb.xlsx.write(res);
@@ -248,16 +295,25 @@ router.get("/royalties", requireRole("admin", "finance"), async (req, res) => {
         { header: "Period", key: "period", width: 2 },
         { header: "Expected Date", key: "expectedDate", width: 2 },
         { header: "Received Date", key: "receivedDate", width: 2 },
-        { header: "Amount", key: "amount", width: 2 },
+        { header: "Received", key: "amountReceived", width: 2 },
+        { header: "Cost", key: "costAmount", width: 2 },
         { header: "Status", key: "status", width: 2 },
       ],
-      rows: data.map(r => ({ ...r, amount: r.amount ? `${Number(r.amount).toLocaleString()}` : "" })),
+      rows: data.map(r => ({
+        ...r,
+        amountReceived: r.amountReceived ? `${Number(r.amountReceived).toLocaleString()}` : "",
+        costAmount: r.costAmount ? `${Number(r.costAmount).toLocaleString()}` : "",
+      })),
     });
     return;
   }
 
   res.json({
-    data: data.map(r => ({ ...r, amount: r.amount ? Number(r.amount) : null })),
+    data: data.map(r => ({
+      ...r,
+      amountReceived: r.amountReceived ? Number(r.amountReceived) : null,
+      costAmount: r.costAmount ? Number(r.costAmount) : null,
+    })),
     generatedAt: new Date().toISOString(),
   });
 });

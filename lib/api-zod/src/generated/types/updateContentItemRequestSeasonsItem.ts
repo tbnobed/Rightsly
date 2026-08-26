@@ -6,6 +6,7 @@
  */
 
 export type UpdateContentItemRequestSeasonsItem = {
+  id?: string;
   seasonNumber: number;
   title?: string | null;
   year?: number | null;

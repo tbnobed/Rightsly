@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { contentItemsTable, seasonsTable, contractContentTable, contractsTable, partnersTable } from "@workspace/db";
-import { eq, ilike, and, count, sql, desc } from "drizzle-orm";
+import { contentItemsTable, seasonsTable, contractContentTable, contractSeasonsTable, contractsTable, partnersTable } from "@workspace/db";
+import { eq, ilike, and, count, sql, desc, inArray } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { routeParam, validateContentYear } from "../lib/validation";
@@ -130,62 +130,139 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   const { type, title, description, year, seasons, hasCleans, hasCaptions } = req.body;
   const yearError = validateContentYear(year);
   if (yearError) { res.status(400).json({ message: yearError }); return; }
+  try {
+    const result = await db.transaction(async (tx) => {
+      let currentSeasonRows: { id: string }[] = [];
+      if (seasons !== undefined) {
+        // Serialize contract scope inserts with season removal. Together with
+        // the restrictive FK, no concurrent edit can cascade away scope.
+        await tx.execute(sql`LOCK TABLE seasons, contract_seasons IN SHARE ROW EXCLUSIVE MODE`);
+        currentSeasonRows = await tx.select({ id: seasonsTable.id }).from(seasonsTable)
+          .where(eq(seasonsTable.contentItemId, id));
+        const currentIds = new Set(currentSeasonRows.map((season) => season.id));
+        const keptIds = new Set<string>(
+          seasons.flatMap((season: { id?: unknown }) =>
+            typeof season.id === "string" && currentIds.has(season.id) ? [season.id] : []
+          ),
+        );
+        const removedIds = currentSeasonRows.filter((season) => !keptIds.has(season.id)).map((season) => season.id);
+        if (removedIds.length) {
+          const [reference] = await tx.select({ seasonId: contractSeasonsTable.seasonId })
+            .from(contractSeasonsTable)
+            .where(inArray(contractSeasonsTable.seasonId, removedIds))
+            .limit(1);
+          if (reference) return { error: "referenced" as const };
+        }
+      }
 
-  const [item] = await db
-    .update(contentItemsTable)
-    .set({
-      type,
-      title,
-      description: description || null,
-      year: year || null,
-      ...(hasCleans !== undefined ? { hasCleans: !!hasCleans } : {}),
-      ...(hasCaptions !== undefined ? { hasCaptions: !!hasCaptions } : {}),
-      updatedAt: new Date(),
-    })
-    .where(eq(contentItemsTable.id, id))
-    .returning();
+      const [item] = await tx.update(contentItemsTable).set({
+        type,
+        title,
+        description: description || null,
+        year: year || null,
+        ...(hasCleans !== undefined ? { hasCleans: !!hasCleans } : {}),
+        ...(hasCaptions !== undefined ? { hasCaptions: !!hasCaptions } : {}),
+        updatedAt: new Date(),
+      }).where(eq(contentItemsTable.id, id)).returning();
+      if (!item) return { error: "not_found" as const };
 
-  if (!item) {
-    res.status(404).json({ message: "Content item not found" });
-    return;
-  }
+      if (seasons !== undefined) {
+        const currentIds = new Set(currentSeasonRows.map((season) => season.id));
+        const keptIds = new Set<string>();
+        for (const season of seasons) {
+          const seasonId = typeof season.id === "string" && currentIds.has(season.id) ? season.id : crypto.randomUUID();
+          keptIds.add(seasonId);
+          const values = {
+            contentItemId: id,
+            seasonNumber: season.seasonNumber,
+            title: season.title || null,
+            year: season.year || null,
+            episodeCount: season.episodeCount || null,
+          };
+          if (currentIds.has(seasonId)) {
+            await tx.update(seasonsTable).set(values).where(eq(seasonsTable.id, seasonId));
+          } else {
+            await tx.insert(seasonsTable).values({ id: seasonId, ...values });
+          }
+        }
+        const removedIds = currentSeasonRows.filter((season) => !keptIds.has(season.id)).map((season) => season.id);
+        if (removedIds.length) {
+          await tx.delete(seasonsTable).where(inArray(seasonsTable.id, removedIds));
+        }
+      }
 
-  if (seasons !== undefined) {
-    await db.delete(seasonsTable).where(eq(seasonsTable.contentItemId, id));
-    if (seasons.length) {
-      await db.insert(seasonsTable).values(
-        seasons.map((s: any) => ({
-          id: crypto.randomUUID(),
-          contentItemId: id,
-          seasonNumber: s.seasonNumber,
-          title: s.title || null,
-          year: s.year || null,
-          episodeCount: s.episodeCount || null,
-        }))
-      );
+      const [updatedSeasons, [{ value: contractCount }]] = await Promise.all([
+        tx.select().from(seasonsTable).where(eq(seasonsTable.contentItemId, id)).orderBy(seasonsTable.seasonNumber),
+        tx.select({ value: count() }).from(contractContentTable).where(eq(contractContentTable.contentItemId, id)),
+      ]);
+      return { item, updatedSeasons, contractCount: Number(contractCount) };
+    });
+    if ("error" in result) {
+      res.status(result.error === "not_found" ? 404 : 409).json({
+        message: result.error === "not_found"
+          ? "Content item not found"
+          : "A season linked to a contract cannot be deleted",
+      });
+      return;
     }
+
+    await logAudit({ user: req.user, action: "update", entityType: "content", entityId: id });
+    res.json({ ...result.item, seasons: result.updatedSeasons, contractCount: result.contractCount });
+  } catch (error) {
+    if ((error as { code?: string }).code === "23503") {
+      res.status(409).json({ message: "A season linked to a contract cannot be deleted" });
+      return;
+    }
+    throw error;
   }
-
-  const [updatedSeasons, [{ value: contractCount }]] = await Promise.all([
-    db.select().from(seasonsTable).where(eq(seasonsTable.contentItemId, id)).orderBy(seasonsTable.seasonNumber),
-    db.select({ value: count() }).from(contractContentTable).where(eq(contractContentTable.contentItemId, id)),
-  ]);
-
-  await logAudit({ user: req.user, action: "update", entityType: "content", entityId: id });
-  res.json({ ...item, seasons: updatedSeasons, contractCount: Number(contractCount) });
 });
 
 // DELETE /api/content/:id
 router.delete("/:id", requireRole("admin"), async (req, res) => {
   const id = routeParam(req.params.id);
-  await db.delete(contentItemsTable).where(eq(contentItemsTable.id, id));
-  await logAudit({ user: req.user, action: "delete", entityType: "content", entityId: id });
-  res.json({ message: "Content item deleted" });
+  try {
+    const result = await db.transaction(async (tx) => {
+      await tx.execute(sql`LOCK TABLE content_items, contract_content IN SHARE ROW EXCLUSIVE MODE`);
+      const [reference] = await tx.select({ contractId: contractContentTable.contractId })
+        .from(contractContentTable)
+        .where(eq(contractContentTable.contentItemId, id))
+        .limit(1);
+      if (reference) return "referenced" as const;
+      const [deleted] = await tx.delete(contentItemsTable)
+        .where(eq(contentItemsTable.id, id))
+        .returning({ id: contentItemsTable.id });
+      return deleted ? "deleted" as const : "not_found" as const;
+    });
+    if (result !== "deleted") {
+      res.status(result === "referenced" ? 409 : 404).json({
+        message: result === "referenced"
+          ? "Content linked to a contract cannot be deleted"
+          : "Content item not found",
+      });
+      return;
+    }
+    await logAudit({ user: req.user, action: "delete", entityType: "content", entityId: id });
+    res.json({ message: "Content item deleted" });
+  } catch (error) {
+    if ((error as { code?: string }).code === "23503") {
+      res.status(409).json({ message: "Content linked to a contract cannot be deleted" });
+      return;
+    }
+    throw error;
+  }
 });
 
 // GET /api/content/:id/contracts
 router.get("/:id/contracts", async (req, res) => {
   const id = routeParam(req.params.id);
+  const today = new Date().toISOString().split("T")[0];
+  const salesVisibility = req.user?.role === "sales"
+    ? and(
+        eq(contractsTable.status, "active"),
+        eq(contractsTable.archived, false),
+        sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})`,
+      )
+    : undefined;
   const contracts = await db
     .select({
       id: contractsTable.id,
@@ -207,10 +284,14 @@ router.get("/:id/contracts", async (req, res) => {
     .from(contractContentTable)
     .innerJoin(contractsTable, eq(contractContentTable.contractId, contractsTable.id))
     .leftJoin(partnersTable, eq(contractsTable.partnerId, partnersTable.id))
-    .where(eq(contractContentTable.contentItemId, id))
+    .where(and(eq(contractContentTable.contentItemId, id), salesVisibility))
     .orderBy(desc(contractsTable.createdAt));
 
-  res.json(contracts);
+  const canViewFinancials = req.user?.role === "admin" || req.user?.role === "finance";
+  res.json(contracts.map((contract) => ({
+    ...contract,
+    royaltyType: canViewFinancials ? contract.royaltyType : null,
+  })));
 });
 
 export default router;

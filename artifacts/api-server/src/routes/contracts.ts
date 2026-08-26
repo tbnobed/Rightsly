@@ -3,8 +3,10 @@ import { db } from "@workspace/db";
 import {
   contractsTable,
   contractContentTable,
+  contractSeasonsTable,
   partnersTable,
   contentItemsTable,
+  seasonsTable,
   amendmentsTable,
   contractAttachmentsTable,
   usersTable,
@@ -21,6 +23,8 @@ import {
 } from "../lib/rightsVocabulary";
 import { routeParam, validateHttpUrl } from "../lib/validation";
 import { displayContractStatus } from "../lib/contractStatus";
+import { syncRevenueSchedule } from "../lib/revenueSchedule";
+import { isSalesVisibleContract, salesVisibleContractPredicate } from "../lib/contractVisibility";
 
 const router = Router();
 router.use(authenticateToken);
@@ -84,12 +88,7 @@ router.get("/", contractReadGuard, async (req, res) => {
   }
   if (!includeArchived) conditions.push(eq(contractsTable.archived, false));
   if ((req as typeof req & { salesFilter?: boolean }).salesFilter) {
-    conditions.push(
-      and(
-        eq(contractsTable.status, "active"),
-        sql`(${contractsTable.endType} <> 'date' OR ${contractsTable.endDate} >= ${today})`,
-      ),
-    );
+    conditions.push(salesVisibleContractPredicate(today));
   }
   if (expiringWithinDays) {
     const cutoff = new Date();
@@ -143,6 +142,7 @@ router.get("/", contractReadGuard, async (req, res) => {
     data: contracts.map((contract) =>
       displayContractStatus({
         ...contract,
+        royaltyType: canViewFinancials(req.user?.role) ? contract.royaltyType : null,
         territories: canonicalTerritories(contract.territories),
         distributionTypes: canonicalDistributionTypes(contract.distributionTypes),
       }),
@@ -176,8 +176,17 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
     rightsInDetails,
     rightsOutDetails,
     contentItemIds,
+    seasonIds,
     departmentTags,
   } = req.body;
+  if (
+    !canViewFinancials(req.user?.role) &&
+    [royaltyType, royaltyDetails, paymentTerms, rightsOutDetails?.minPaymentThreshold]
+      .some((value) => value !== undefined && value !== null && value !== "")
+  ) {
+    res.status(403).json({ message: "Financial terms are restricted to Admin and Finance" });
+    return;
+  }
 
   if (!direction || !partnerId || !endType) {
     res.status(400).json({ message: "direction, partnerId, endType are required" });
@@ -205,10 +214,15 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
   const id = crypto.randomUUID();
   const ri = rightsInDetails || {};
   const ro = rightsOutDetails || {};
+  const seasonError = await validateSeasonScope(contentItemIds ?? [], seasonIds ?? []);
+  if (seasonError) {
+    res.status(400).json({ message: seasonError });
+    return;
+  }
 
-  const [contract] = await db
-    .insert(contractsTable)
-    .values({
+  let contract: typeof contractsTable.$inferSelect;
+  await db.transaction(async (tx) => {
+    [contract] = await tx.insert(contractsTable).values({
       id,
       direction,
       partnerId,
@@ -233,6 +247,7 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
       rightsInYoutubeChannel: ri.youtubeChannel || null,
       rightsInSocialPlatforms: ri.socialPlatforms || null,
       rightsInSocialHandle: ri.socialHandle || null,
+      rightsInSocialAccounts: normalizeSocialAccounts(ri.socialAccounts, ri.socialPlatforms, ri.socialHandle),
       rightsInGrantOfRights: ri.grantOfRights || null,
       rightsInExclusivityStartDate: ri.exclusivityStartDate || null,
       rightsInExclusivityEndDate: ri.exclusivityEndDate || null,
@@ -245,26 +260,39 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
       rightsOutReportingFrequency: ro.reportingFrequency || null,
       rightsOutMinPaymentThreshold: ro.minPaymentThreshold?.toString() || null,
       createdBy: req.user!.id,
-    })
-    .returning();
+    }).returning();
 
-  // Link content items
-  if (contentItemIds?.length) {
-    await db.insert(contractContentTable).values(
-      contentItemIds.map((cid: string) => ({ contractId: id, contentItemId: cid }))
-    );
-  }
+    if (contentItemIds?.length) {
+      await tx.insert(contractContentTable).values(
+        contentItemIds.map((cid: string) => ({ contractId: id, contentItemId: cid }))
+      );
+    }
+    if (seasonIds?.length) {
+      await tx.insert(contractSeasonsTable).values(
+        [...new Set(seasonIds)].map((seasonId: string) => ({ contractId: id, seasonId }))
+      );
+    }
+    await syncRevenueSchedule(tx, {
+      id,
+      direction,
+      startDate: startDate || null,
+      endType,
+      endDate: endDate || null,
+      reportingFrequency: ro.reportingFrequency || null,
+      paymentTerms: paymentTerms || null,
+    });
+  });
 
   await logAudit({ user: req.user, action: "create", entityType: "contract", entityId: id, after: { direction, partnerId, status } });
-  res.status(201).json(await getContractById(id));
+  res.status(201).json(await getContractById(id, req.user?.role));
 });
 
 // GET /api/contracts/:id
 router.get("/:id", contractReadGuard, async (req, res) => {
-  const contract = await getContractById(routeParam(req.params.id));
+  const contract = await getContractById(routeParam(req.params.id), req.user?.role);
   if (
     !contract ||
-    (req.user?.role === "sales" && (contract.archived || contract.status !== "active"))
+    (req.user?.role === "sales" && !isSalesVisibleContract(contract))
   ) {
     res.status(404).json({ message: "Contract not found" });
     return;
@@ -295,21 +323,51 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
     rightsInDetails,
     rightsOutDetails,
     contentItemIds,
+    seasonIds,
     departmentTags,
     archived,
   } = req.body;
+  if (
+    !canViewFinancials(req.user?.role) &&
+    [royaltyType, royaltyDetails, paymentTerms, rightsOutDetails?.minPaymentThreshold]
+      .some((value) => value !== undefined && value !== null && value !== "")
+  ) {
+    res.status(403).json({ message: "Financial terms are restricted to Admin and Finance" });
+    return;
+  }
 
   const [existingContract] = await db
     .select({
       startDate: contractsTable.startDate,
       endType: contractsTable.endType,
       endDate: contractsTable.endDate,
+      rightsInSocialPlatforms: contractsTable.rightsInSocialPlatforms,
+      rightsInSocialHandle: contractsTable.rightsInSocialHandle,
+      rightsInSocialAccounts: contractsTable.rightsInSocialAccounts,
+      direction: contractsTable.direction,
+      rightsOutReportingFrequency: contractsTable.rightsOutReportingFrequency,
+      paymentTerms: contractsTable.paymentTerms,
     })
     .from(contractsTable)
     .where(eq(contractsTable.id, id));
   if (!existingContract) {
     res.status(404).json({ message: "Contract not found" });
     return;
+  }
+  if (seasonIds !== undefined || contentItemIds !== undefined) {
+    const [currentContent, currentSeasons] = await Promise.all([
+      db.select({ contentItemId: contractContentTable.contentItemId })
+        .from(contractContentTable).where(eq(contractContentTable.contractId, id)),
+      db.select({ seasonId: contractSeasonsTable.seasonId })
+        .from(contractSeasonsTable).where(eq(contractSeasonsTable.contractId, id)),
+    ]);
+    const effectiveContentIds = contentItemIds ?? currentContent.map((row) => row.contentItemId);
+    const effectiveSeasonIds = seasonIds ?? currentSeasons.map((row) => row.seasonId);
+    const seasonError = await validateSeasonScope(effectiveContentIds, effectiveSeasonIds);
+    if (seasonError) {
+      res.status(400).json({ message: seasonError });
+      return;
+    }
   }
 
   const effectiveEndType = endType !== undefined ? endType : existingContract.endType;
@@ -364,9 +422,11 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   if (otherTerritories !== undefined) updates.otherTerritories = otherTerritories;
   if (distributionTypes !== undefined) updates.distributionTypes = canonicalDistributionTypes(distributionTypes);
   if (platform !== undefined) updates.platform = platform;
-  if (royaltyType !== undefined) updates.royaltyType = royaltyType;
-  if (royaltyDetails !== undefined) updates.royaltyDetails = royaltyDetails;
-  if (paymentTerms !== undefined) updates.paymentTerms = paymentTerms;
+  if (canViewFinancials(req.user?.role)) {
+    if (royaltyType !== undefined) updates.royaltyType = royaltyType;
+    if (royaltyDetails !== undefined) updates.royaltyDetails = royaltyDetails;
+    if (paymentTerms !== undefined) updates.paymentTerms = paymentTerms;
+  }
   if (notes !== undefined) updates.notes = notes;
   if (websiteLink !== undefined) updates.websiteLink = websiteLink;
   if (departmentTags !== undefined) updates.departmentTags = departmentTags;
@@ -377,6 +437,13 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
     if (ri.youtubeChannel !== undefined) updates.rightsInYoutubeChannel = ri.youtubeChannel;
     if (ri.socialPlatforms !== undefined) updates.rightsInSocialPlatforms = ri.socialPlatforms;
     if (ri.socialHandle !== undefined) updates.rightsInSocialHandle = ri.socialHandle;
+    if (ri.socialAccounts !== undefined || ri.socialPlatforms !== undefined || ri.socialHandle !== undefined) {
+      updates.rightsInSocialAccounts = normalizeSocialAccounts(
+        ri.socialAccounts === undefined ? existingContract.rightsInSocialAccounts : ri.socialAccounts,
+        ri.socialPlatforms === undefined ? existingContract.rightsInSocialPlatforms : ri.socialPlatforms,
+        ri.socialHandle === undefined ? existingContract.rightsInSocialHandle : ri.socialHandle,
+      );
+    }
     if (ri.grantOfRights !== undefined) updates.rightsInGrantOfRights = ri.grantOfRights;
     if (ri.exclusivityStartDate !== undefined) updates.rightsInExclusivityStartDate = ri.exclusivityStartDate;
     if (ri.exclusivityEndDate !== undefined) updates.rightsInExclusivityEndDate = ri.exclusivityEndDate;
@@ -389,25 +456,56 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
     if (ro.hasAmendment !== undefined) updates.rightsOutHasAmendment = ro.hasAmendment;
     if (ro.exclusivity !== undefined) updates.rightsOutExclusivity = ro.exclusivity;
     if (ro.reportingFrequency !== undefined) updates.rightsOutReportingFrequency = ro.reportingFrequency;
-    if (ro.minPaymentThreshold !== undefined) updates.rightsOutMinPaymentThreshold = ro.minPaymentThreshold?.toString();
-  }
-
-  await db.update(contractsTable).set(updates).where(eq(contractsTable.id, id));
-
-  if (contentItemIds !== undefined) {
-    await db.delete(contractContentTable).where(eq(contractContentTable.contractId, id));
-    if (contentItemIds.length) {
-      await db.insert(contractContentTable).values(
-        contentItemIds.map((cid: string) => ({ contractId: id, contentItemId: cid }))
-      );
+    if (canViewFinancials(req.user?.role) && ro.minPaymentThreshold !== undefined) {
+      updates.rightsOutMinPaymentThreshold = ro.minPaymentThreshold?.toString();
     }
   }
+
+  await db.transaction(async (tx) => {
+    await tx.update(contractsTable).set(updates).where(eq(contractsTable.id, id));
+
+    if (contentItemIds !== undefined) {
+      await tx.delete(contractContentTable).where(eq(contractContentTable.contractId, id));
+      if (contentItemIds.length) {
+        await tx.insert(contractContentTable).values(
+          contentItemIds.map((cid: string) => ({ contractId: id, contentItemId: cid }))
+        );
+      }
+    }
+    if (seasonIds !== undefined) {
+      await tx.delete(contractSeasonsTable).where(eq(contractSeasonsTable.contractId, id));
+      if (seasonIds.length) {
+        await tx.insert(contractSeasonsTable).values(
+          [...new Set(seasonIds)].map((seasonId: string) => ({ contractId: id, seasonId }))
+        );
+      }
+    }
+    if (
+      startDate !== undefined ||
+      endType !== undefined ||
+      endDate !== undefined ||
+      paymentTerms !== undefined ||
+      ro.reportingFrequency !== undefined
+    ) {
+      await syncRevenueSchedule(tx, {
+        id,
+        direction: existingContract.direction,
+        startDate: effectiveStartDate,
+        endType: effectiveEndType,
+        endDate: effectiveEndDate,
+        reportingFrequency: ro.reportingFrequency !== undefined
+          ? ro.reportingFrequency
+          : existingContract.rightsOutReportingFrequency,
+        paymentTerms: paymentTerms !== undefined ? paymentTerms : existingContract.paymentTerms,
+      });
+    }
+  });
 
   const prevStatus = req.body._prevStatus;
   const action = status && status !== prevStatus ? "status_change" : "update";
   await logAudit({ user: req.user, action, entityType: "contract", entityId: id, after: updates });
 
-  res.json(await getContractById(id));
+  res.json(await getContractById(id, req.user?.role));
 });
 
 // DELETE /api/contracts/:id
@@ -581,7 +679,7 @@ router.delete("/:id/attachments/:attachmentId", requireRole("admin", "legal"), a
 });
 
 // Helper: get full contract by ID
-async function getContractById(id: string) {
+async function getContractById(id: string, role?: string) {
   const [contract] = await db
     .select()
     .from(contractsTable)
@@ -591,12 +689,25 @@ async function getContractById(id: string) {
 
   if (!contract) return null;
 
-  const [linkedContent, amendments] = await Promise.all([
+  const [linkedContent, linkedSeasons, amendments] = await Promise.all([
     db
       .select({ id: contentItemsTable.id, type: contentItemsTable.type, title: contentItemsTable.title, year: contentItemsTable.year })
       .from(contractContentTable)
       .innerJoin(contentItemsTable, eq(contractContentTable.contentItemId, contentItemsTable.id))
       .where(eq(contractContentTable.contractId, id)),
+    db
+      .select({
+        id: seasonsTable.id,
+        contentItemId: seasonsTable.contentItemId,
+        seasonNumber: seasonsTable.seasonNumber,
+        title: seasonsTable.title,
+        year: seasonsTable.year,
+        episodeCount: seasonsTable.episodeCount,
+      })
+      .from(contractSeasonsTable)
+      .innerJoin(seasonsTable, eq(contractSeasonsTable.seasonId, seasonsTable.id))
+      .where(eq(contractSeasonsTable.contractId, id))
+      .orderBy(asc(seasonsTable.seasonNumber)),
     db
       .select()
       .from(amendmentsTable)
@@ -623,9 +734,9 @@ async function getContractById(id: string) {
     otherTerritories: c.otherTerritories,
     distributionTypes: canonicalDistributionTypes(c.distributionTypes),
     platform: c.platform,
-    royaltyType: c.royaltyType,
-    royaltyDetails: c.royaltyDetails,
-    paymentTerms: c.paymentTerms,
+    royaltyType: canViewFinancials(role) ? c.royaltyType : null,
+    royaltyDetails: canViewFinancials(role) ? c.royaltyDetails : null,
+    paymentTerms: canViewFinancials(role) ? c.paymentTerms : null,
     notes: c.notes,
     documentUrl: c.documentUrl,
     websiteLink: c.websiteLink,
@@ -636,6 +747,11 @@ async function getContractById(id: string) {
       youtubeChannel: c.rightsInYoutubeChannel,
       socialPlatforms: c.rightsInSocialPlatforms,
       socialHandle: c.rightsInSocialHandle,
+      socialAccounts: socialAccountsWithLegacyFallback(
+        c.rightsInSocialAccounts,
+        c.rightsInSocialPlatforms,
+        c.rightsInSocialHandle,
+      ),
       grantOfRights: c.rightsInGrantOfRights,
       exclusivityStartDate: c.rightsInExclusivityStartDate,
       exclusivityEndDate: c.rightsInExclusivityEndDate,
@@ -647,14 +763,61 @@ async function getContractById(id: string) {
       hasAmendment: c.rightsOutHasAmendment,
       exclusivity: c.rightsOutExclusivity,
       reportingFrequency: c.rightsOutReportingFrequency,
-      minPaymentThreshold: c.rightsOutMinPaymentThreshold ? Number(c.rightsOutMinPaymentThreshold) : null,
+      minPaymentThreshold: canViewFinancials(role) && c.rightsOutMinPaymentThreshold ? Number(c.rightsOutMinPaymentThreshold) : null,
     } : null,
     contentItems: linkedContent.map(item => ({ ...item, contractCount: 0, seasons: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })),
+    selectedSeasons: linkedSeasons,
     amendments,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
     createdByName: u?.name ?? null,
   };
+}
+
+function canViewFinancials(role?: string) {
+  return role === "admin" || role === "finance";
+}
+
+const namedSocialPlatforms = new Set(["Facebook", "Instagram", "TikTok", "Other"]);
+
+function normalizeSocialAccounts(accounts: unknown, socialPlatforms?: unknown, legacyHandle?: unknown) {
+  const result: Record<string, string> = {};
+  if (accounts && typeof accounts === "object" && !Array.isArray(accounts)) {
+    for (const [platform, value] of Object.entries(accounts as Record<string, unknown>)) {
+      if (namedSocialPlatforms.has(platform) && typeof value === "string" && value.trim()) result[platform] = value.trim();
+    }
+  }
+  // A legacy shared handle remains useful when a caller has not supplied
+  // account-specific values. Never manufacture a value for "All Socials".
+  if (typeof legacyHandle === "string" && legacyHandle.trim() && Array.isArray(socialPlatforms)) {
+    for (const platform of socialPlatforms) {
+      if (namedSocialPlatforms.has(platform) && !result[platform]) result[platform] = legacyHandle.trim();
+    }
+  }
+  return Object.keys(result).length ? result : null;
+}
+
+function socialAccountsWithLegacyFallback(accounts: unknown, platforms: unknown, legacyHandle: string | null) {
+  return normalizeSocialAccounts(accounts, platforms, legacyHandle);
+}
+
+async function validateSeasonScope(contentItemIds: unknown, seasonIds: unknown): Promise<string | null> {
+  if (!Array.isArray(contentItemIds) || !Array.isArray(seasonIds)) {
+    return "contentItemIds and seasonIds must be arrays";
+  }
+  if (seasonIds.length === 0) return null;
+  if (!seasonIds.every((id) => typeof id === "string")) return "seasonIds must contain IDs";
+  const uniqueSeasonIds = [...new Set(seasonIds)];
+  const seasons = await db.select({
+    id: seasonsTable.id,
+    contentItemId: seasonsTable.contentItemId,
+  }).from(seasonsTable).where(inArray(seasonsTable.id, uniqueSeasonIds));
+  if (seasons.length !== uniqueSeasonIds.length) return "One or more selected seasons do not exist";
+  const selectedTitleIds = new Set(contentItemIds);
+  if (seasons.some((season) => !selectedTitleIds.has(season.contentItemId))) {
+    return "Selected seasons must belong to selected content titles";
+  }
+  return null;
 }
 
 async function canReadContract(role: string | undefined, id: string) {

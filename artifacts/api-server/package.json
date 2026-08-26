@@ -9,6 +9,7 @@
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --experimental-strip-types --test src/lib/*.test.ts",
+    "test:integration": "node --experimental-strip-types --test src/integration/*.test.ts",
     "seed": "node --enable-source-maps ./dist/seed.mjs"
   },
   "dependencies": {

@@ -226,6 +226,7 @@ export const CreateContentItemRequestType = {
 } as const;
 
 export type CreateContentItemRequestSeasonsItem = {
+  id?: string;
   seasonNumber: number;
   title?: string | null;
   year?: number | null;
@@ -254,6 +255,7 @@ export const UpdateContentItemRequestType = {
 } as const;
 
 export type UpdateContentItemRequestSeasonsItem = {
+  id?: string;
   seasonNumber: number;
   title?: string | null;
   year?: number | null;
@@ -316,11 +318,14 @@ export const ContractPaymentTerms = {
   net_90: 'net_90',
 } as const;
 
+export type RightsInDetailsSocialAccounts = {[key: string]: string};
+
 export interface RightsInDetails {
   platforms?: string[];
   youtubeChannel?: string | null;
   socialPlatforms?: string[];
   socialHandle?: string | null;
+  socialAccounts?: RightsInDetailsSocialAccounts;
   grantOfRights?: string | null;
   exclusivityStartDate?: string | null;
   exclusivityEndDate?: string | null;
@@ -389,6 +394,7 @@ export interface Contract {
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
   contentItems?: ContentItem[];
+  selectedSeasons?: Season[];
   amendments?: Amendment[];
   createdAt: string;
   updatedAt?: string;
@@ -462,6 +468,7 @@ export interface CreateContractRequest {
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
   contentItemIds?: string[];
+  seasonIds?: string[];
   departmentTags?: string[];
 }
 
@@ -523,6 +530,7 @@ export interface UpdateContractRequest {
   rightsInDetails?: RightsInDetails | null;
   rightsOutDetails?: RightsOutDetails | null;
   contentItemIds?: string[];
+  seasonIds?: string[];
   departmentTags?: string[];
   archived?: boolean;
 }
@@ -559,6 +567,7 @@ export interface ContractListItem {
   id: string;
   direction: ContractListItemDirection;
   partnerId?: string;
+  platform?: string | null;
   partnerName?: string;
   licensor?: string | null;
   licensee?: string | null;
@@ -593,10 +602,14 @@ export interface RevenueReport {
   contractId: string;
   partnerName?: string | null;
   period: string;
+  periodStart?: string | null;
+  periodEnd?: string | null;
   expectedDate?: string | null;
   receivedDate?: string | null;
-  amount?: number | null;
+  amountReceived?: number | null;
+  costAmount?: number | null;
   status: RevenueReportStatus;
+  scheduleGenerated?: boolean;
   documentPath?: string | null;
   documentName?: string | null;
   createdAt: string;
@@ -613,10 +626,16 @@ export const CreateRevenueReportRequestStatus = {
 
 export interface CreateRevenueReportRequest {
   period: string;
+  periodStart?: string | null;
+  periodEnd?: string | null;
   expectedDate?: string | null;
   receivedDate?: string | null;
-  amount?: number | null;
+  /** @minimum 0 */
+  amountReceived?: number | null;
+  /** @minimum 0 */
+  costAmount?: number | null;
   status: CreateRevenueReportRequestStatus;
+  scheduleGenerated?: boolean;
 }
 
 export type UpdateRevenueReportRequestStatus = typeof UpdateRevenueReportRequestStatus[keyof typeof UpdateRevenueReportRequestStatus];
@@ -632,54 +651,67 @@ export interface UpdateRevenueReportRequest {
   period?: string;
   expectedDate?: string | null;
   receivedDate?: string | null;
-  amount?: number | null;
+  /** @minimum 0 */
+  amountReceived?: number | null;
+  /** @minimum 0 */
+  costAmount?: number | null;
   status?: UpdateRevenueReportRequestStatus;
   documentPath?: string | null;
   documentName?: string | null;
 }
 
-export type RoyaltyCalcResultCalculationsItemReviewStatus = typeof RoyaltyCalcResultCalculationsItemReviewStatus[keyof typeof RoyaltyCalcResultCalculationsItemReviewStatus];
+export type ReviewedRevenueReportStatus = typeof ReviewedRevenueReportStatus[keyof typeof ReviewedRevenueReportStatus];
 
 
-export const RoyaltyCalcResultCalculationsItemReviewStatus = {
+export const ReviewedRevenueReportStatus = {
+  expected: 'expected',
+  received: 'received',
+  overdue: 'overdue',
+} as const;
+
+export type ReviewedRevenueReportReviewStatus = typeof ReviewedRevenueReportReviewStatus[keyof typeof ReviewedRevenueReportReviewStatus];
+
+
+export const ReviewedRevenueReportReviewStatus = {
   pending: 'pending',
   reviewed: 'reviewed',
   approved: 'approved',
 } as const;
 
-export type RoyaltyCalcResultCalculationsItem = {
-  reportId: string;
+export interface ReviewedRevenueReport {
+  id: string;
+  contractId: string;
   period: string;
-  revenueAmount: number | null;
-  sharePercentage?: number | null;
-  amountOwed: number | null;
-  reviewStatus: RoyaltyCalcResultCalculationsItemReviewStatus;
+  expectedDate?: string | null;
+  receivedDate?: string | null;
+  amountReceived?: number | null;
+  costAmount?: number | null;
+  status: ReviewedRevenueReportStatus;
+  reviewStatus: ReviewedRevenueReportReviewStatus;
   reviewedBy?: string | null;
   reviewedAt?: string | null;
   documentPath?: string | null;
   documentName?: string | null;
-};
-
-export interface RoyaltyCalcResult {
-  contractId: string;
-  partnerName?: string;
-  royaltyType?: string | null;
-  royaltyDetails?: string | null;
-  calculations: RoyaltyCalcResultCalculationsItem[];
+  createdAt: string;
 }
 
-export type UpdateRoyaltyStatusRequestStatus = typeof UpdateRoyaltyStatusRequestStatus[keyof typeof UpdateRoyaltyStatusRequestStatus];
+export interface RevenueReviewQueue {
+  contractId: string;
+  partnerName: string;
+  reports: ReviewedRevenueReport[];
+}
+
+export type ReviewRevenueReportRequestStatus = typeof ReviewRevenueReportRequestStatus[keyof typeof ReviewRevenueReportRequestStatus];
 
 
-export const UpdateRoyaltyStatusRequestStatus = {
-  pending: 'pending',
+export const ReviewRevenueReportRequestStatus = {
   reviewed: 'reviewed',
   approved: 'approved',
 } as const;
 
-export interface UpdateRoyaltyStatusRequest {
+export interface ReviewRevenueReportRequest {
   reportId: string;
-  status: UpdateRoyaltyStatusRequestStatus;
+  status: ReviewRevenueReportRequestStatus;
 }
 
 export type RightsCheckResultConflictsItem = {
@@ -699,12 +731,19 @@ export type RightsCheckResultGrantsItem = {
   distributionTypes?: string[];
   startDate?: string | null;
   endDate?: string | null;
+  seasonIds?: string[];
+};
+
+export type RightsCheckResultSuggestions = {
+  availableTerritories: string[];
+  availableDistributionTypes: string[];
 };
 
 export interface RightsCheckResult {
   available: boolean;
   conflicts: RightsCheckResultConflictsItem[];
   grants: RightsCheckResultGrantsItem[];
+  suggestions: RightsCheckResultSuggestions;
 }
 
 export type CalendarEventType = typeof CalendarEventType[keyof typeof CalendarEventType];
@@ -979,6 +1018,7 @@ contentItemId: string;
 territory: string;
 distributionType: string;
 date: string;
+seasonId?: string;
 };
 
 export type GetDashboardParams = {
@@ -1003,13 +1043,24 @@ entityType?: string;
 action?: string;
 from?: string;
 to?: string;
+format?: ListAuditLogsFormat;
 };
+
+export type ListAuditLogsFormat = typeof ListAuditLogsFormat[keyof typeof ListAuditLogsFormat];
+
+
+export const ListAuditLogsFormat = {
+  json: 'json',
+  csv: 'csv',
+} as const;
 
 export type GetContractReportParams = {
 direction?: GetContractReportDirection;
 status?: string;
 from?: string;
 to?: string;
+platform?: string;
+territory?: string;
 format?: GetContractReportFormat;
 };
 

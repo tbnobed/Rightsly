@@ -6,7 +6,7 @@ import {
 import { Router, type IRouter, type Request, type Response } from 'express';
 
 import { db } from '@workspace/db';
-import { amendmentsTable, contractAttachmentsTable, revenueReportsTable } from '@workspace/db';
+import { amendmentsTable, contractAttachmentsTable, contractsTable, revenueReportsTable } from '@workspace/db';
 import { eq } from 'drizzle-orm';
 
 import { authenticateToken, requireRole } from '../lib/auth';
@@ -14,6 +14,7 @@ import {
   ObjectNotFoundError,
   ObjectStorageService,
 } from '../lib/objectStorage';
+import { isSalesVisibleContract } from '../lib/contractVisibility';
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -133,17 +134,37 @@ router.get('/storage/objects/*path', authenticateToken, async (req: Request, res
     // revenue report documents. Revenue documents remain finance/admin only.
     const [[attachment], [amendment]] = await Promise.all([
       db
-        .select({ id: contractAttachmentsTable.id })
+        .select({ id: contractAttachmentsTable.id, contractId: contractAttachmentsTable.contractId })
         .from(contractAttachmentsTable)
         .where(eq(contractAttachmentsTable.objectPath, objectPath))
         .limit(1),
       db
-        .select({ id: amendmentsTable.id })
+        .select({ id: amendmentsTable.id, contractId: amendmentsTable.contractId })
         .from(amendmentsTable)
         .where(eq(amendmentsTable.documentUrl, objectPath))
         .limit(1),
     ]);
-    if (!attachment && !amendment) {
+    if (attachment || amendment) {
+      const contractId = attachment?.contractId ?? amendment?.contractId;
+      const [contract] = contractId ? await db
+        .select({
+          status: contractsTable.status,
+          archived: contractsTable.archived,
+          endType: contractsTable.endType,
+          endDate: contractsTable.endDate,
+        })
+        .from(contractsTable)
+        .where(eq(contractsTable.id, contractId))
+        .limit(1) : [];
+      if (!contract) {
+        res.status(404).json({ error: 'Object not found' });
+        return;
+      }
+      if (req.user?.role === 'sales' && !isSalesVisibleContract(contract)) {
+        res.status(403).json({ error: 'Forbidden' });
+        return;
+      }
+    } else {
       const [revenueDoc] = await db
         .select({ id: revenueReportsTable.id })
         .from(revenueReportsTable)

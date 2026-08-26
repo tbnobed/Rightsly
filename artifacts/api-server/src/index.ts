@@ -1,5 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { runNotificationSweep } from "./routes/notifications";
+import { backfillLegacyRevenueAmounts } from "./lib/legacyRevenue";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +24,21 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  void backfillLegacyRevenueAmounts().catch((err) => {
+    logger.error({ err }, "Legacy revenue amount backfill failed");
+  });
+  let sweepRunning = false;
+  const sweep = async () => {
+    if (sweepRunning) return;
+    sweepRunning = true;
+    try {
+      await runNotificationSweep();
+    } catch (err) {
+      logger.error({ err }, "Notification sweep failed");
+    } finally {
+      sweepRunning = false;
+    }
+  };
+  setTimeout(() => void sweep(), 5_000).unref();
+  setInterval(() => void sweep(), 15 * 60 * 1000).unref();
 });

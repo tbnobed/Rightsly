@@ -4,6 +4,7 @@
  * Api
  * OpenAPI spec version: 0.1.0
  */
+import type { ListAuditLogsFormat } from './listAuditLogsFormat';
 
 export type ListAuditLogsParams = {
 page?: number;
@@ -13,4 +14,5 @@ entityType?: string;
 action?: string;
 from?: Date;
 to?: Date;
+format?: ListAuditLogsFormat;
 };

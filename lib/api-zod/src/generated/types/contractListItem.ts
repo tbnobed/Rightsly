@@ -12,6 +12,7 @@ export interface ContractListItem {
   id: string;
   direction: ContractListItemDirection;
   partnerId?: string;
+  platform?: string | null;
   partnerName?: string;
   licensor?: string | null;
   licensee?: string | null;

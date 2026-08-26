@@ -15,6 +15,7 @@ import { DISTRIBUTION_OPTIONS, localDateValue, TERRITORY_OPTIONS } from "@/lib/r
 
 const checkSchema = z.object({
   contentItemId: z.string().min(1, "Select content"),
+  seasonId: z.string().optional(),
   territory: z.string().min(1, "Select territory"),
   distributionType: z.string().min(1, "Select distribution type"),
   date: z.string().min(1, "Select check date"),
@@ -36,7 +37,7 @@ export default function RightsCheck() {
     },
   });
 
-  const { data: checkResult, refetch, isFetching } = useRightsCheck(form.getValues(), {
+  const { data: checkResult, refetch, isFetching } = useRightsCheck(form.getValues() as any, {
     query: {
       enabled: false,
       queryKey: getRightsCheckQueryKey(form.getValues()),
@@ -87,6 +88,29 @@ export default function RightsCheck() {
                     </FormItem>
                   )}
                 />
+                {(() => {
+                  const selected = contentData?.data?.find((item) => item.id === form.watch("contentItemId"));
+                  return selected?.type === "TVSeries" && selected.seasons?.length ? (
+                    <FormField
+                      control={form.control}
+                      name="seasonId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Season <span className="text-slate-400 font-normal">(optional)</span></FormLabel>
+                          <Select onValueChange={(value) => field.onChange(value === "__all__" ? undefined : value)} value={field.value || "__all__"}>
+                            <FormControl><SelectTrigger className="bg-white" data-testid="select-rights-check-season"><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              <SelectItem value="__all__">Whole title</SelectItem>
+                              {(selected.seasons ?? []).map((season) => (
+                                <SelectItem key={season.id} value={season.id}>Season {season.seasonNumber}{season.title ? ` · ${season.title}` : ""}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  ) : null;
+                })()}
                 
                 <FormField
                   control={form.control}
@@ -174,7 +198,7 @@ export default function RightsCheck() {
                         {checkResult.available ? 'Rights Available' : 'Rights Conflict'}
                       </h2>
                       <p className="text-white/80 font-medium">
-                        For {form.getValues('territory')} / {form.getValues('distributionType')} on {format(parseISO(form.getValues('date')), 'MMM d, yyyy')}
+                          For {form.getValues('territory')} / {form.getValues('distributionType')}{form.getValues("seasonId") ? " / selected season" : ""} on {format(parseISO(form.getValues('date')), 'MMM d, yyyy')}
                       </p>
                     </div>
                   </div>
@@ -200,6 +224,25 @@ export default function RightsCheck() {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+                  {!checkResult.available && checkResult.suggestions && (
+                    <div className="p-6 border-t border-slate-100 bg-amber-50/40">
+                      <h3 className="font-bold text-slate-900 mb-1 flex items-center"><AlertTriangle className="w-5 h-5 mr-2 text-amber-500" /> Conservative suggestions</h3>
+                      <p className="text-sm text-slate-600 mb-3">The requested combination is blocked. These canonical alternatives have no matching exclusive conflict for the same title, season, and date.</p>
+                      <div className="space-y-2 text-sm">
+                        <div><span className="font-medium">Territories:</span>{" "}
+                          {checkResult.suggestions.availableTerritories.length
+                            ? checkResult.suggestions.availableTerritories.slice(0, 8).join(", ")
+                            : "No canonical alternatives found"}
+                        </div>
+                        <div><span className="font-medium">Distribution types:</span>{" "}
+                          {checkResult.suggestions.availableDistributionTypes.length
+                            ? checkResult.suggestions.availableDistributionTypes.join(", ")
+                            : "No canonical alternatives found"}
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-3">Confirm negotiated and custom “Other” rights before relying on a suggestion.</p>
                     </div>
                   )}
 

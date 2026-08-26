@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { auditLogsTable } from "@workspace/db";
 import { eq, and, gte, lte, count } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
+import { csvCell } from "../lib/csv";
 
 const router = Router();
 router.use(authenticateToken, requireRole("admin"));
@@ -16,6 +17,7 @@ router.get("/", async (req, res) => {
   const action = req.query.action as string | undefined;
   const from = req.query.from as string | undefined;
   const to = req.query.to as string | undefined;
+  const format = req.query.format as string | undefined;
 
   const conditions: any[] = [];
   if (userId) conditions.push(eq(auditLogsTable.userId, userId));
@@ -25,6 +27,30 @@ router.get("/", async (req, res) => {
   if (to) conditions.push(lte(auditLogsTable.timestamp, new Date(to + "T23:59:59Z")));
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+  if (format === "csv") {
+    const logs = await db
+      .select()
+      .from(auditLogsTable)
+      .where(where)
+      .orderBy(auditLogsTable.timestamp);
+    const headers = ["Timestamp", "User ID", "User Name", "User Email", "Action", "Entity Type", "Entity ID", "Before", "After"];
+    const rows = logs.map((log) => [
+      log.timestamp.toISOString(),
+      log.userId,
+      log.userName,
+      log.userEmail,
+      log.action,
+      log.entityType,
+      log.entityId,
+      log.beforeSummary,
+      log.afterSummary,
+    ].map(csvCell).join(","));
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename=audit-log-${new Date().toISOString().split("T")[0]}.csv`);
+    res.send([headers.map(csvCell).join(","), ...rows].join("\r\n"));
+    return;
+  }
 
   const [logs, [{ value: total }]] = await Promise.all([
     db

@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "gXtfYP62OKRgIpi5n2gwC"
+uri = "file://docs/rightsly-requirements-remediation-report.md"
+type = "text"
+title = "Rightsly Requirements Remediation Report"
+description = "Complete disposition of all 74 audited requirements, including fixes, pre-existing coverage, exclusions, open policy questions, and verification evidence."

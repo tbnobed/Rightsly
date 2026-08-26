@@ -316,6 +316,8 @@ components:
             type: object
             required: [seasonNumber]
             properties:
+              id:
+                type: string
               seasonNumber:
                 type: integer
               title:
@@ -352,6 +354,8 @@ components:
             type: object
             required: [seasonNumber]
             properties:
+              id:
+                type: string
               seasonNumber:
                 type: integer
               title:
@@ -447,6 +451,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ContentItem'
+        selectedSeasons:
+          type: array
+          items:
+            $ref: '#/components/schemas/Season'
         amendments:
           type: array
           items:
@@ -478,6 +486,10 @@ components:
         socialHandle:
           type: string
           nullable: true
+        socialAccounts:
+          type: object
+          additionalProperties:
+            type: string
         grantOfRights:
           type: string
           nullable: true
@@ -584,6 +596,10 @@ components:
           type: array
           items:
             type: string
+        seasonIds:
+          type: array
+          items:
+            type: string
         departmentTags:
           type: array
           items:
@@ -655,6 +671,10 @@ components:
           type: array
           items:
             type: string
+        seasonIds:
+          type: array
+          items:
+            type: string
         departmentTags:
           type: array
           items:
@@ -673,6 +693,9 @@ components:
           enum: [rights_in, rights_out]
         partnerId:
           type: string
+        platform:
+          type: string
+          nullable: true
         partnerName:
           type: string
         licensor:
@@ -761,6 +784,14 @@ components:
           nullable: true
         period:
           type: string
+        periodStart:
+          type: string
+          format: date
+          nullable: true
+        periodEnd:
+          type: string
+          format: date
+          nullable: true
         expectedDate:
           type: string
           format: date
@@ -769,12 +800,17 @@ components:
           type: string
           format: date
           nullable: true
-        amount:
+        amountReceived:
+          type: number
+          nullable: true
+        costAmount:
           type: number
           nullable: true
         status:
           type: string
           enum: [expected, received, overdue]
+        scheduleGenerated:
+          type: boolean
         documentPath:
           type: string
           nullable: true
@@ -791,6 +827,14 @@ components:
       properties:
         period:
           type: string
+        periodStart:
+          type: string
+          format: date
+          nullable: true
+        periodEnd:
+          type: string
+          format: date
+          nullable: true
         expectedDate:
           type: string
           format: date
@@ -799,12 +843,19 @@ components:
           type: string
           format: date
           nullable: true
-        amount:
+        amountReceived:
           type: number
+          minimum: 0
+          nullable: true
+        costAmount:
+          type: number
+          minimum: 0
           nullable: true
         status:
           type: string
           enum: [expected, received, overdue]
+        scheduleGenerated:
+          type: boolean
 
     UpdateRevenueReportRequest:
       type: object
@@ -819,8 +870,13 @@ components:
           type: string
           format: date
           nullable: true
-        amount:
+        amountReceived:
           type: number
+          minimum: 0
+          nullable: true
+        costAmount:
+          type: number
+          minimum: 0
           nullable: true
         status:
           type: string
@@ -832,57 +888,67 @@ components:
           type: string
           nullable: true
 
-    RoyaltyCalcResult:
+    ReviewedRevenueReport:
       type: object
-      required: [contractId, calculations]
+      required: [id, contractId, period, status, reviewStatus, createdAt]
+      properties:
+        id:
+          type: string
+        contractId:
+          type: string
+        period:
+          type: string
+        expectedDate:
+          type: string
+          format: date
+          nullable: true
+        receivedDate:
+          type: string
+          format: date
+          nullable: true
+        amountReceived:
+          type: number
+          nullable: true
+        costAmount:
+          type: number
+          nullable: true
+        status:
+          type: string
+          enum: [expected, received, overdue]
+        reviewStatus:
+          type: string
+          enum: [pending, reviewed, approved]
+        reviewedBy:
+          type: string
+          nullable: true
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+        documentPath:
+          type: string
+          nullable: true
+        documentName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    RevenueReviewQueue:
+      type: object
+      required: [contractId, partnerName, reports]
       properties:
         contractId:
           type: string
         partnerName:
           type: string
-        royaltyType:
-          type: string
-          nullable: true
-        royaltyDetails:
-          type: string
-          nullable: true
-        calculations:
+        reports:
           type: array
           items:
-            type: object
-            required: [reportId, period, revenueAmount, amountOwed, reviewStatus]
-            properties:
-              reportId:
-                type: string
-              period:
-                type: string
-              revenueAmount:
-                type: number
-                nullable: true
-              sharePercentage:
-                type: number
-                nullable: true
-              amountOwed:
-                type: number
-                nullable: true
-              reviewStatus:
-                type: string
-                enum: [pending, reviewed, approved]
-              reviewedBy:
-                type: string
-                nullable: true
-              reviewedAt:
-                type: string
-                format: date-time
-                nullable: true
-              documentPath:
-                type: string
-                nullable: true
-              documentName:
-                type: string
-                nullable: true
+            $ref: '#/components/schemas/ReviewedRevenueReport'
 
-    UpdateRoyaltyStatusRequest:
+    ReviewRevenueReportRequest:
       type: object
       required: [reportId, status]
       properties:
@@ -890,11 +956,11 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, reviewed, approved]
+          enum: [reviewed, approved]
 
     RightsCheckResult:
       type: object
-      required: [available, conflicts, grants]
+      required: [available, conflicts, grants, suggestions]
       properties:
         available:
           type: boolean
@@ -947,6 +1013,22 @@ components:
                 type: string
                 format: date
                 nullable: true
+              seasonIds:
+                type: array
+                items:
+                  type: string
+        suggestions:
+          type: object
+          required: [availableTerritories, availableDistributionTypes]
+          properties:
+            availableTerritories:
+              type: array
+              items:
+                type: string
+            availableDistributionTypes:
+              type: array
+              items:
+                type: string
 
     DashboardSummary:
       type: object
@@ -1977,8 +2059,8 @@ paths:
 
   /royalties/{contractId}:
     get:
-      operationId: getRoyaltyCalc
-      summary: Get royalty calculations for a contract (Finance/Admin)
+      operationId: getRevenueReviewQueue
+      summary: Get revenue reports and review status for a contract (Finance/Admin)
       parameters:
         - name: contractId
           in: path
@@ -1987,16 +2069,16 @@ paths:
             type: string
       responses:
         '200':
-          description: Royalty calculation results
+          description: Revenue report review queue
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoyaltyCalcResult'
+                $ref: '#/components/schemas/RevenueReviewQueue'
 
   /royalties/{contractId}/approve:
     post:
-      operationId: approveRoyalty
-      summary: Approve or review a royalty calculation (Finance/Admin)
+      operationId: reviewRevenueReport
+      summary: Mark a revenue report reviewed or approved (Finance/Admin)
       parameters:
         - name: contractId
           in: path
@@ -2008,14 +2090,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateRoyaltyStatusRequest'
+              $ref: '#/components/schemas/ReviewRevenueReportRequest'
       responses:
         '200':
           description: Updated status
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoyaltyCalcResult'
+                $ref: '#/components/schemas/ReviewedRevenueReport'
 
   /content:
     get:
@@ -2176,6 +2258,11 @@ paths:
           schema:
             type: string
             format: date
+        - name: seasonId
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         '200':
           description: Rights check result
@@ -2245,6 +2332,12 @@ paths:
           schema:
             type: string
             format: date
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
       responses:
         '200':
           description: Paginated audit log
@@ -2252,6 +2345,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedAuditLogs'
+            text/csv:
+              schema:
+                type: string
 
   /import/contracts:
     post:
@@ -2307,6 +2403,14 @@ paths:
           schema:
             type: string
             format: date
+        - name: platform
+          in: query
+          schema:
+            type: string
+        - name: territory
+          in: query
+          schema:
+            type: string
         - name: format
           in: query
           schema:

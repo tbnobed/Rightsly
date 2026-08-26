@@ -5,3 +5,4 @@
 - [api-server bundling quirks](api-server-bundling.md) — pdfkit must stay externalized in esbuild (reads .afm via __dirname); build success doesn't prove runtime works, curl-verify.
 - [Rights Check territory overlap](rights-check-territory-overlap.md) — Global requests overlap every grant; Global/empty grants overlap every request; comparisons are normalized.
 - [Contract date validation](contract-date-validation.md) — date-bounded terms require end >= start across create, partial update, UI, and CSV import.
+- [Content-scope integrity](season-scope-integrity.md) — never delete contract-referenced titles/seasons; missing scope records can erase or broaden rights.
