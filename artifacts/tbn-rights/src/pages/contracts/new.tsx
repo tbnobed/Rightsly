@@ -275,7 +275,7 @@ export default function NewContractWizard() {
         contentItemIds: selectedContentIds,
         seasonIds: selectedSeasonIds,
       };
-      if (user?.role === "admin" || user?.role === "finance") {
+      if (user?.role === "admin" || user?.role === "content_admin" || user?.role === "finance") {
         requestData.royaltyType = values.royaltyType || null;
         requestData.royaltyDetails = values.royaltyDetails || null;
         requestData.paymentTerms = values.paymentTerms || null;
@@ -301,7 +301,7 @@ export default function NewContractWizard() {
           hasAmendment: values.roHasAmendment,
           exclusivity: values.roExclusivity || null,
           reportingFrequency: values.roReportingFrequency || null,
-          ...((user?.role === "admin" || user?.role === "finance") ? { minPaymentThreshold:
+          ...((user?.role === "admin" || user?.role === "content_admin" || user?.role === "finance") ? { minPaymentThreshold:
             values.roMinPaymentThreshold && values.roMinPaymentThreshold !== ""
               ? Number(values.roMinPaymentThreshold)
               : null } : {}),
@@ -972,7 +972,7 @@ export default function NewContractWizard() {
               <CardTitle className="text-lg">Financials &amp; Reference</CardTitle>
             </CardHeader>
             <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {(user?.role === "admin" || user?.role === "finance") && <>
+              {(user?.role === "admin" || user?.role === "content_admin" || user?.role === "finance") && <>
               <FormField
                 control={form.control}
                 name="royaltyType"

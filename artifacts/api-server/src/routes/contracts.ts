@@ -13,6 +13,7 @@ import {
 } from "@workspace/db";
 import { eq, and, or, ilike, inArray, sql, count, lte, gte, asc, desc } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
+import { canViewFinancials } from "../lib/rolePolicy";
 import { logAudit } from "../lib/audit";
 import { validateContractDates } from "../lib/contractDates";
 import {
@@ -931,10 +932,6 @@ async function getContractById(id: string, role?: string) {
     updatedAt: c.updatedAt,
     createdByName: u?.name ?? null,
   };
-}
-
-function canViewFinancials(role?: string) {
-  return role === "admin" || role === "finance";
 }
 
 const namedSocialPlatforms = new Set(["Facebook", "Instagram", "TikTok", "Other"]);

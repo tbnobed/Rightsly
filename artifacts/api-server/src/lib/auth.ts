@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { isStrictAdmin, roleHasPermission } from "./rolePolicy";
 
 const JWT_SECRET = process.env.JWT_SECRET || "tbn-rights-secret-change-in-production";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
@@ -77,10 +78,22 @@ export function requireRole(...roles: string[]) {
       res.status(401).json({ message: "Unauthorized" });
       return;
     }
-    if (!roles.includes(req.user.role)) {
+    if (!roleHasPermission(req.user.role, roles)) {
       res.status(403).json({ message: "Forbidden: insufficient role" });
       return;
     }
     next();
   };
+}
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user) {
+    res.status(401).json({ message: "Unauthorized" });
+    return;
+  }
+  if (!isStrictAdmin(req.user.role)) {
+    res.status(403).json({ message: "Forbidden: insufficient role" });
+    return;
+  }
+  next();
 }

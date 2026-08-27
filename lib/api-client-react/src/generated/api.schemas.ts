@@ -78,6 +78,7 @@ export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 export const UserRole = {
   admin: 'admin',
+  content_admin: 'content_admin',
   legal: 'legal',
   finance: 'finance',
   sales: 'sales',
@@ -110,6 +111,7 @@ export type CreateUserRequestRole = typeof CreateUserRequestRole[keyof typeof Cr
 
 export const CreateUserRequestRole = {
   admin: 'admin',
+  content_admin: 'content_admin',
   legal: 'legal',
   finance: 'finance',
   sales: 'sales',
@@ -126,6 +128,7 @@ export type UpdateUserRequestRole = typeof UpdateUserRequestRole[keyof typeof Up
 
 export const UpdateUserRequestRole = {
   admin: 'admin',
+  content_admin: 'content_admin',
   legal: 'legal',
   finance: 'finance',
   sales: 'sales',

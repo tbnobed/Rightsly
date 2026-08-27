@@ -109,7 +109,7 @@ export default function Royalties() {
     } catch { toast({ variant: "destructive", title: "Could not download document" }); }
   };
 
-  if (user?.role !== "admin" && user?.role !== "finance") return <div className="p-12 text-center"><AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" /><h2 className="text-2xl font-bold">Access Denied</h2><p className="text-slate-500 mt-2">Only Finance and Admin roles can manage revenue reports.</p></div>;
+  if (user?.role !== "admin" && user?.role !== "content_admin" && user?.role !== "finance") return <div className="p-12 text-center"><AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" /><h2 className="text-2xl font-bold">Access Denied</h2><p className="text-slate-500 mt-2">Only Finance and Admin roles can manage revenue reports.</p></div>;
   return <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6">
     <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv" onChange={(event) => event.target.files?.[0] && void upload(event.target.files[0])} />
     <div><h1 className="text-3xl font-bold tracking-tight">Revenue Reports</h1><p className="text-slate-500 mt-1">Record received revenue and costs, then complete the review workflow.</p></div>

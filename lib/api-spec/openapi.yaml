@@ -159,7 +159,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, legal, finance, sales]
+          enum: [admin, content_admin, legal, finance, sales]
         isActive:
           type: boolean
         createdAt:
@@ -182,7 +182,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, legal, finance, sales]
+          enum: [admin, content_admin, legal, finance, sales]
 
     UpdateUserRequest:
       type: object
@@ -191,7 +191,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, legal, finance, sales]
+          enum: [admin, content_admin, legal, finance, sales]
         isActive:
           type: boolean
         password:

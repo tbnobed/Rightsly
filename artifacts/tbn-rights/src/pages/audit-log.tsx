@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
 import { AlertCircle, History, Clock, FileDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { isStrictAdmin } from "@/lib/permissions";
 
 export default function AuditLog() {
   const { user } = useAuth();
@@ -26,6 +27,7 @@ export default function AuditLog() {
   const { data: result, isLoading } = useListAuditLogs(params, {
     query: {
       queryKey: getListAuditLogsQueryKey(params),
+      enabled: isStrictAdmin(user?.role),
     }
   });
   const auditEntries = typeof result === "string" ? [] : result?.data ?? [];

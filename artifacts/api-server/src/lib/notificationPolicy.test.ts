@@ -4,6 +4,7 @@ import { canReceiveRevenueNotifications, canSendNotificationEmails } from "./not
 
 test("revenue notifications are restricted to financial roles", () => {
   assert.equal(canReceiveRevenueNotifications("admin"), true);
+  assert.equal(canReceiveRevenueNotifications("content_admin"), true);
   assert.equal(canReceiveRevenueNotifications("finance"), true);
   assert.equal(canReceiveRevenueNotifications("legal"), false);
   assert.equal(canReceiveRevenueNotifications("sales"), false);

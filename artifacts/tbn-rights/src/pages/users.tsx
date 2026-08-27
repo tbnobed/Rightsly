@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { UserFormDialog } from "@/components/user-form-dialog";
 import type { User } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
+import { isStrictAdmin } from "@/lib/permissions";
 
 export default function Users() {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export default function Users() {
   const { data: result, isLoading } = useListUsers(undefined, {
     query: {
       queryKey: getListUsersQueryKey(),
+      enabled: isStrictAdmin(user?.role),
     }
   });
 
@@ -39,6 +41,7 @@ export default function Users() {
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin': return <Badge className="bg-red-100 text-red-800 border-none"><Shield className="w-3 h-3 mr-1" /> Admin</Badge>;
+      case 'content_admin': return <Badge className="bg-purple-100 text-purple-800 border-none"><Shield className="w-3 h-3 mr-1" /> Content Admin</Badge>;
       case 'finance': return <Badge className="bg-emerald-100 text-emerald-800 border-none">Finance</Badge>;
       case 'legal': return <Badge className="bg-blue-100 text-blue-800 border-none">Legal</Badge>;
       case 'sales': return <Badge className="bg-amber-100 text-amber-800 border-none">Sales</Badge>;

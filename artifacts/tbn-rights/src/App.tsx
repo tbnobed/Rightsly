@@ -28,6 +28,7 @@ import ContactsList from '@/pages/contacts/index';
 import { PwaInstallProvider } from '@/hooks/use-pwa-install';
 import { PwaInstallBanner } from '@/components/pwa-install';
 import { useAuth } from '@/contexts/auth';
+import { isStrictAdmin } from '@/lib/permissions';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,8 +72,8 @@ function AuthenticatedRouter() {
         <Route path="/royalties" component={Royalties} />
         <Route path="/reports" component={Reports} />
         <Route path="/import" component={ImportData} />
-        <Route path="/audit-log" component={AuditLog} />
-        <Route path="/users" component={Users} />
+        {isStrictAdmin(user.role) && <Route path="/audit-log" component={AuditLog} />}
+        {isStrictAdmin(user.role) && <Route path="/users" component={Users} />}
         <Route component={NotFound} />
       </Switch>
     </Shell>

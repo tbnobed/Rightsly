@@ -29,7 +29,7 @@ export const LoginResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
+  "role": zod.enum(['admin', 'content_admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "lastLogin": zod.coerce.date().nullish(),
@@ -56,7 +56,7 @@ export const AcceptInvitationResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
+  "role": zod.enum(['admin', 'content_admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "lastLogin": zod.coerce.date().nullish(),
@@ -88,7 +88,7 @@ export const GetMeResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
+  "role": zod.enum(['admin', 'content_admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "lastLogin": zod.coerce.date().nullish(),
@@ -112,7 +112,7 @@ export const ListUsersResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
+  "role": zod.enum(['admin', 'content_admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "lastLogin": zod.coerce.date().nullish(),
@@ -130,14 +130,14 @@ export const ListUsersResponse = zod.object({
 export const CreateUserBody = zod.object({
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'legal', 'finance', 'sales'])
+  "role": zod.enum(['admin', 'content_admin', 'legal', 'finance', 'sales'])
 })
 
 export const CreateUserResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
+  "role": zod.enum(['admin', 'content_admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "lastLogin": zod.coerce.date().nullish(),
@@ -156,7 +156,7 @@ export const GetUserResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
+  "role": zod.enum(['admin', 'content_admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "lastLogin": zod.coerce.date().nullish(),
@@ -173,7 +173,7 @@ export const UpdateUserParams = zod.object({
 
 export const UpdateUserBody = zod.object({
   "name": zod.string().optional(),
-  "role": zod.enum(['admin', 'legal', 'finance', 'sales']).optional(),
+  "role": zod.enum(['admin', 'content_admin', 'legal', 'finance', 'sales']).optional(),
   "isActive": zod.boolean().optional(),
   "password": zod.string().optional()
 })
@@ -182,7 +182,7 @@ export const UpdateUserResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'legal', 'finance', 'sales']),
+  "role": zod.enum(['admin', 'content_admin', 'legal', 'finance', 'sales']),
   "isActive": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "lastLogin": zod.coerce.date().nullish(),

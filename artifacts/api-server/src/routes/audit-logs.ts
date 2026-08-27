@@ -2,11 +2,11 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { auditLogsTable } from "@workspace/db";
 import { eq, and, gte, lte, count } from "drizzle-orm";
-import { authenticateToken, requireRole } from "../lib/auth";
+import { authenticateToken, requireAdmin } from "../lib/auth";
 import { csvCell } from "../lib/csv";
 
 const router = Router();
-router.use(authenticateToken, requireRole("admin"));
+router.use(authenticateToken, requireAdmin);
 
 // GET /api/audit-logs
 router.get("/", async (req, res) => {

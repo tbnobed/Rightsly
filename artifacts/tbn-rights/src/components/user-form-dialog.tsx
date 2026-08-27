@@ -38,7 +38,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 
-const roleEnum = z.enum(["admin", "legal", "finance", "sales"]);
+const roleEnum = z.enum(["admin", "content_admin", "legal", "finance", "sales"]);
 
 const createSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -183,7 +183,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
             />
 
             <div className={isEdit ? "grid grid-cols-2 gap-4" : ""}>
-              {isEdit && <FormField
+              <FormField
                 control={form.control}
                 name="role"
                 render={({ field }) => (
@@ -197,6 +197,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="content_admin">Content Admin</SelectItem>
                         <SelectItem value="legal">Legal</SelectItem>
                         <SelectItem value="finance">Finance</SelectItem>
                         <SelectItem value="sales">Sales</SelectItem>
@@ -205,7 +206,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
                     <FormMessage />
                   </FormItem>
                 )}
-              />}
+              />
 
               <FormField
                 control={form.control}

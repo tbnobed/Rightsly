@@ -67,9 +67,9 @@ export function ContactFormDialog({ open, onOpenChange, contact, readOnly = fals
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isEdit = !!contact;
-  const canEdit = user?.role === "admin" || user?.role === "legal";
+  const canEdit = user?.role === "admin" || user?.role === "content_admin" || user?.role === "legal";
   const isReadOnly = readOnly || !canEdit;
-  const canDelete = user?.role === "admin";
+  const canDelete = user?.role === "admin" || user?.role === "content_admin";
   const [isDeleting, setIsDeleting] = useState(false);
 
   const createContact = useCreateContact();

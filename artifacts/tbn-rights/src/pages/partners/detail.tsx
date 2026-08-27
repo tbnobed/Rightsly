@@ -33,8 +33,8 @@ export default function PartnerDetail() {
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const canEdit = user?.role === "admin" || user?.role === "legal";
-  const canDelete = user?.role === "admin";
+  const canEdit = user?.role === "admin" || user?.role === "content_admin" || user?.role === "legal";
+  const canDelete = user?.role === "admin" || user?.role === "content_admin";
 
   const deletePartner = useDeletePartner();
 

@@ -1,0 +1,1 @@
+ALTER TYPE "role" ADD VALUE IF NOT EXISTS 'content_admin' AFTER 'admin';

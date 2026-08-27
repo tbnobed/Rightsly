@@ -27,7 +27,7 @@ export default function ContactsList() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const canEdit = user?.role === "admin" || user?.role === "legal";
+  const canEdit = user?.role === "admin" || user?.role === "content_admin" || user?.role === "legal";
   const previewImport = usePreviewContactImport({ query: { enabled: importOpen, queryKey: getPreviewContactImportQueryKey() } });
   const approveImport = useApproveContactImport({
     mutation: {

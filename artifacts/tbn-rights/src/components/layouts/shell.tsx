@@ -6,6 +6,7 @@ import { LayoutDashboard, FileText, Users, Film, CheckCircle, Calculator, BarCha
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { InstallAppButton } from "@/components/pwa-install";
+import { canViewFinancials, roleLabel } from "@/lib/permissions";
 
 export function Shell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
@@ -88,7 +89,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               
-              {(user.role === "admin" || user.role === "finance") && (
+              {canViewFinancials(user.role) && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={location === "/royalties"}>
                     <Link href="/royalties">
@@ -141,7 +142,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </Avatar>
               <div className="flex flex-col flex-1 overflow-hidden">
                 <span className="text-sm font-medium truncate">{user.name}</span>
-                <span className="text-xs text-sidebar-foreground/60 truncate capitalize">{user.role}</span>
+                <span className="text-xs text-sidebar-foreground/60 truncate">{roleLabel(user.role)}</span>
               </div>
               <button onClick={logout} className="p-2 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors" aria-label="Logout" data-testid="button-logout">
                 <LogOut className="w-4 h-4" />

@@ -201,9 +201,9 @@ export default function ContractDetail() {
               </a>
             </Button>
           )}
-          {(user?.role === 'admin' || user?.role === 'legal') && (
+          {(user?.role === 'admin' || user?.role === 'content_admin' || user?.role === 'legal') && (
             <>
-              {user?.role === 'admin' && (
+              {(user?.role === 'admin' || user?.role === 'content_admin') && (
                 <Button
                   variant="outline"
                   className="bg-white text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -244,7 +244,7 @@ export default function ContractDetail() {
             <TabsTrigger value="content" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">Content</TabsTrigger>
             <TabsTrigger value="documents" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">Documents</TabsTrigger>
             <TabsTrigger value="amendments" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">Amendments</TabsTrigger>
-            {(user?.role === "admin" || user?.role === "finance") && <TabsTrigger value="financials" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">Financials</TabsTrigger>}
+            {(user?.role === "admin" || user?.role === "content_admin" || user?.role === "finance") && <TabsTrigger value="financials" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">Financials</TabsTrigger>}
           </TabsList>
         </div>
         
@@ -398,7 +398,7 @@ export default function ContractDetail() {
                 <CardTitle className="text-lg">Licensed Content</CardTitle>
                 <CardDescription>Titles covered by this agreement</CardDescription>
               </div>
-              {(user?.role === 'admin' || user?.role === 'legal') && (
+              {(user?.role === 'admin' || user?.role === 'content_admin' || user?.role === 'legal') && (
                 <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white">
                   <LinkIcon className="w-4 h-4 mr-2" /> Link Content
                 </Button>
@@ -447,7 +447,7 @@ export default function ContractDetail() {
         <TabsContent value="documents" className="mt-6">
           <ContractAttachments
             contractId={contract.id}
-            canEdit={user?.role === 'admin' || user?.role === 'legal'}
+            canEdit={user?.role === 'admin' || user?.role === 'content_admin' || user?.role === 'legal'}
           />
         </TabsContent>
 
@@ -455,7 +455,7 @@ export default function ContractDetail() {
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/80 pb-4">
               <CardTitle className="text-lg">Amendments</CardTitle>
-              {(user?.role === 'admin' || user?.role === 'legal') && (
+              {(user?.role === 'admin' || user?.role === 'content_admin' || user?.role === 'legal') && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -491,7 +491,7 @@ export default function ContractDetail() {
                               <FileText className="w-3 h-3 mr-1" /> Document
                             </Button>
                           )}
-                          {(user?.role === "admin" || user?.role === "legal") && (
+                          {(user?.role === "admin" || user?.role === "content_admin" || user?.role === "legal") && (
                             <Button
                               type="button"
                               variant="ghost"
@@ -520,7 +520,7 @@ export default function ContractDetail() {
           </Card>
         </TabsContent>
         
-        {(user?.role === "admin" || user?.role === "finance") && <TabsContent value="financials" className="mt-6">
+        {(user?.role === "admin" || user?.role === "content_admin" || user?.role === "finance") && <TabsContent value="financials" className="mt-6">
           <div className="p-8 bg-white border border-slate-200 rounded-lg shadow-sm">
             <h3 className="text-lg font-semibold text-slate-900 mb-5">Financial Terms</h3>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 text-sm">

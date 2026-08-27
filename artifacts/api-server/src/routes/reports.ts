@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { contractsTable, revenueReportsTable, partnersTable } from "@workspace/db";
 import { eq, and, or, lte, gte, desc, sql } from "drizzle-orm";
 import { authenticateToken, requireRole } from "../lib/auth";
+import { canViewFinancials } from "../lib/rolePolicy";
 import { sendPdfReport } from "../lib/pdfReport";
 import { displayContractStatus } from "../lib/contractStatus";
 import { formatRevenueAmount } from "../lib/revenueCore";
@@ -81,7 +82,7 @@ async function getContractsData(params: any) {
 // GET /api/reports/contracts
 router.get("/contracts", async (req, res) => {
   const { direction, status, from, to, platform, territory, format } = req.query as Record<string, string>;
-  const canViewFinancials = req.user?.role === "admin" || req.user?.role === "finance";
+  const hasFinancialAccess = canViewFinancials(req.user?.role);
   const data = (await getContractsData({
     direction,
     status,
@@ -93,7 +94,7 @@ router.get("/contracts", async (req, res) => {
   }))
     .map((contract) => displayContractStatus({
       ...contract,
-      royaltyType: canViewFinancials ? contract.royaltyType : null,
+      royaltyType: hasFinancialAccess ? contract.royaltyType : null,
     }));
 
   if (format === "xlsx") {
@@ -189,10 +190,10 @@ router.get("/expiring", async (req, res) => {
       )
     )
     .orderBy(contractsTable.endDate);
-  const canViewFinancials = req.user?.role === "admin" || req.user?.role === "finance";
+  const hasFinancialAccess = canViewFinancials(req.user?.role);
   const visibleData = data.map((contract) => ({
     ...contract,
-    royaltyType: canViewFinancials ? contract.royaltyType : null,
+      royaltyType: hasFinancialAccess ? contract.royaltyType : null,
   }));
 
   if (format === "xlsx") {

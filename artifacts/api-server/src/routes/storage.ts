@@ -15,6 +15,7 @@ import {
   ObjectStorageService,
 } from '../lib/objectStorage';
 import { isSalesVisibleContract } from '../lib/contractVisibility';
+import { canViewFinancials } from '../lib/rolePolicy';
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -212,7 +213,7 @@ router.get('/storage/objects/*path', authenticateToken, async (req: Request, res
         return;
       }
       const role = req.user?.role;
-      if (role !== 'admin' && role !== 'finance') {
+      if (!canViewFinancials(role)) {
         res.status(403).json({ error: 'Forbidden' });
         return;
       }

@@ -4,12 +4,13 @@ import crypto from "node:crypto";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq, ilike, count, sql } from "drizzle-orm";
-import { authenticateToken, requireRole } from "../lib/auth";
+import { authenticateToken, requireAdmin } from "../lib/auth";
+import { isValidUserRole } from "../lib/rolePolicy";
 import { logAudit } from "../lib/audit";
 import { sendInvitationEmail } from "../lib/email";
 
 const router = Router();
-router.use(authenticateToken, requireRole("admin"));
+router.use(authenticateToken, requireAdmin);
 
 // GET /api/users
 router.get("/", async (req, res) => {
@@ -41,8 +42,8 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   const { email, name, role } = req.body;
 
-  if (!email || !name || !role) {
-    res.status(400).json({ message: "email, name, and role are required" });
+  if (!email || !name || !isValidUserRole(role)) {
+    res.status(400).json({ message: "email, name, and a valid role are required" });
     return;
   }
 
@@ -105,6 +106,10 @@ router.put("/:id", async (req, res) => {
   const { name, role, isActive, password } = req.body;
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
+  if (role !== undefined && !isValidUserRole(role)) {
+    res.status(400).json({ message: "role must be a valid user role" });
+    return;
+  }
   if (name !== undefined) updates.name = name;
   if (role !== undefined) updates.role = role;
   if (isActive !== undefined) updates.isActive = isActive;

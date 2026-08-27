@@ -203,7 +203,7 @@ export async function runNotificationSweep() {
     DELETE FROM notifications n
     USING users u
     WHERE n.user_id = u.id
-      AND u.role NOT IN ('admin', 'finance')
+      AND u.role NOT IN ('admin', 'content_admin', 'finance')
       AND n.type IN ('report_expected', 'approval_needed')
   `);
   await db.execute(sql`

@@ -19,7 +19,9 @@ function calendarPlatforms(platforms: string[] | null, platform: string | null) 
 // GET /api/dashboard
 router.get("/", async (req, res) => {
   const period = (req.query.period as string) || "month";
-  const canViewFinancials = req.user?.role === "admin" || req.user?.role === "finance";
+  const canViewFinancials = req.user?.role === "admin"
+    || req.user?.role === "content_admin"
+    || req.user?.role === "finance";
   const salesOnly = req.user?.role === "sales";
 
   // Date-only, timezone-stable period boundaries (all math in UTC).

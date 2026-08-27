@@ -6,6 +6,7 @@ import { authenticateToken, requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 import { normalizeTitleRights, routeParam, validateContentYear } from "../lib/validation";
 import { normalizeContentType } from "../lib/rightsValidation";
+import { canViewFinancials } from "../lib/rolePolicy";
 
 const router = Router();
 router.use(authenticateToken);
@@ -435,10 +436,10 @@ router.get("/:id/contracts", async (req, res) => {
     .where(and(eq(contractContentTable.contentItemId, id), salesVisibility))
     .orderBy(desc(contractsTable.createdAt));
 
-  const canViewFinancials = req.user?.role === "admin" || req.user?.role === "finance";
+  const hasFinancialAccess = canViewFinancials(req.user?.role);
   res.json(contracts.map((contract) => ({
     ...contract,
-    royaltyType: canViewFinancials ? contract.royaltyType : null,
+      royaltyType: hasFinancialAccess ? contract.royaltyType : null,
   })));
 });
 
