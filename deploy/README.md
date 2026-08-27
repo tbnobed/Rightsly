@@ -1,6 +1,6 @@
 # Rightsly — Docker deployment (Ubuntu Server 24.04)
 
-Three containers:
+Three long-running containers (plus one-shot setup and backup services):
 
 - **web** — nginx serving the built React frontend, proxying `/api/*` to the API
 - **api** — Express API server (Node 24, prebuilt bundle)
@@ -90,11 +90,60 @@ docker compose restart api          # restart one service
 docker exec -it rightsly-db-1 psql -U rightsly rightsly   # SQL console
 ```
 
-**Backups** — the database lives in the `rightsly_pgdata` volume:
+### Automated backups and recovery
+
+The dedicated `backup` service creates a PostgreSQL **custom-format** dump and
+a compressed archive of the uploaded-object volume. Each dated backup directory
+contains `database.dump`, `objectdata.tar.gz`, `SHA256SUMS`, and `MANIFEST.txt`.
+It uses a concurrency lock and writes to a temporary directory before an atomic
+rename. Completed backups older than 30 days are removed (override with
+`BACKUP_RETENTION_DAYS` in `.env`).
+
+Choose a host-owned backup location before deployment; it is bind-mounted into
+the one-shot backup container and must be protected like production data:
 
 ```bash
-docker exec rightsly-db-1 pg_dump -U rightsly rightsly | gzip > backup-$(date +%F).sql.gz
+mkdir -p /srv/rightsly-backups
+chmod 700 /srv/rightsly-backups
+# deploy/.env
+BACKUP_DIR=/srv/rightsly-backups
+BACKUP_RETENTION_DAYS=30
 ```
+
+Install this host crontab entry to run daily at **2:00 AM** (replace the path
+with the absolute checkout path). Docker Compose reads credentials from `.env`;
+the command does not put them in cron arguments or output.
+
+```cron
+0 2 * * * cd /opt/rightsly/deploy && /usr/bin/docker compose run --rm backup >> /var/log/rightsly-backup.log 2>&1
+```
+
+An operator may run the same `docker compose run --rm backup` command manually.
+Do not use `docker compose up` for this one-shot service.
+
+**Safe restore procedure (maintenance window required):**
+
+1. Stop application writers: `docker compose stop api web`. Do not delete the
+   existing database or object volume until the backup checksum is verified.
+2. Verify the selected backup: `cd /srv/rightsly-backups/rightsly-YYYY-MM-DD &&
+   sha256sum -c SHA256SUMS`. Abort on any failure.
+3. Create a fresh, empty target database/volume or preserve the current volumes
+   as a rollback point. Never restore over the only copy of production data.
+4. Restore the database from a PostgreSQL client/container compatible with
+   PostgreSQL 16:
+   `pg_restore --clean --if-exists --no-owner --no-acl --exit-on-error --dbname="$PGDATABASE" database.dump`.
+   Configure the target with protected `PGHOST`, `PGDATABASE`, `PGUSER`, and
+   `PGPASSWORD` environment variables (or a protected `.pgpass` file), never
+   with a password command-line argument or shell history.
+5. Extract `objectdata.tar.gz` into the configured `objectdata` volume at
+   `/var/lib/rightsly/objects`, preserving paths and ownership appropriate for
+   the API's `app` user. Do not expose this volume through nginx.
+6. Start `api` and `web`, validate a representative attachment and application
+   login, then retain the pre-restore volumes until validation is complete.
+
+The backup is for operational disaster recovery; use the authorized in-app
+portable export for data exchange. Full Admin exports include every application
+table. Content Admin exports exclude the restricted Users and Audit Log datasets.
 
 ## Notes
 

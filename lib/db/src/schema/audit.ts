@@ -7,6 +7,7 @@ export const auditActionEnum = pgEnum("audit_action", [
   "status_change",
   "login",
   "logout",
+  "export",
 ]);
 
 export const auditLogsTable = pgTable("audit_logs", {

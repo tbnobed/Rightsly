@@ -2,7 +2,7 @@ import { db } from "@workspace/db";
 import { auditLogsTable } from "@workspace/db";
 import type { AuthenticatedUser } from "./auth";
 
-type AuditAction = "create" | "update" | "delete" | "status_change" | "login" | "logout";
+type AuditAction = "create" | "update" | "delete" | "status_change" | "login" | "logout" | "export";
 
 export async function logAudit(params: {
   user?: AuthenticatedUser | null;

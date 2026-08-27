@@ -61,6 +61,14 @@ FROM deps AS db-tools
 CMD ["pnpm", "--filter", "@workspace/db", "run", "push-force"]
 
 # ---------------------------------------------------------------------------
+# Target: backup — PostgreSQL dump plus the self-hosted object-store volume.
+# Invoked explicitly by host cron; it does not run with the application.
+# ---------------------------------------------------------------------------
+FROM postgres:16-alpine AS backup
+COPY --chmod=755 deploy/backup.sh /usr/local/bin/rightsly-backup
+ENTRYPOINT ["/usr/local/bin/rightsly-backup"]
+
+# ---------------------------------------------------------------------------
 # Target: web — nginx serving the built SPA and proxying /api
 # ---------------------------------------------------------------------------
 FROM nginx:1.27-alpine AS web

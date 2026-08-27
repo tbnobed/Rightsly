@@ -4574,6 +4574,84 @@ export function useGetContractReport<TData = Awaited<ReturnType<typeof getContra
 
 
 
+export const getExportAllDataUrl = () => {
+
+
+
+
+  return `/api/reports/export-all`
+}
+
+/**
+ * Available to Admin and Content Admin. The ZIP contains formula-safe CSVs, README, and manifest. Password and invitation token hashes and uploaded file binaries are excluded.
+ * @summary Download a portable ZIP export of all application data
+ */
+export const exportAllData = async ( options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getExportAllDataUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportAllDataQueryKey = () => {
+    return [
+    `/api/reports/export-all`
+    ] as const;
+    }
+
+
+export const getExportAllDataQueryOptions = <TData = Awaited<ReturnType<typeof exportAllData>>, TError = ErrorType<Error>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAllData>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportAllDataQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportAllData>>> = ({ signal }) => exportAllData({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportAllData>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportAllDataQueryResult = NonNullable<Awaited<ReturnType<typeof exportAllData>>>
+export type ExportAllDataQueryError = ErrorType<Error>
+
+
+/**
+ * @summary Download a portable ZIP export of all application data
+ */
+
+export function useExportAllData<TData = Awaited<ReturnType<typeof exportAllData>>, TError = ErrorType<Error>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportAllData>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportAllDataQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetExpiringReportUrl = (params?: GetExpiringReportParams,) => {
   const normalizedParams = new URLSearchParams();
 

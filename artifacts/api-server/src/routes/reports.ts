@@ -1,15 +1,73 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { contractsTable, revenueReportsTable, partnersTable } from "@workspace/db";
-import { eq, and, or, lte, gte, desc, sql } from "drizzle-orm";
+import { eq, and, or, lte, gte, desc, sql, asc, getTableColumns } from "drizzle-orm";
+import archiver from "archiver";
 import { authenticateToken, requireRole } from "../lib/auth";
+import { logAudit } from "../lib/audit";
 import { canViewFinancials } from "../lib/rolePolicy";
 import { sendPdfReport } from "../lib/pdfReport";
 import { displayContractStatus } from "../lib/contractStatus";
 import { formatRevenueAmount } from "../lib/revenueCore";
+import {
+  exportHeaders, portableExportTablesForRole, PORTABLE_EXPORT_README, sanitizePortableRecord, serializePortableCsv,
+} from "../lib/portableExport";
 
 const router = Router();
 router.use(authenticateToken);
+
+// GET /api/reports/export-all
+// This portable export intentionally includes metadata, not uploaded object bytes.
+router.get("/export-all", (req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, private");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  next();
+}, requireRole("admin", "content_admin"), async (req, res): Promise<void> => {
+  const datasets: { filename: string; csv: string; rowCount: number; headers: string[] }[] = [];
+  for (const spec of portableExportTablesForRole(req.user!.role)) {
+    const columns = getTableColumns(spec.table) as Record<string, any>;
+    const rows = await (db.select().from(spec.table as any).orderBy(
+      ...spec.orderBy.map((field) => asc(columns[field])),
+    ) as Promise<Record<string, unknown>[]>);
+    const headers = exportHeaders(spec);
+    datasets.push({
+      filename: spec.filename,
+      csv: serializePortableCsv(headers, rows.map(sanitizePortableRecord)),
+      rowCount: rows.length,
+      headers,
+    });
+  }
+
+  const generatedAt = new Date().toISOString();
+  const manifest = {
+    format: "rightsly-portable-export-v1",
+    generatedAt,
+    tables: datasets.map(({ filename, rowCount, headers }) => ({ filename, rowCount, headers })),
+    excludedFields: ["users.passwordHash", "users.inviteTokenHash"],
+    roleRestrictedDatasets: req.user?.role === "admin" ? [] : ["users.csv", "audit_logs.csv"],
+    attachments: "Metadata and object paths only; uploaded binaries are excluded.",
+  };
+  await logAudit({
+    user: req.user,
+    action: "export",
+    entityType: "portable_export",
+    after: { tableCount: datasets.length, rowCount: datasets.reduce((total, item) => total + item.rowCount, 0) },
+  });
+
+  res.setHeader("Content-Type", "application/zip");
+  res.setHeader("Content-Disposition", `attachment; filename="rightsly-export-${generatedAt.slice(0, 10)}.zip"`);
+  const archive = archiver("zip", { zlib: { level: 9 } });
+  archive.on("error", (error: Error) => {
+    req.log.error({ err: error }, "Portable export archive failed");
+    res.destroy(error);
+  });
+  archive.pipe(res);
+  for (const dataset of datasets) archive.append(dataset.csv, { name: dataset.filename, date: new Date(0) });
+  archive.append(PORTABLE_EXPORT_README, { name: "README.txt", date: new Date(0) });
+  archive.append(`${JSON.stringify(manifest, null, 2)}\n`, { name: "manifest.json", date: new Date(0) });
+  await archive.finalize();
+});
 
 async function getContractsData(params: any) {
   const { direction, status, from, to, platform, territory, salesOnly } = params;

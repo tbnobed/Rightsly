@@ -1442,7 +1442,7 @@ components:
           nullable: true
         action:
           type: string
-          enum: [create, update, delete, status_change, login, logout]
+          enum: [create, update, delete, status_change, login, logout, export]
         entityType:
           type: string
         entityId:
@@ -3152,6 +3152,37 @@ paths:
                   generatedAt:
                     type: string
                     format: date-time
+
+  /reports/export-all:
+    get:
+      operationId: exportAllData
+      summary: Download a portable ZIP export of all application data
+      description: Available to Admin and Content Admin. The ZIP contains formula-safe CSVs, README, and manifest. Password and invitation token hashes and uploaded file binaries are excluded.
+      responses:
+        '200':
+          description: Portable data ZIP
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-store response directive
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Admin or Content Admin required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /reports/expiring:
     get:

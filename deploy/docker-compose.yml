@@ -82,6 +82,31 @@ services:
     volumes:
       - objectdata:${LOCAL_OBJECT_STORAGE_DIR:-/var/lib/rightsly/objects}
 
+  # Run explicitly: docker compose run --rm backup
+  # The host directory is deliberately bind-mounted, rather than a Docker
+  # volume, so backups remain available if the compose project is removed.
+  backup:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: backup
+    profiles: ["backup"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: ${POSTGRES_DB:-rightsly}
+      PGUSER: ${POSTGRES_USER:-rightsly}
+      # Used by pg_dump through its environment, never passed as a CLI arg.
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - objectdata:/objectdata:ro
+      - ${BACKUP_DIR:-./backups}:/backups
+
   web:
     build:
       context: ..

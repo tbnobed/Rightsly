@@ -1946,7 +1946,7 @@ export const ListAuditLogsResponse = zod.object({
   "userId": zod.string().nullish(),
   "userEmail": zod.string().nullish(),
   "userName": zod.string().nullish(),
-  "action": zod.enum(['create', 'update', 'delete', 'status_change', 'login', 'logout']),
+  "action": zod.enum(['create', 'update', 'delete', 'status_change', 'login', 'logout', 'export']),
   "entityType": zod.string(),
   "entityId": zod.string().nullable(),
   "beforeSummary": zod.string().nullish(),
@@ -2104,6 +2104,13 @@ export const GetContractReportResponse = zod.object({
 })).optional(),
   "generatedAt": zod.coerce.date().optional()
 })
+
+
+/**
+ * Available to Admin and Content Admin. The ZIP contains formula-safe CSVs, README, and manifest. Password and invitation token hashes and uploaded file binaries are excluded.
+ * @summary Download a portable ZIP export of all application data
+ */
+export const ExportAllDataResponse = zod.unknown()
 
 
 /**

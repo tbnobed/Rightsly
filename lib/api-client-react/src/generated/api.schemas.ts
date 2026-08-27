@@ -1456,6 +1456,7 @@ export const AuditLogAction = {
   status_change: 'status_change',
   login: 'login',
   logout: 'logout',
+  export: 'export',
 } as const;
 
 export interface AuditLog {

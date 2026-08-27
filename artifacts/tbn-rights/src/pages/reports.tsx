@@ -7,6 +7,7 @@ import { useGetContractReport, getGetContractReportQueryKey, useGetExpiringRepor
 import { FileDown, FileText, CalendarClock, DollarSign, Filter, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/auth";
 import { matchesContractStatusFilter } from "./reports/report-filters";
 
 type SortField = "partner" | "contentCount" | "status" | "platform" | "territory" | "royaltyType" | "endDate";
@@ -50,6 +51,7 @@ const STATUS_CHIPS: { key: string; label: string }[] = [
 
 export default function Reports() {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [sortField, setSortField] = useState<SortField>("partner");
@@ -62,6 +64,7 @@ export default function Reports() {
   const [contractTerritory, setContractTerritory] = useState("all");
   const [expiringDays, setExpiringDays] = useState("90");
   const [royaltyStatus, setRoyaltyStatus] = useState("all");
+  const [isExportingAll, setIsExportingAll] = useState(false);
 
   const { data: contractReport, isLoading: isLoadingReport } = useGetContractReport(undefined, {
     query: { queryKey: getGetContractReportQueryKey() },
@@ -191,12 +194,75 @@ export default function Reports() {
     }
   };
 
+  const handleExportAll = async () => {
+    setIsExportingAll(true);
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch("/api/reports/export-all", {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        throw new Error(res.status === 403
+          ? "You don't have permission to export all data."
+          : `Export failed (HTTP ${res.status}).`);
+      }
+      const blob = await res.blob();
+      const match = (res.headers.get("Content-Disposition") ?? "").match(/filename="?([^";]+)"?/);
+      const filename = match?.[1]?.trim() || "rightsly-export.zip";
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Export complete", description: filename });
+    } catch (err) {
+      toast({
+        title: "Export failed",
+        description: err instanceof Error ? err.message : "Unexpected error.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExportingAll(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Reports Hub</h1>
         <p className="text-slate-500 mt-1">Generate and export system data.</p>
       </div>
+
+       {(user?.role === "admin" || user?.role === "content_admin") && (
+         <Card className="border-amber-300 bg-amber-50/50 shadow-sm">
+           <CardHeader className="pb-3">
+             <CardTitle>Export All Data</CardTitle>
+             <CardDescription>
+                Download one portable ZIP with CSVs for every dataset your role may access, plus a README and manifest.
+             </CardDescription>
+           </CardHeader>
+           <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+             <p className="max-w-3xl text-sm text-amber-900">
+               <strong>Warning:</strong> This export can contain sensitive business and personal data. Store it securely.
+               Passwords, invitation-token hashes, and uploaded file binaries are not included; attachment metadata and paths are.
+                {user?.role === "content_admin" && " Users and Audit Log data remain restricted to full Admins."}
+             </p>
+             <Button
+               className="shrink-0 bg-slate-900 text-white hover:bg-slate-800"
+               onClick={handleExportAll}
+               disabled={isExportingAll}
+               data-testid="button-export-all-data"
+             >
+               <FileDown className="mr-2 h-4 w-4" />
+               {isExportingAll ? "Preparing ZIP…" : "Export All Data"}
+             </Button>
+           </CardContent>
+         </Card>
+       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         
