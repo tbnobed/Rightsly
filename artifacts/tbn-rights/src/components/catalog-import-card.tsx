@@ -67,7 +67,7 @@ export function CatalogImportCard() {
             <FileSpreadsheet className="h-5 w-5" />
           </div>
           <div>
-            <CardTitle>Import TBN Content Catalog</CardTitle>
+            <CardTitle>TBN master catalog workbook</CardTitle>
             <CardDescription className="mt-1">
               Import the Metadata sheet from the TBN master catalog. Titles, seasons,
               episodes, IDs, credits, dates, genres, formats, and ratings are preserved.

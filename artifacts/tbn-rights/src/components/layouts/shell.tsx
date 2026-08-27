@@ -112,7 +112,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 <SidebarMenuButton asChild isActive={location === "/import"}>
                   <Link href="/import">
                     <Upload className="w-4 h-4 mr-2" />
-                    <span>Import</span>
+                      <span>Import Contracts</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

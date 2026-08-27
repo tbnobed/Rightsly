@@ -87,7 +87,7 @@ export default function ContentList() {
         </div>
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Button asChild variant="outline" className="border-slate-300 bg-white text-slate-800 hover:bg-slate-50 flex-1 sm:flex-none" data-testid="button-import-content">
-            <Link href="/import">
+            <Link href="/content/import">
               <Upload className="w-4 h-4 mr-2" />
               Import Content
             </Link>

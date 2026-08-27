@@ -10,7 +10,6 @@ import {
   type ImportResult,
 } from "@workspace/api-client-react";
 import { Progress } from "@/components/ui/progress";
-import { CatalogImportCard } from "@/components/catalog-import-card";
 
 export default function ImportData() {
   const [file, setFile] = useState<File | null>(null);
@@ -144,16 +143,15 @@ export default function ImportData() {
   return (
     <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Bulk Import</h1>
-        <p className="text-slate-500 mt-1">Import the TBN content catalog or legacy contracts.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">Import Contracts</h1>
+        <p className="text-slate-500 mt-1">Validate and import legacy contract records from a CSV file.</p>
       </div>
-
-      <CatalogImportCard />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-2 border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
-            <CardTitle className="text-lg">Upload Data</CardTitle>
+            <CardTitle className="text-lg">Upload Contract CSV</CardTitle>
+            <CardDescription>Select a completed Rightsly contract-import template.</CardDescription>
           </CardHeader>
           <CardContent className="p-6">
             {!result ? (

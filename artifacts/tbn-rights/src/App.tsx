@@ -16,6 +16,7 @@ import PartnersList from '@/pages/partners/index';
 import PartnerDetail from '@/pages/partners/detail';
 import ContentList from '@/pages/content/index';
 import ContentDetail from '@/pages/content/detail';
+import ImportContentCatalog from '@/pages/content/import';
 import RightsCheck from '@/pages/rights-check';
 import Royalties from '@/pages/royalties';
 import Reports from '@/pages/reports';
@@ -63,6 +64,7 @@ function AuthenticatedRouter() {
         <Route path="/partners" component={PartnersList} />
         <Route path="/partners/:id" component={PartnerDetail} />
         <Route path="/content" component={ContentList} />
+        <Route path="/content/import" component={ImportContentCatalog} />
         <Route path="/content/:id" component={ContentDetail} />
         <Route path="/rights-check" component={RightsCheck} />
         <Route path="/contacts" component={ContactsList} />
