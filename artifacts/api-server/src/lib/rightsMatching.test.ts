@@ -66,6 +66,9 @@ test("canonical rights values and documented aliases are recognized", () => {
   assert.equal(isRecognizedTerritory("LATAM"), true);
   assert.equal(isRecognizedDistributionType("Linear"), true);
   assert.equal(isRecognizedDistributionType("Linear Broadcast"), true);
+  assert.equal(isRecognizedDistributionType("Digital FAST Feed"), true);
+  assert.equal(isRecognizedDistributionType("Linear COM Feed"), true);
+  assert.equal(isRecognizedDistributionType("BD/DVD"), true);
 });
 
 test("territory filter storage keys include canonical and legacy aliases", () => {

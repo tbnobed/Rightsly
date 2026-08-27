@@ -20,6 +20,7 @@ import { format, parseISO } from "date-fns";
 import { Search, Plus, FileText, Filter, ChevronRight, ArrowUp, ArrowDown, ChevronsLeft, ChevronsRight, Upload } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { getContractsPagination, getNextContractSort } from "./contracts-list-state";
+import { contractTerritoryLabels } from "@/lib/rights-options";
 
 export default function ContractsList() {
   const [, setLocation] = useLocation();
@@ -250,10 +251,16 @@ export default function ContractsList() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1 max-w-[200px]">
-                        {contract.territories && contract.territories.length > 0 ? (
+                        {contractTerritoryLabels(contract.territories, contract.otherTerritories).length > 0 ? (
                           <>
-                            <span className="text-slate-600 truncate block">{contract.territories.slice(0, 2).join(', ')}</span>
-                            {contract.territories.length > 2 && <span className="text-xs text-slate-400">+{contract.territories.length - 2}</span>}
+                            <span className="text-slate-600 truncate block">
+                              {contractTerritoryLabels(contract.territories, contract.otherTerritories).slice(0, 2).join(", ")}
+                            </span>
+                            {contractTerritoryLabels(contract.territories, contract.otherTerritories).length > 2 && (
+                              <span className="text-xs text-slate-400">
+                                +{contractTerritoryLabels(contract.territories, contract.otherTerritories).length - 2}
+                              </span>
+                            )}
                           </>
                         ) : (
                           <span className="text-slate-400 italic">None</span>

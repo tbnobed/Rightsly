@@ -999,6 +999,9 @@ components:
           type: array
           items:
             type: string
+        otherTerritories:
+          type: string
+          nullable: true
         distributionTypes:
           type: array
           items:

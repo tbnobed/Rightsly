@@ -268,6 +268,7 @@ router.get("/", contractReadGuard, async (req, res) => {
         endType: contractsTable.endType,
         endDate: contractsTable.endDate,
         territories: contractsTable.territories,
+        otherTerritories: contractsTable.otherTerritories,
         distributionTypes: contractsTable.distributionTypes,
         royaltyType: contractsTable.royaltyType,
         departmentTags: contractsTable.departmentTags,

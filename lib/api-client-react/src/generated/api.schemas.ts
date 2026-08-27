@@ -1204,6 +1204,7 @@ export interface ContractListItem {
   endType: ContractListItemEndType;
   endDate?: string | null;
   territories?: string[];
+  otherTerritories?: string | null;
   distributionTypes?: string[];
   royaltyType?: string | null;
   contentCount?: number;

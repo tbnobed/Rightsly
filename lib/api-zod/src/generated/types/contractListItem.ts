@@ -21,6 +21,7 @@ export interface ContractListItem {
   endType: ContractListItemEndType;
   endDate?: Date | null;
   territories?: string[];
+  otherTerritories?: string | null;
   distributionTypes?: string[];
   royaltyType?: string | null;
   contentCount?: number;

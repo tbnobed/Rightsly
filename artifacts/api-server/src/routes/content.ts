@@ -425,6 +425,7 @@ router.get("/:id/contracts", async (req, res) => {
       endType: contractsTable.endType,
       endDate: contractsTable.endDate,
       territories: contractsTable.territories,
+      otherTerritories: contractsTable.otherTerritories,
       distributionTypes: contractsTable.distributionTypes,
       royaltyType: contractsTable.royaltyType,
       contentCount: sql<number>`1`.mapWith(Number),

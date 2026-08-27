@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { uploadFile } from "@/lib/upload-file";
+import { contractTerritoryLabels, distributionLabel } from "@/lib/rights-options";
 
 export default function ContractDetail() {
   const { id } = useParams<{ id: string }>();
@@ -289,19 +290,22 @@ export default function ContractDetail() {
                       <dt className="text-sm font-medium text-slate-500 flex items-center gap-1.5"><Globe className="w-4 h-4" /> Territories</dt>
                       <dd className="text-sm text-slate-900 col-span-2">
                         <div className="flex flex-wrap gap-1.5">
-                          {contract.territories?.map(t => (
+                          {contractTerritoryLabels(contract.territories, contract.otherTerritories).map(t => (
                             <Badge key={t} variant="secondary" className="bg-slate-200 text-slate-700 hover:bg-slate-200">{t}</Badge>
-                          )) || <span className="text-slate-400 italic">None specified</span>}
+                          ))}
+                          {contractTerritoryLabels(contract.territories, contract.otherTerritories).length === 0 && (
+                            <span className="text-slate-400 italic">None specified</span>
+                          )}
                         </div>
-                        {contract.otherTerritories && <p className="mt-2 text-slate-600 text-xs">{contract.otherTerritories}</p>}
                       </dd>
                     </div>
                     <div className="px-6 py-4 grid grid-cols-3 gap-4">
                       <dt className="text-sm font-medium text-slate-500">Distribution</dt>
                       <dd className="text-sm text-slate-900 col-span-2 flex flex-wrap gap-1.5">
                         {contract.distributionTypes?.map(d => (
-                          <Badge key={d} variant="outline" className="border-slate-300 text-slate-700">{d}</Badge>
-                        )) || <span className="text-slate-400 italic">None specified</span>}
+                          <Badge key={d} variant="outline" className="border-slate-300 text-slate-700">{distributionLabel(d)}</Badge>
+                        ))}
+                        {!contract.distributionTypes?.length && <span className="text-slate-400 italic">None specified</span>}
                       </dd>
                     </div>
                   </dl>

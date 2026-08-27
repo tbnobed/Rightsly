@@ -6,7 +6,7 @@ export const TERRITORIES = [
   "India", "France", "Germany", "Italy", "Spain",
 ] as const;
 export const DISTRIBUTION_TYPES = [
-  "SVOD", "AVOD", "TVOD", "FAST", "Linear Broadcast", "VOD", "Broadcast",
+  "SVOD", "AVOD", "TVOD", "FAST", "Linear Broadcast", "BD/DVD", "VOD", "Broadcast",
 ] as const;
 
 const territoryAliases: Record<string, string> = {
@@ -19,7 +19,10 @@ const territoryAliases: Record<string, string> = {
 };
 const distributionAliases: Record<string, string> = {
   svod: "SVOD", avod: "AVOD", tvod: "TVOD", fast: "FAST", vod: "VOD",
+  "digital fast feed": "FAST",
   linear: "Linear Broadcast", "linear broadcast": "Linear Broadcast",
+  "linear com feed": "Linear Broadcast",
+  "bd/dvd": "BD/DVD", "bd dvd": "BD/DVD", "blu-ray/dvd": "BD/DVD", "blu ray/dvd": "BD/DVD",
   broadcast: "Broadcast", television: "Broadcast",
 };
 const regionCountries: Record<string, string[]> = {

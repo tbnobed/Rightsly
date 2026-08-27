@@ -23,6 +23,7 @@ import {
 import { useAuth } from "@/contexts/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { contractTerritoryLabels, distributionLabel } from "@/lib/rights-options";
 
 function formatTitleRight(duration: number | null, term: "months" | "years" | "in_perpetuity" | null, customTerm: string | null) {
   if (term === "in_perpetuity") return "In Perpetuity";
@@ -297,8 +298,14 @@ export default function ContentDetail() {
                           <StatusBadge status={contract.status} />
                         </div>
                         <div className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span className="flex items-center"><Globe className="w-3.5 h-3.5 mr-1" /> {contract.territories?.slice(0, 2).join(', ') || 'Global'}</span>
-                          <span className="flex items-center"><LayoutList className="w-3.5 h-3.5 mr-1" /> {contract.distributionTypes?.slice(0, 2).join(', ') || 'All'}</span>
+                          <span className="flex items-center">
+                            <Globe className="w-3.5 h-3.5 mr-1" />
+                            {contractTerritoryLabels(contract.territories, contract.otherTerritories).slice(0, 2).join(", ") || "Global"}
+                          </span>
+                          <span className="flex items-center">
+                            <LayoutList className="w-3.5 h-3.5 mr-1" />
+                            {contract.distributionTypes?.slice(0, 2).map(distributionLabel).join(", ") || "All"}
+                          </span>
                         </div>
                       </div>
                       <ChevronRight className="w-5 h-5 text-slate-400" />
