@@ -7,6 +7,7 @@ import { useGetContractReport, getGetContractReportQueryKey, useGetExpiringRepor
 import { FileDown, FileText, CalendarClock, DollarSign, Filter, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { matchesContractStatusFilter } from "./reports/report-filters";
 
 type SortField = "partner" | "contentCount" | "status" | "platform" | "territory" | "royaltyType" | "endDate";
 type SortDir = "asc" | "desc";
@@ -85,7 +86,7 @@ export default function Reports() {
     const data: ReportContract[] = (contractReport?.data ?? []) as ReportContract[];
     const filtered = data.filter((c) =>
         (activeFilters.length === 0 || activeFilters.some((f) =>
-          f === "auto_renew" ? c.endType === "auto_renew" : c.status === f
+          matchesContractStatusFilter(c, f)
         )) &&
         (contractPlatform === "all" || c.platform === contractPlatform) &&
         (contractTerritory === "all" || c.territories?.includes(contractTerritory))
