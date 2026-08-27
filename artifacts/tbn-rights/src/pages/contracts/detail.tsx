@@ -89,7 +89,7 @@ export default function ContractDetail() {
       return;
     }
     const token = localStorage.getItem("auth_token");
-    const response = await fetch(`${import.meta.env.BASE_URL}api/storage${documentUrl}`, {
+    const response = await fetch(`/api/storage${documentUrl}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
     if (!response.ok) throw new Error("Failed to download document");
@@ -157,7 +157,7 @@ export default function ContractDetail() {
   };
 
   if (isLoading) {
-    return <div className="p-8 max-w-7xl mx-auto"><Skeleton className="h-12 w-1/3 mb-6" /><Skeleton className="h-64 w-full" /></div>;
+    return <div className="p-4 sm:p-8 max-w-7xl mx-auto"><Skeleton className="h-12 w-1/3 mb-6" /><Skeleton className="h-64 w-full" /></div>;
   }
 
   if (!contract) {
@@ -173,7 +173,7 @@ export default function ContractDetail() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
           <Button variant="ghost" size="sm" asChild className="mb-4 text-slate-500 -ml-3">
@@ -193,7 +193,7 @@ export default function ContractDetail() {
           </div>
           <p className="text-slate-500 font-mono text-sm">ID: {contract.id}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {contract.documentUrl && (
             <Button variant="outline" className="bg-white" asChild>
               <a href={contract.documentUrl} target="_blank" rel="noreferrer">
@@ -238,13 +238,15 @@ export default function ContractDetail() {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className={`grid w-full max-w-xl ${user?.role === "admin" || user?.role === "finance" ? "grid-cols-5" : "grid-cols-4"} bg-slate-200/50 p-1`}>
-          <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
-          <TabsTrigger value="content" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Content</TabsTrigger>
-          <TabsTrigger value="documents" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Documents</TabsTrigger>
-          <TabsTrigger value="amendments" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Amendments</TabsTrigger>
-          {(user?.role === "admin" || user?.role === "finance") && <TabsTrigger value="financials" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">Financials</TabsTrigger>}
-        </TabsList>
+        <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <TabsList className="inline-flex min-w-max h-10 items-center justify-start bg-slate-200/50 p-1 rounded-md">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">Overview</TabsTrigger>
+            <TabsTrigger value="content" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">Content</TabsTrigger>
+            <TabsTrigger value="documents" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">Documents</TabsTrigger>
+            <TabsTrigger value="amendments" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">Amendments</TabsTrigger>
+            {(user?.role === "admin" || user?.role === "finance") && <TabsTrigger value="financials" className="data-[state=active]:bg-white data-[state=active]:shadow-sm px-4">Financials</TabsTrigger>}
+          </TabsList>
+        </div>
         
         <TabsContent value="overview" className="mt-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

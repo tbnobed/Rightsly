@@ -58,7 +58,7 @@ export default function AuditLog() {
       if (params.from) query.set("from", params.from);
       if (params.to) query.set("to", params.to);
       const token = localStorage.getItem("auth_token");
-      const response = await fetch(`${import.meta.env.BASE_URL}api/audit-logs?${query}`, {
+      const response = await fetch(`/api/audit-logs?${query}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!response.ok) throw new Error(response.status === 403 ? "You don't have permission to export audit logs." : `Export failed (HTTP ${response.status}).`);
@@ -79,7 +79,7 @@ export default function AuditLog() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Audit Log</h1>
@@ -88,9 +88,9 @@ export default function AuditLog() {
       </div>
 
       <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-wrap items-center gap-3 bg-slate-50/50">
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 bg-slate-50/50">
           <Select value={action} onValueChange={setAction}>
-            <SelectTrigger className="w-[180px] bg-white border-slate-200">
+            <SelectTrigger className="w-full sm:w-[180px] bg-white border-slate-200">
               <SelectValue placeholder="Action Type" />
             </SelectTrigger>
             <SelectContent>
@@ -104,7 +104,7 @@ export default function AuditLog() {
             </SelectContent>
           </Select>
           <Select value={entityType} onValueChange={setEntityType}>
-            <SelectTrigger className="w-[180px] bg-white border-slate-200" data-testid="select-audit-entity-type">
+            <SelectTrigger className="w-full sm:w-[180px] bg-white border-slate-200" data-testid="select-audit-entity-type">
               <SelectValue placeholder="Entity Type" />
             </SelectTrigger>
             <SelectContent>
@@ -115,20 +115,22 @@ export default function AuditLog() {
               <SelectItem value="revenue_report">Revenue Report</SelectItem>
             </SelectContent>
           </Select>
-          <label className="text-xs text-slate-500">
-            From
-            <input type="date" value={from} onChange={(event) => setFrom(event.target.value)} className="ml-2 h-9 rounded-md border border-slate-200 bg-white px-2 text-sm" data-testid="input-audit-from" />
-          </label>
-          <label className="text-xs text-slate-500">
-            To
-            <input type="date" value={to} onChange={(event) => setTo(event.target.value)} className="ml-2 h-9 rounded-md border border-slate-200 bg-white px-2 text-sm" data-testid="input-audit-to" />
-          </label>
-          <Button variant="outline" className="ml-auto bg-white" onClick={exportCsv} data-testid="button-export-audit-csv">
+          <div className="flex items-center gap-3 flex-wrap">
+            <label className="text-xs text-slate-500 flex items-center">
+              From
+              <input type="date" value={from} onChange={(event) => setFrom(event.target.value)} className="ml-2 h-9 rounded-md border border-slate-200 bg-white px-2 text-sm" data-testid="input-audit-from" />
+            </label>
+            <label className="text-xs text-slate-500 flex items-center">
+              To
+              <input type="date" value={to} onChange={(event) => setTo(event.target.value)} className="ml-2 h-9 rounded-md border border-slate-200 bg-white px-2 text-sm" data-testid="input-audit-to" />
+            </label>
+          </div>
+          <Button variant="outline" className="w-full sm:w-auto sm:ml-auto bg-white" onClick={exportCsv} data-testid="button-export-audit-csv">
             <FileDown className="mr-2 h-4 w-4" /> Export CSV
           </Button>
         </div>
         
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 bg-slate-50 uppercase border-b border-slate-100">
               <tr>

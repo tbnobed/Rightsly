@@ -26,7 +26,7 @@ const emptyForm: ReportForm = { period: "", expectedDate: null, receivedDate: nu
 
 async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem("auth_token");
-  const response = await fetch(`${import.meta.env.BASE_URL}api${url}`, {
+  const response = await fetch(`/api${url}`, {
     ...options, headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options?.headers },
   });
   if (!response.ok) { const body = await response.json().catch(() => null); throw new Error(body?.message || body?.error || "Request failed"); }
@@ -102,7 +102,7 @@ export default function Royalties() {
     if (!report.documentPath) return;
     try {
       const token = localStorage.getItem("auth_token");
-      const response = await fetch(`${import.meta.env.BASE_URL}api/storage${report.documentPath}`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+      const response = await fetch(`/api/storage${report.documentPath}`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
       if (!response.ok) throw new Error("Download failed");
       const url = URL.createObjectURL(await response.blob()); const anchor = document.createElement("a");
       anchor.href = url; anchor.download = report.documentName || "revenue-report"; anchor.click(); URL.revokeObjectURL(url);
@@ -110,7 +110,7 @@ export default function Royalties() {
   };
 
   if (user?.role !== "admin" && user?.role !== "finance") return <div className="p-12 text-center"><AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" /><h2 className="text-2xl font-bold">Access Denied</h2><p className="text-slate-500 mt-2">Only Finance and Admin roles can manage revenue reports.</p></div>;
-  return <div className="p-8 max-w-6xl mx-auto space-y-6">
+  return <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-6">
     <input ref={fileInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv" onChange={(event) => event.target.files?.[0] && void upload(event.target.files[0])} />
     <div><h1 className="text-3xl font-bold tracking-tight">Revenue Reports</h1><p className="text-slate-500 mt-1">Record received revenue and costs, then complete the review workflow.</p></div>
     <Card><CardContent className="p-6 max-w-md"><Label>Contract</Label><Select value={selectedContractId} onValueChange={setSelectedContractId}><SelectTrigger className="mt-2"><SelectValue placeholder="Choose a contract" /></SelectTrigger><SelectContent>{contracts.map((contract) => <SelectItem key={contract.id} value={contract.id}>{contract.partnerName || contract.id}</SelectItem>)}</SelectContent></Select></CardContent></Card>
@@ -123,9 +123,9 @@ export default function Royalties() {
       <div><Label>Status</Label><Select value={form.status} onValueChange={(value) => setField("status", value as ReportForm["status"])}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="expected">Expected</SelectItem><SelectItem value="received">Received</SelectItem><SelectItem value="overdue">Overdue</SelectItem></SelectContent></Select></div>
       <div className="md:col-span-3 flex gap-2"><Button disabled={saving}>{editingId ? "Save changes" : "Create report"}</Button>{editingId && <Button type="button" variant="outline" onClick={() => { setEditingId(null); setForm(emptyForm); }}>Cancel</Button>}</div>
     </form></CardContent></Card>
-    <Card><CardHeader><CardTitle>Reports and approvals</CardTitle></CardHeader><CardContent className="p-0"><table className="w-full text-sm"><thead className="bg-slate-50 text-left"><tr><th className="p-4">Period</th><th className="p-4 text-right">Received</th><th className="p-4 text-right">Costs</th><th className="p-4">Review</th><th className="p-4">Document</th><th className="p-4" /></tr></thead><tbody>
+    <Card><CardHeader><CardTitle>Reports and approvals</CardTitle></CardHeader><CardContent className="p-0"><div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0"><table className="w-full text-sm"><thead className="bg-slate-50 text-left"><tr><th className="p-4">Period</th><th className="p-4 text-right">Received</th><th className="p-4 text-right">Costs</th><th className="p-4">Review</th><th className="p-4">Document</th><th className="p-4" /></tr></thead><tbody>
       {reports.map((report) => <tr key={report.id} className="border-t"><td className="p-4">{report.period}<div className="text-xs text-slate-500">{report.status}</div></td><td className="p-4 text-right">{report.amountReceived == null ? "—" : formatCurrency(report.amountReceived)}</td><td className="p-4 text-right">{report.costAmount == null ? "—" : formatCurrency(report.costAmount)}</td><td className="p-4"><Badge>{report.reviewStatus}</Badge><div className="mt-2 flex gap-1">{report.reviewStatus === "pending" && <Button size="sm" variant="outline" onClick={() => void review(report.id, "reviewed")}>Mark reviewed</Button>}{report.reviewStatus !== "approved" && <Button size="sm" onClick={() => void review(report.id, "approved")}><CheckCircle className="w-3 h-3 mr-1" />Approve</Button>}</div></td><td className="p-4"><div className="flex gap-1">{report.documentPath && <Button variant="ghost" size="sm" onClick={() => void download(report)}><FileText className="w-4 h-4" /></Button>}<Button variant="ghost" size="sm" onClick={() => { setPendingReportId(report.id); fileInputRef.current?.click(); }} disabled={requestUploadUrl.isPending}><Paperclip className="w-4 h-4" /></Button></div></td><td className="p-4 text-right"><Button variant="ghost" size="sm" onClick={() => edit(report)}><Pencil className="w-4 h-4" /></Button><Button variant="ghost" size="sm" onClick={() => void remove(report.id)}><Trash2 className="w-4 h-4 text-red-500" /></Button></td></tr>)}
       {!loading && reports.length === 0 && <tr><td colSpan={6} className="p-10 text-center text-slate-500">No reports yet. Create the first report above.</td></tr>}
-    </tbody></table></CardContent></Card></>}
+    </tbody></table></div></CardContent></Card></>}
   </div>;
 }

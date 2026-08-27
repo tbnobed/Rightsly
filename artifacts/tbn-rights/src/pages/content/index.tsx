@@ -79,20 +79,20 @@ export default function ContentList() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Content Catalog</h1>
           <p className="text-slate-500 mt-1">Central repository of all licensable media assets.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="outline" className="border-slate-300 bg-white text-slate-800 hover:bg-slate-50" data-testid="button-import-content">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <Button asChild variant="outline" className="border-slate-300 bg-white text-slate-800 hover:bg-slate-50 flex-1 sm:flex-none" data-testid="button-import-content">
             <Link href="/import">
               <Upload className="w-4 h-4 mr-2" />
               Import Content
             </Link>
           </Button>
-          <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => setAddOpen(true)} data-testid="button-add-content">
+          <Button className="bg-slate-900 hover:bg-slate-800 text-white flex-1 sm:flex-none" onClick={() => setAddOpen(true)} data-testid="button-add-content">
             <Plus className="w-4 h-4 mr-2" />
             Add Title
           </Button>
@@ -101,7 +101,7 @@ export default function ContentList() {
 
       <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex flex-col lg:flex-row gap-3 bg-slate-50/50">
-          <div className="relative flex-1">
+          <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input 
               placeholder="Search titles..." 
@@ -110,57 +110,62 @@ export default function ContentList() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="pl-9 bg-white border-slate-200"
+              className="pl-9 bg-white border-slate-200 w-full"
             />
           </div>
-          <Select value={type} onValueChange={(value) => {
-            setType(value);
-            setPage(1);
-          }}>
-            <SelectTrigger className="w-[180px] bg-white border-slate-200">
-              <SelectValue placeholder="Content Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="Film">Film</SelectItem>
-              <SelectItem value="TVSeries">TV Series</SelectItem>
-              <SelectItem value="TBN_FAST">TBN FAST</SelectItem>
-              <SelectItem value="TBN_Linear">TBN Linear</SelectItem>
-              <SelectItem value="WoF_FAST">WoF FAST</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={sortBy} onValueChange={(value) => {
-            setSortBy(value as ContentSortBy);
-            setSortDirection(value === "contractCount" || value === "updatedAt" ? "desc" : "asc");
-            setPage(1);
-          }}>
-            <SelectTrigger className="w-[180px] bg-white border-slate-200" data-testid="select-content-sort">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="title">Title</SelectItem>
-              <SelectItem value="type">Content type</SelectItem>
-              <SelectItem value="year">Release year</SelectItem>
-              <SelectItem value="contractCount">Active contract count</SelectItem>
-              <SelectItem value="updatedAt">Recently updated</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              setSortDirection((current) => current === "asc" ? "desc" : "asc");
+          <div className="grid grid-cols-2 lg:flex gap-3">
+            <Select value={type} onValueChange={(value) => {
+              setType(value);
               setPage(1);
-            }}
-            aria-label={`Sort ${sortDirection === "asc" ? "descending" : "ascending"}`}
-            data-testid="button-content-sort-direction"
-          >
-            {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-          </Button>
+            }}>
+              <SelectTrigger className="w-full lg:w-[180px] bg-white border-slate-200">
+                <SelectValue placeholder="Content Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="Film">Film</SelectItem>
+                <SelectItem value="TVSeries">TV Series</SelectItem>
+                <SelectItem value="TBN_FAST">TBN FAST</SelectItem>
+                <SelectItem value="TBN_Linear">TBN Linear</SelectItem>
+                <SelectItem value="WoF_FAST">WoF FAST</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2">
+              <Select value={sortBy} onValueChange={(value) => {
+                setSortBy(value as ContentSortBy);
+                setSortDirection(value === "contractCount" || value === "updatedAt" ? "desc" : "asc");
+                setPage(1);
+              }}>
+                <SelectTrigger className="w-full lg:w-[180px] bg-white border-slate-200" data-testid="select-content-sort">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="title">Title</SelectItem>
+                  <SelectItem value="type">Content type</SelectItem>
+                  <SelectItem value="year">Release year</SelectItem>
+                  <SelectItem value="contractCount">Active contract count</SelectItem>
+                  <SelectItem value="updatedAt">Recently updated</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="shrink-0"
+                onClick={() => {
+                  setSortDirection((current) => current === "asc" ? "desc" : "asc");
+                  setPage(1);
+                }}
+                aria-label={`Sort ${sortDirection === "asc" ? "descending" : "ascending"}`}
+                data-testid="button-content-sort-direction"
+              >
+                {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 bg-slate-50 uppercase border-b border-slate-100">
               <tr>
@@ -246,7 +251,7 @@ export default function ContentList() {
           </table>
         </div>
         {result && result.total > 0 && (
-          <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="text-sm text-slate-600" aria-live="polite">
               Showing <span className="font-medium text-slate-900">{(result.page - 1) * result.pageSize + 1}</span>
               {"–"}
@@ -254,7 +259,7 @@ export default function ContentList() {
               {" of "}
               <span className="font-medium text-slate-900">{result.total}</span> titles
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
               <span className="text-sm text-slate-600">Rows</span>
               <Select value={String(pageSize)} onValueChange={(value) => {
                 setPageSize(Number(value));
@@ -271,18 +276,20 @@ export default function ContentList() {
                 </SelectContent>
               </Select>
               <span className="min-w-[92px] text-center text-sm text-slate-600">Page {result.page} of {totalPages}</span>
-              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage(1)} aria-label="First page" data-testid="button-content-first-page">
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} aria-label="Previous page" data-testid="button-content-previous-page">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} aria-label="Next page" data-testid="button-content-next-page">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Last page" data-testid="button-content-last-page">
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage(1)} aria-label="First page" data-testid="button-content-first-page">
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} aria-label="Previous page" data-testid="button-content-previous-page">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} aria-label="Next page" data-testid="button-content-next-page">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Last page" data-testid="button-content-last-page">
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         )}

@@ -81,13 +81,13 @@ export default function PartnersList() {
   );
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Partners</h1>
           <p className="text-slate-500 mt-1">Manage licensors and licensees.</p>
         </div>
-        <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => setAddOpen(true)} data-testid="button-add-partner">
+        <Button className="bg-slate-900 hover:bg-slate-800 text-white w-full sm:w-auto" onClick={() => setAddOpen(true)} data-testid="button-add-partner">
           <Plus className="w-4 h-4 mr-2" />
           Add Partner
         </Button>
@@ -107,41 +107,42 @@ export default function PartnersList() {
               className="pl-9 bg-white border-slate-200"
             />
           </div>
-          <div className="flex items-center gap-2 md:ml-auto">
-            <Select
-              value={sortBy}
-              onValueChange={(value) => {
-                setSortBy(value as PartnerSortBy);
-                setSortDirection(value === "contractCount" || value === "updatedAt" ? "desc" : "asc");
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-[170px] bg-white" data-testid="select-partners-sort">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">Name</SelectItem>
-                <SelectItem value="type">Partner type</SelectItem>
-                <SelectItem value="website">Website</SelectItem>
-                <SelectItem value="contractCount">Active contract count</SelectItem>
-                <SelectItem value="updatedAt">Recently updated</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                setSortDirection((current) => current === "asc" ? "desc" : "asc");
-                setPage(1);
-              }}
-              aria-label={`Sort ${sortDirection === "asc" ? "descending" : "ascending"}`}
-              data-testid="button-partners-sort-direction"
-            >
-              {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-            </Button>
-          </div>
-          <div className="flex items-center rounded-md border border-slate-200 bg-white p-0.5">
+          <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto justify-between md:justify-start">
+            <div className="flex items-center gap-2 flex-1 sm:flex-none">
+              <Select
+                value={sortBy}
+                onValueChange={(value) => {
+                  setSortBy(value as PartnerSortBy);
+                  setSortDirection(value === "contractCount" || value === "updatedAt" ? "desc" : "asc");
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-[170px] bg-white" data-testid="select-partners-sort">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="type">Partner type</SelectItem>
+                  <SelectItem value="website">Website</SelectItem>
+                  <SelectItem value="contractCount">Active contract count</SelectItem>
+                  <SelectItem value="updatedAt">Recently updated</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  setSortDirection((current) => current === "asc" ? "desc" : "asc");
+                  setPage(1);
+                }}
+                aria-label={`Sort ${sortDirection === "asc" ? "descending" : "ascending"}`}
+                data-testid="button-partners-sort-direction"
+              >
+                {sortDirection === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+              </Button>
+            </div>
+            <div className="flex items-center rounded-md border border-slate-200 bg-white p-0.5 shrink-0">
             <Button
               variant={view === "grid" ? "secondary" : "ghost"}
               size="sm"
@@ -160,6 +161,7 @@ export default function PartnersList() {
             >
               <List className="w-4 h-4" />
             </Button>
+          </div>
           </div>
         </div>
 
@@ -261,7 +263,7 @@ export default function PartnersList() {
         )}
 
         {result && result.total > 0 && (
-          <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="text-sm text-slate-600" aria-live="polite">
               Showing <span className="font-medium text-slate-900">{(result.page - 1) * result.pageSize + 1}</span>
               {"–"}
@@ -269,7 +271,7 @@ export default function PartnersList() {
               {" of "}
               <span className="font-medium text-slate-900">{result.total}</span> partners
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
               <span className="text-sm text-slate-600">Rows</span>
               <Select
                 value={String(pageSize)}
@@ -291,18 +293,20 @@ export default function PartnersList() {
               <span className="min-w-[92px] text-center text-sm text-slate-600">
                 Page {result.page} of {totalPages}
               </span>
-              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage(1)} aria-label="First page" data-testid="button-partners-first-page">
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} aria-label="Previous page" data-testid="button-partners-previous-page">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} aria-label="Next page" data-testid="button-partners-next-page">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Last page" data-testid="button-partners-last-page">
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage(1)} aria-label="First page" data-testid="button-partners-first-page">
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} aria-label="Previous page" data-testid="button-partners-previous-page">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} aria-label="Next page" data-testid="button-partners-next-page">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage(totalPages)} aria-label="Last page" data-testid="button-partners-last-page">
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         )}

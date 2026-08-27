@@ -31,7 +31,7 @@ export default function Login() {
       cleanUrl.search = "";
       window.history.replaceState({}, "", cleanUrl.toString());
 
-      fetch(`${import.meta.env.BASE_URL}api/auth/sso/exchange`, {
+      fetch("/api/auth/sso/exchange", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: ssoCode }),
@@ -67,7 +67,7 @@ export default function Login() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${import.meta.env.BASE_URL}api/auth/sso/config`)
+    fetch("/api/auth/sso/config")
       .then((r) => r.json())
       .then((data: { enabled?: boolean }) => {
         if (!cancelled) setSsoEnabled(!!data?.enabled);
@@ -81,7 +81,7 @@ export default function Login() {
   }, []);
 
   const handleSsoLogin = () => {
-    window.location.href = `${import.meta.env.BASE_URL}api/auth/sso/login`;
+    window.location.href = "/api/auth/sso/login";
   };
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -139,6 +139,8 @@ export default function Login() {
                     <FormLabel className="text-[#c9d3ce]">Email address</FormLabel>
                     <FormControl>
                       <Input 
+                        type="email"
+                        autoComplete="email"
                         placeholder="name@tbn.tv" 
                         {...field} 
                         className="bg-[#0c1512]/60 border-[#2A3833] text-[#F4F1E9] placeholder:text-[#5F6B64] focus-visible:ring-[#1D9E75]"
@@ -158,6 +160,7 @@ export default function Login() {
                     <FormControl>
                       <Input 
                         type="password" 
+                        autoComplete="current-password"
                         placeholder="••••••••" 
                         {...field} 
                         className="bg-[#0c1512]/60 border-[#2A3833] text-[#F4F1E9] placeholder:text-[#5F6B64] focus-visible:ring-[#1D9E75]"

@@ -117,7 +117,7 @@ export default function ImportData() {
   const handleDownloadTemplate = async () => {
     try {
       const token = localStorage.getItem("auth_token");
-      const response = await fetch(`${import.meta.env.BASE_URL}api/import/template`, {
+      const response = await fetch("/api/import/template", {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       if (!response.ok) throw new Error(`Template download failed (HTTP ${response.status})`);
@@ -142,7 +142,7 @@ export default function ImportData() {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Bulk Import</h1>
         <p className="text-slate-500 mt-1">Import the TBN content catalog or legacy contracts.</p>

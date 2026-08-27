@@ -82,14 +82,14 @@ export default function ContractsList() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Contracts</h1>
           <p className="text-slate-500 mt-1">Manage and track all licensing agreements.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button asChild className="bg-amber-600 hover:bg-amber-700 text-white border-none" data-testid="button-new-contract">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <Button asChild className="bg-amber-600 hover:bg-amber-700 text-white border-none w-full sm:w-auto" data-testid="button-new-contract">
             <Link href="/contracts/new">
               <Plus className="w-4 h-4 mr-2" />
               New Contract
@@ -122,11 +122,11 @@ export default function ContractsList() {
               />
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 text-slate-400" />
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-3">
+            <div className="col-span-2 sm:col-span-1 flex items-center gap-2">
+              <Filter className="w-4 h-4 text-slate-400 hidden sm:block" />
                <Select value={direction} onValueChange={updateFilter(setDirection)}>
-                <SelectTrigger className="w-[140px] bg-white border-slate-200" data-testid="select-direction">
+                <SelectTrigger className="w-full sm:w-[140px] bg-white border-slate-200" data-testid="select-direction">
                   <SelectValue placeholder="Direction" />
                 </SelectTrigger>
                 <SelectContent>
@@ -137,7 +137,7 @@ export default function ContractsList() {
               </Select>
             </div>
              <Select value={status} onValueChange={updateFilter(setStatus)}>
-              <SelectTrigger className="w-[140px] bg-white border-slate-200" data-testid="select-status">
+              <SelectTrigger className="w-full sm:w-[140px] bg-white border-slate-200" data-testid="select-status">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -149,7 +149,7 @@ export default function ContractsList() {
               </SelectContent>
             </Select>
              <Select value={departmentTag} onValueChange={updateFilter(setDepartmentTag)}>
-              <SelectTrigger className="w-[160px] bg-white border-slate-200" data-testid="select-department-tag">
+              <SelectTrigger className="w-full sm:w-[160px] bg-white border-slate-200" data-testid="select-department-tag">
                 <SelectValue placeholder="Department" />
               </SelectTrigger>
               <SelectContent>
@@ -159,7 +159,7 @@ export default function ContractsList() {
               </SelectContent>
             </Select>
              <Select value={territory} onValueChange={updateFilter(setTerritory)}>
-               <SelectTrigger className="w-[160px] bg-white border-slate-200" data-testid="select-territory">
+               <SelectTrigger className="w-full sm:w-[160px] bg-white border-slate-200" data-testid="select-territory">
                  <SelectValue placeholder="Territory" />
                </SelectTrigger>
                <SelectContent>
@@ -168,7 +168,7 @@ export default function ContractsList() {
                </SelectContent>
              </Select>
              <Select value={licensor} onValueChange={updateFilter(setLicensor)}>
-               <SelectTrigger className="w-[160px] bg-white border-slate-200" data-testid="select-licensor">
+               <SelectTrigger className="w-full sm:w-[160px] bg-white border-slate-200" data-testid="select-licensor">
                  <SelectValue placeholder="Licensor" />
                </SelectTrigger>
                <SelectContent>
@@ -176,7 +176,7 @@ export default function ContractsList() {
                  {filterOptions?.licensors.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}
                </SelectContent>
              </Select>
-            <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none ml-auto">
+            <label className="col-span-2 sm:col-span-1 flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none sm:ml-auto mt-2 sm:mt-0">
               <Checkbox
                 checked={includeArchived}
                  onCheckedChange={(v) => { setIncludeArchived(v === true); resetPage(); }}
@@ -283,21 +283,21 @@ export default function ContractsList() {
         </div>
         
          {result && (
-           <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-slate-500">
-             <div className="flex items-center gap-3">
+           <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-sm text-slate-500">
+             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                <span aria-live="polite">
                  {result.total === 0 ? "No results" : `Showing ${pagination.start}–${pagination.end} of ${result.total}`}
                </span>
                <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); resetPage(); }}>
-                 <SelectTrigger className="w-[110px] bg-white" aria-label="Results per page"><SelectValue /></SelectTrigger>
+                 <SelectTrigger className="w-full sm:w-[110px] bg-white" aria-label="Results per page"><SelectValue /></SelectTrigger>
                  <SelectContent>
                    {[10, 20, 50, 100].map((value) => <SelectItem key={value} value={String(value)}>{value} / page</SelectItem>)}
                  </SelectContent>
                </Select>
              </div>
-             <div className="flex items-center gap-1" role="navigation" aria-label="Contracts pagination">
+             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1" role="navigation" aria-label="Contracts pagination">
                <Button variant="outline" size="icon" onClick={() => setPage(1)} disabled={page <= 1} aria-label="First page"><ChevronsLeft className="h-4 w-4" /></Button>
-               <Button variant="outline" size="sm" onClick={() => setPage((value) => value - 1)} disabled={page <= 1}>Previous</Button>
+               <Button variant="outline" size="sm" onClick={() => setPage((value) => value - 1)} disabled={page <= 1}>Prev</Button>
                <span className="px-2 tabular-nums">Page {page} of {totalPages}</span>
                <Button variant="outline" size="sm" onClick={() => setPage((value) => value + 1)} disabled={page >= totalPages}>Next</Button>
                <Button variant="outline" size="icon" onClick={() => setPage(totalPages)} disabled={page >= totalPages} aria-label="Last page"><ChevronsRight className="h-4 w-4" /></Button>

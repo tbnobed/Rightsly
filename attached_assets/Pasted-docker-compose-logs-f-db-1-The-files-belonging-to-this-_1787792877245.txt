@@ -1,0 +1,321 @@
+docker compose logs -f
+db-1  | The files belonging to this database system will be owned by user "postgres".
+db-1  | This user must also own the server process.
+db-1  |
+db-1  | The database cluster will be initialized with locale "en_US.utf8".
+db-1  | The default database encoding has accordingly been set to "UTF8".
+db-1  | The default text search configuration will be set to "english".
+db-1  |
+db-1  | Data page checksums are disabled.
+db-1  |
+db-1  | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+db-1  | creating subdirectories ... ok
+db-1  | selecting dynamic shared memory implementation ... posix
+db-1  | selecting default max_connections ... 100
+db-1  | selecting default shared_buffers ... 128MB
+db-1  | selecting default time zone ... UTC
+db-1  | creating configuration files ... ok
+db-1  | running bootstrap script ... ok
+db-1  | sh: locale: not found
+db-1  | 2026-07-17 18:33:10.104 UTC [35] WARNING:  no usable system locales were found
+db-1  | performing post-bootstrap initialization ... ok
+db-1  | syncing data to disk ... ok
+api-1  | {"level":30,"time":1787792822104,"pid":1,"hostname":"c865072ce6fb","port":8080,"msg":"Server listening"}
+db-1   |
+db-1   |
+db-1   | Success. You can now start the database server using:
+api-1  | {"level":30,"time":1787792825024,"pid":1,"hostname":"c865072ce6fb","req":{"id":1,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":13,"msg":"request completed"}
+api-1  | {"level":30,"time":1787792825960,"pid":1,"hostname":"c865072ce6fb","req":{"id":2,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":4,"msg":"request completed"}
+api-1  | {"level":30,"time":1787792826751,"pid":1,"hostname":"c865072ce6fb","req":{"id":3,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":3,"msg":"request completed"}
+api-1  | {"level":30,"time":1787792827224,"pid":1,"hostname":"c865072ce6fb","req":{"id":4,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":1,"msg":"request completed"}
+seed-1  | Seeding database...
+api-1   | {"level":30,"time":1787792827566,"pid":1,"hostname":"c865072ce6fb","req":{"id":5,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":3,"msg":"request completed"}
+seed-1  | Database already seeded — skipping. (Set SEED_FORCE=true to re-seed.)
+api-1      | {"level":30,"time":1787792827759,"pid":1,"hostname":"c865072ce6fb","req":{"id":6,"method":"GET","url":"/api/auth/me"},"res":{"statusCode":401},"responseTime":3,"msg":"request completed"}
+db-push-1  |
+db-push-1  | > @workspace/db@0.0.0 push-force /app/lib/db
+db-push-1  | > drizzle-kit push --force --config ./drizzle.config.ts
+db-push-1  |
+db-push-1  | Reading config file '/app/lib/db/drizzle.config.ts'
+db-push-1  | Using 'pg' driver for database querying
+db-push-1  | [⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[⣟] Pulling schema from database...
+[⡿] Pulling schema from database...
+[⢿] Pulling schema from database...
+db-1   |
+web-1      | /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+web-1      | /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+web-1      | /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+[✓] Pulling schema from database...
+db-1       |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+db-push-1  | [i] No changes detected
+web-1      | 10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf
+web-1      | 10-listen-on-ipv6-by-default.sh: info: /etc/nginx/conf.d/default.conf differs from the packaged version
+web-1      | /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh
+db-push-1  |
+db-push-1  | > @workspace/db@0.0.0 push-force /app/lib/db
+web-1      | /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+web-1      | /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
+web-1      | /docker-entrypoint.sh: Configuration complete; ready for start up
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: using the "epoll" event method
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: nginx/1.27.5
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: built by gcc 14.2.0 (Alpine 14.2.0)
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: OS: Linux 5.15.0-157-generic
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker processes
+db-1       |
+db-push-1  | > drizzle-kit push --force --config ./drizzle.config.ts
+db-push-1  |
+db-push-1  | Reading config file '/app/lib/db/drizzle.config.ts'
+db-push-1  | Using 'pg' driver for database querying
+db-push-1  | [⣷] Pulling schema from database...
+[⣯] Pulling schema from database...
+[⣟] Pulling schema from database...
+db-1       | initdb: warning: enabling "trust" authentication for local connections
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 29
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 30
+[⡿] Pulling schema from database...
+[⢿] Pulling schema from database...
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 31
+db-1       | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+db-1       | waiting for server to start....2026-07-17 18:33:10.852 UTC [41] LOG:  starting PostgreSQL 16.10 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+db-1       | 2026-07-17 18:33:10.853 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+db-1       | 2026-07-17 18:33:10.859 UTC [44] LOG:  database system was shut down at 2026-07-17 18:33:10 UTC
+db-1       | 2026-07-17 18:33:10.869 UTC [41] LOG:  database system is ready to accept connections
+db-1       |  done
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 32
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 33
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 34
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 35
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 36
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 37
+[✓] Pulling schema from database...
+db-push-1  | [i] No changes detected
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 38
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 39
+web-1      | 2026/08/27 01:07:01 [notice] 1#1: start worker process 40
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:04 +0000] "GET / HTTP/1.1" 200 776 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:04 +0000] "GET /manifest.webmanifest HTTP/1.1" 304 0 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:05 +0000] "GET /api/auth/me HTTP/1.1" 401 27 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:05 +0000] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:05 +0000] "GET /manifest.webmanifest HTTP/1.1" 304 0 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+db-1       | server started
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:05 +0000] "GET /api/auth/me HTTP/1.1" 401 27 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:06 +0000] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:06 +0000] "GET /manifest.webmanifest HTTP/1.1" 304 0 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:06 +0000] "GET /api/auth/me HTTP/1.1" 401 27 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:07 +0000] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+db-1       | CREATE DATABASE
+db-1       |
+db-1       |
+db-1       | /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+db-1       |
+db-1       | waiting for server to shut down...2026-07-17 18:33:11.046 UTC [41] LOG:  received fast shutdown request
+db-1       | .2026-07-17 18:33:11.047 UTC [41] LOG:  aborting any active transactions
+db-1       | 2026-07-17 18:33:11.053 UTC [41] LOG:  background worker "logical replication launcher" (PID 47) exited with exit code 1
+db-1       | 2026-07-17 18:33:11.053 UTC [42] LOG:  shutting down
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:07 +0000] "GET /manifest.webmanifest HTTP/1.1" 304 0 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:07 +0000] "GET /api/auth/me HTTP/1.1" 401 27 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:07 +0000] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:07 +0000] "GET /manifest.webmanifest HTTP/1.1" 304 0 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:07 +0000] "GET /api/auth/me HTTP/1.1" 401 27 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:07 +0000] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:07 +0000] "GET /manifest.webmanifest HTTP/1.1" 304 0 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+web-1      | 192.168.3.46 - - [27/Aug/2026:01:07:07 +0000] "GET /api/auth/me HTTP/1.1" 401 27 "https://rightsly.obtv.io/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" "76.219.194.165"
+db-1       | 2026-07-17 18:33:11.055 UTC [42] LOG:  checkpoint starting: shutdown immediate
+db-1       | 2026-07-17 18:33:11.098 UTC [42] LOG:  checkpoint complete: wrote 926 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.025 s, sync=0.016 s, total=0.045 s; sync files=301, longest=0.002 s, average=0.001 s; distance=4272 kB, estimate=4272 kB; lsn=0/191E928, redo lsn=0/191E928
+db-1       | 2026-07-17 18:33:11.108 UTC [41] LOG:  database system is shut down
+db-1       |  done
+db-1       | server stopped
+db-1       |
+db-1       | PostgreSQL init process complete; ready for start up.
+db-1       |
+db-1       | 2026-07-17 18:33:11.181 UTC [1] LOG:  starting PostgreSQL 16.10 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+db-1       | 2026-07-17 18:33:11.181 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+db-1       | 2026-07-17 18:33:11.181 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+db-1       | 2026-07-17 18:33:11.184 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+db-1       | 2026-07-17 18:33:11.188 UTC [57] LOG:  database system was shut down at 2026-07-17 18:33:11 UTC
+db-1       | 2026-07-17 18:33:11.199 UTC [1] LOG:  database system is ready to accept connections
+db-1       | 2026-07-17 18:38:11.253 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-07-17 18:38:28.433 UTC [55] LOG:  checkpoint complete: wrote 174 buffers (1.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=17.164 s, sync=0.012 s, total=17.180 s; sync files=113, longest=0.001 s, average=0.001 s; distance=891 kB, estimate=891 kB; lsn=0/19FD6E8, redo lsn=0/19FD6B0
+db-1       | 2026-07-17 19:38:12.563 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-07-17 19:38:13.679 UTC [55] LOG:  checkpoint complete: wrote 12 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.106 s, sync=0.003 s, total=1.116 s; sync files=10, longest=0.002 s, average=0.001 s; distance=1 kB, estimate=802 kB; lsn=0/19FDE38, redo lsn=0/19FDE00
+db-1       | 2026-07-17 19:43:12.777 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-07-17 19:43:13.690 UTC [55] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.906 s, sync=0.003 s, total=0.913 s; sync files=8, longest=0.002 s, average=0.001 s; distance=2 kB, estimate=722 kB; lsn=0/19FE708, redo lsn=0/19FE6D0
+db-1       | 2026-07-17 20:03:13.027 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-07-17 20:03:15.047 UTC [55] LOG:  checkpoint complete: wrote 21 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.011 s, sync=0.003 s, total=2.020 s; sync files=13, longest=0.002 s, average=0.001 s; distance=41 kB, estimate=654 kB; lsn=0/1A08EB8, redo lsn=0/1A08E80
+db-1       | 2026-08-26 01:49:43.169 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 01:49:43.580 UTC [55] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.404 s, sync=0.003 s, total=0.411 s; sync files=5, longest=0.002 s, average=0.001 s; distance=2 kB, estimate=589 kB; lsn=0/1A09998, redo lsn=0/1A09960
+db-1       | 2026-08-26 01:54:43.677 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 01:54:43.987 UTC [55] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.003 s, total=0.311 s; sync files=4, longest=0.002 s, average=0.001 s; distance=3 kB, estimate=530 kB; lsn=0/1A0A680, redo lsn=0/1A0A648
+db-1       | 2026-08-26 02:04:44.089 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 02:04:44.500 UTC [55] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.403 s, sync=0.002 s, total=0.411 s; sync files=5, longest=0.002 s, average=0.001 s; distance=3 kB, estimate=477 kB; lsn=0/1A0B568, redo lsn=0/1A0B530
+db-1       | 2026-08-26 02:09:44.600 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 02:09:45.614 UTC [55] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.006 s, sync=0.003 s, total=1.014 s; sync files=10, longest=0.002 s, average=0.001 s; distance=6 kB, estimate=430 kB; lsn=0/1A0D010, redo lsn=0/1A0CFD8
+db-1       | 2026-08-26 02:14:44.714 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 02:14:45.426 UTC [55] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.705 s, sync=0.003 s, total=0.712 s; sync files=8, longest=0.002 s, average=0.001 s; distance=6 kB, estimate=388 kB; lsn=0/1A0EAD0, redo lsn=0/1A0EA98
+db-1       | 2026-08-26 02:19:44.487 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 02:19:45.199 UTC [55] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.705 s, sync=0.003 s, total=0.713 s; sync files=8, longest=0.002 s, average=0.001 s; distance=8 kB, estimate=350 kB; lsn=0/1A10CE8, redo lsn=0/1A10CB0
+db-1       | 2026-08-26 02:24:44.299 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 02:24:44.610 UTC [55] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.002 s, total=0.311 s; sync files=4, longest=0.002 s, average=0.001 s; distance=7 kB, estimate=316 kB; lsn=0/1A12B98, redo lsn=0/1A12B60
+db-1       | 2026-08-26 04:09:46.345 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 04:09:48.664 UTC [55] LOG:  checkpoint complete: wrote 24 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.311 s, sync=0.003 s, total=2.319 s; sync files=18, longest=0.001 s, average=0.001 s; distance=130 kB, estimate=297 kB; lsn=0/1A335B8, redo lsn=0/1A33580
+db-1       | 2026-08-26 04:14:46.665 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 04:14:47.076 UTC [55] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.404 s, sync=0.003 s, total=0.412 s; sync files=5, longest=0.002 s, average=0.001 s; distance=7 kB, estimate=268 kB; lsn=0/1A35548, redo lsn=0/1A35510
+db-1       | 2026-08-26 04:19:46.176 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 04:19:46.890 UTC [55] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.705 s, sync=0.003 s, total=0.714 s; sync files=8, longest=0.002 s, average=0.001 s; distance=16 kB, estimate=243 kB; lsn=0/1A396D0, redo lsn=0/1A39698
+db-1       | 2026-08-26 04:29:47.009 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 04:29:47.722 UTC [55] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.705 s, sync=0.003 s, total=0.713 s; sync files=8, longest=0.002 s, average=0.001 s; distance=19 kB, estimate=220 kB; lsn=0/1A3E428, redo lsn=0/1A3E3F0
+db-1       | 2026-08-26 04:34:47.823 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 04:34:48.641 UTC [55] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.809 s, sync=0.003 s, total=0.818 s; sync files=9, longest=0.002 s, average=0.001 s; distance=10 kB, estimate=199 kB; lsn=0/1A41000, redo lsn=0/1A40FC8
+db-1       | 2026-08-26 09:34:52.809 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 09:34:53.120 UTC [55] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.003 s, total=0.312 s; sync files=4, longest=0.002 s, average=0.001 s; distance=7 kB, estimate=180 kB; lsn=0/1A42FC0, redo lsn=0/1A42F88
+db-1       | 2026-08-26 09:49:11.726 UTC [720038] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 09:49:11.726 UTC [720038] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 09:49:11.726 UTC [720038] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 09:49:19.470 UTC [720053] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 09:49:19.470 UTC [720053] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 09:49:19.470 UTC [720053] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 09:50:11.253 UTC [720129] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 09:50:11.253 UTC [720129] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 09:50:11.253 UTC [720129] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 11:54:54.553 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 11:55:00.690 UTC [55] LOG:  checkpoint complete: wrote 62 buffers (0.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=6.126 s, sync=0.007 s, total=6.138 s; sync files=44, longest=0.002 s, average=0.001 s; distance=288 kB, estimate=288 kB; lsn=0/1A8B360, redo lsn=0/1A8B2F0
+db-1       | 2026-08-26 11:59:54.791 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 11:59:56.308 UTC [55] LOG:  checkpoint complete: wrote 16 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.508 s, sync=0.003 s, total=1.518 s; sync files=11, longest=0.002 s, average=0.001 s; distance=21 kB, estimate=262 kB; lsn=0/1A907C0, redo lsn=0/1A90788
+db-1       | 2026-08-26 12:01:55.059 UTC [731598] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 12:01:55.059 UTC [731598] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:01:55.059 UTC [731598] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:02:05.950 UTC [731613] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 12:02:05.950 UTC [731613] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:02:05.950 UTC [731613] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:02:59.725 UTC [731697] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 12:02:59.725 UTC [731697] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:02:59.725 UTC [731697] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:04:51.294 UTC [731863] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 12:04:51.294 UTC [731863] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:04:51.294 UTC [731863] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:04:54.408 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 12:04:54.720 UTC [55] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.003 s, total=0.312 s; sync files=4, longest=0.002 s, average=0.001 s; distance=5 kB, estimate=236 kB; lsn=0/1A91ED8, redo lsn=0/1A91EA0
+db-1       | 2026-08-26 12:05:13.844 UTC [731893] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 12:05:13.844 UTC [731893] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:05:13.844 UTC [731893] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:07:07.455 UTC [732061] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 12:07:07.455 UTC [732061] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:07:07.455 UTC [732061] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:07:26.359 UTC [732078] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 12:07:26.359 UTC [732078] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:07:26.359 UTC [732078] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:08:08.290 UTC [732152] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 12:08:08.290 UTC [732152] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:08:08.290 UTC [732152] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:08:25.303 UTC [732169] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 12:08:25.303 UTC [732169] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:08:25.303 UTC [732169] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:08:25.329 UTC [732168] ERROR:  invalid input value for enum content_type: "TBN FAST"
+db-1       | 2026-08-26 12:08:25.329 UTC [732168] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:08:25.329 UTC [732168] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:08:25.347 UTC [732177] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 12:08:25.347 UTC [732177] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:08:25.347 UTC [732177] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:08:41.870 UTC [732202] ERROR:  invalid input value for enum content_type: "TV Series"
+db-1       | 2026-08-26 12:08:41.870 UTC [732202] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:08:41.870 UTC [732202] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:08:41.874 UTC [732201] ERROR:  invalid input value for enum content_type: "TBN Linear"
+db-1       | 2026-08-26 12:08:41.874 UTC [732201] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:08:41.874 UTC [732201] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:08:41.875 UTC [732200] ERROR:  invalid input value for enum content_type: "TBN FAST"
+db-1       | 2026-08-26 12:08:41.875 UTC [732200] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:08:41.875 UTC [732200] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:08:41.916 UTC [732203] ERROR:  invalid input value for enum content_type: "WoF FAST"
+db-1       | 2026-08-26 12:08:41.916 UTC [732203] CONTEXT:  unnamed portal parameter $2 = '...'
+db-1       | 2026-08-26 12:08:41.916 UTC [732203] STATEMENT:  insert into "content_items" ("id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, $7, default, default) returning "id", "type", "title", "description", "year", "has_cleans", "has_captions", "created_at", "updated_at"
+db-1       | 2026-08-26 12:09:54.820 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 12:09:55.231 UTC [55] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.403 s, sync=0.003 s, total=0.412 s; sync files=5, longest=0.002 s, average=0.001 s; distance=5 kB, estimate=213 kB; lsn=0/1A93558, redo lsn=0/1A93520
+db-1       | 2026-08-26 12:14:54.255 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 12:14:54.967 UTC [55] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.704 s, sync=0.003 s, total=0.713 s; sync files=7, longest=0.002 s, average=0.001 s; distance=6 kB, estimate=192 kB; lsn=0/1A95118, redo lsn=0/1A950E0
+db-1       | 2026-08-26 12:19:55.068 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 12:19:56.284 UTC [55] LOG:  checkpoint complete: wrote 15 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.208 s, sync=0.004 s, total=1.217 s; sync files=14, longest=0.002 s, average=0.001 s; distance=20 kB, estimate=175 kB; lsn=0/1A9A310, redo lsn=0/1A9A2D8
+db-1       | 2026-08-26 12:39:55.686 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 12:39:56.399 UTC [55] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.705 s, sync=0.003 s, total=0.714 s; sync files=8, longest=0.002 s, average=0.001 s; distance=17 kB, estimate=159 kB; lsn=0/1A9E908, redo lsn=0/1A9E8D0
+db-1       | 2026-08-26 12:44:55.499 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 12:44:57.418 UTC [55] LOG:  checkpoint complete: wrote 20 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.910 s, sync=0.003 s, total=1.919 s; sync files=14, longest=0.002 s, average=0.001 s; distance=18 kB, estimate=145 kB; lsn=0/1AA3188, redo lsn=0/1AA3150
+db-1       | 2026-08-26 12:49:55.519 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 12:49:56.432 UTC [55] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.906 s, sync=0.003 s, total=0.914 s; sync files=10, longest=0.002 s, average=0.001 s; distance=19 kB, estimate=132 kB; lsn=0/1AA8138, redo lsn=0/1AA8100
+db-1       | 2026-08-26 12:59:55.554 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 12:59:56.266 UTC [55] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.705 s, sync=0.003 s, total=0.713 s; sync files=8, longest=0.002 s, average=0.001 s; distance=19 kB, estimate=121 kB; lsn=0/1AACE48, redo lsn=0/1AACE10
+db-1       | 2026-08-26 13:04:55.366 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 13:04:56.882 UTC [55] LOG:  checkpoint complete: wrote 16 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.509 s, sync=0.003 s, total=1.517 s; sync files=15, longest=0.002 s, average=0.001 s; distance=46 kB, estimate=114 kB; lsn=0/1AB86A0, redo lsn=0/1AB8668
+db-1       | 2026-08-26 15:29:58.489 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 15:29:59.502 UTC [55] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.006 s, sync=0.003 s, total=1.013 s; sync files=11, longest=0.001 s, average=0.001 s; distance=18 kB, estimate=104 kB; lsn=0/1ABD170, redo lsn=0/1ABD138
+db-1       | 2026-08-26 15:34:58.602 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 15:35:00.016 UTC [55] LOG:  checkpoint complete: wrote 15 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.407 s, sync=0.003 s, total=1.415 s; sync files=13, longest=0.002 s, average=0.001 s; distance=26 kB, estimate=96 kB; lsn=0/1AC3CE0, redo lsn=0/1AC3CA8
+db-1       | 2026-08-26 15:39:58.116 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 15:39:58.827 UTC [55] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.704 s, sync=0.003 s, total=0.712 s; sync files=8, longest=0.002 s, average=0.001 s; distance=11 kB, estimate=88 kB; lsn=0/1AC6BA8, redo lsn=0/1AC6B70
+db-1       | 2026-08-26 15:44:58.928 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 15:44:59.338 UTC [55] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.403 s, sync=0.002 s, total=0.410 s; sync files=5, longest=0.002 s, average=0.001 s; distance=5 kB, estimate=79 kB; lsn=0/1AC8138, redo lsn=0/1AC8100
+db-1       | 2026-08-26 15:49:58.438 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 15:49:59.050 UTC [55] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.604 s, sync=0.003 s, total=0.612 s; sync files=7, longest=0.002 s, average=0.001 s; distance=12 kB, estimate=73 kB; lsn=0/1ACB230, redo lsn=0/1ACB1F8
+db-1       | 2026-08-26 16:39:58.932 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 16:40:01.454 UTC [55] LOG:  checkpoint complete: wrote 26 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.512 s, sync=0.004 s, total=2.522 s; sync files=25, longest=0.002 s, average=0.001 s; distance=107 kB, estimate=107 kB; lsn=0/1AE5E38, redo lsn=0/1AE5E00
+db-1       | 2026-08-26 16:49:58.617 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 16:50:00.233 UTC [55] LOG:  checkpoint complete: wrote 17 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.608 s, sync=0.003 s, total=1.616 s; sync files=14, longest=0.002 s, average=0.001 s; distance=65 kB, estimate=102 kB; lsn=0/1AF63F0, redo lsn=0/1AF63B8
+db-1       | 2026-08-26 16:54:58.295 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 16:54:58.604 UTC [55] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.002 s, total=0.309 s; sync files=3, longest=0.002 s, average=0.001 s; distance=1 kB, estimate=92 kB; lsn=0/1AF6AE8, redo lsn=0/1AF6AB0
+db-1       | 2026-08-26 16:59:58.631 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 16:59:59.844 UTC [55] LOG:  checkpoint complete: wrote 13 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.207 s, sync=0.002 s, total=1.214 s; sync files=11, longest=0.001 s, average=0.001 s; distance=27 kB, estimate=86 kB; lsn=0/1AFD928, redo lsn=0/1AFD8F0
+db-1       | 2026-08-26 17:09:59.041 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 17:09:59.753 UTC [55] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.705 s, sync=0.003 s, total=0.712 s; sync files=8, longest=0.002 s, average=0.001 s; distance=14 kB, estimate=79 kB; lsn=0/1B012C8, redo lsn=0/1B01290
+db-1       | 2026-08-26 17:19:59.954 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 17:20:00.464 UTC [55] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.504 s, sync=0.003 s, total=0.511 s; sync files=6, longest=0.002 s, average=0.001 s; distance=11 kB, estimate=72 kB; lsn=0/1B040A8, redo lsn=0/1B04070
+db-1       | 2026-08-26 17:29:59.665 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 17:30:07.906 UTC [55] LOG:  checkpoint complete: wrote 83 buffers (0.5%); 0 WAL file(s) added, 0 removed, 0 recycled; write=8.232 s, sync=0.006 s, total=8.242 s; sync files=53, longest=0.001 s, average=0.001 s; distance=440 kB, estimate=440 kB; lsn=0/1B723E8, redo lsn=0/1B723B0
+db-1       | 2026-08-26 17:34:59.973 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 17:35:04.400 UTC [55] LOG:  checkpoint complete: wrote 45 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=4.419 s, sync=0.003 s, total=4.427 s; sync files=17, longest=0.002 s, average=0.001 s; distance=199 kB, estimate=416 kB; lsn=0/1BA4348, redo lsn=0/1BA4310
+db-1       | 2026-08-26 17:59:59.814 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 18:00:00.426 UTC [55] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.604 s, sync=0.003 s, total=0.612 s; sync files=7, longest=0.002 s, average=0.001 s; distance=14 kB, estimate=376 kB; lsn=0/1BA7F40, redo lsn=0/1BA7F08
+db-1       | 2026-08-26 18:09:59.626 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 18:09:59.934 UTC [55] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.002 s, total=0.309 s; sync files=4, longest=0.001 s, average=0.001 s; distance=10 kB, estimate=339 kB; lsn=0/1BAA998, redo lsn=0/1BAA960
+db-1       | 2026-08-26 18:15:00.035 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 18:15:00.643 UTC [55] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.603 s, sync=0.002 s, total=0.609 s; sync files=6, longest=0.002 s, average=0.001 s; distance=16 kB, estimate=307 kB; lsn=0/1BAE9C8, redo lsn=0/1BAE990
+db-1       | 2026-08-26 18:20:00.744 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 18:20:00.951 UTC [55] LOG:  checkpoint complete: wrote 2 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.202 s, sync=0.002 s, total=0.208 s; sync files=1, longest=0.002 s, average=0.002 s; distance=5 kB, estimate=277 kB; lsn=0/1BB0110, redo lsn=0/1BB00D8
+db-1       | 2026-08-26 18:25:01.051 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 18:25:01.562 UTC [55] LOG:  checkpoint complete: wrote 6 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.504 s, sync=0.003 s, total=0.511 s; sync files=6, longest=0.002 s, average=0.001 s; distance=13 kB, estimate=250 kB; lsn=0/1BB3588, redo lsn=0/1BB3550
+db-1       | 2026-08-26 18:30:01.662 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 18:30:02.072 UTC [55] LOG:  checkpoint complete: wrote 5 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.403 s, sync=0.003 s, total=0.411 s; sync files=4, longest=0.002 s, average=0.001 s; distance=18 kB, estimate=227 kB; lsn=0/1BB8038, redo lsn=0/1BB7FE8
+db-1       | 2026-08-26 18:35:01.172 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 18:35:01.984 UTC [55] LOG:  checkpoint complete: wrote 9 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.804 s, sync=0.003 s, total=0.812 s; sync files=7, longest=0.002 s, average=0.001 s; distance=33 kB, estimate=208 kB; lsn=0/1BC0708, redo lsn=0/1BC06D0
+db-1       | 2026-08-26 18:40:02.084 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 18:40:03.097 UTC [55] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.006 s, sync=0.003 s, total=1.013 s; sync files=10, longest=0.001 s, average=0.001 s; distance=50 kB, estimate=192 kB; lsn=0/1BCCF88, redo lsn=0/1BCCF50
+db-1       | 2026-08-26 18:45:02.197 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 18:45:04.617 UTC [55] LOG:  checkpoint complete: wrote 25 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.412 s, sync=0.004 s, total=2.420 s; sync files=16, longest=0.002 s, average=0.001 s; distance=114 kB, estimate=184 kB; lsn=0/1BE9B48, redo lsn=0/1BE9B10
+db-1       | 2026-08-26 19:10:03.118 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 19:10:05.484 UTC [55] LOG:  checkpoint complete: wrote 24 buffers (0.1%); 1 WAL file(s) added, 0 removed, 0 recycled; write=2.312 s, sync=0.004 s, total=2.366 s; sync files=18, longest=0.002 s, average=0.001 s; distance=120 kB, estimate=178 kB; lsn=0/1C07C80, redo lsn=0/1C07C48
+db-1       | 2026-08-26 19:15:03.510 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 19:15:03.820 UTC [55] LOG:  checkpoint complete: wrote 4 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.303 s, sync=0.002 s, total=0.310 s; sync files=4, longest=0.002 s, average=0.001 s; distance=21 kB, estimate=162 kB; lsn=0/1C0D460, redo lsn=0/1C0D428
+db-1       | 2026-08-26 19:20:03.878 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 19:20:04.891 UTC [55] LOG:  checkpoint complete: wrote 11 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=1.006 s, sync=0.003 s, total=1.013 s; sync files=10, longest=0.002 s, average=0.001 s; distance=35 kB, estimate=149 kB; lsn=0/1C16130, redo lsn=0/1C160F8
+db-1       | 2026-08-26 19:25:03.913 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 19:25:04.524 UTC [55] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.604 s, sync=0.003 s, total=0.612 s; sync files=5, longest=0.002 s, average=0.001 s; distance=33 kB, estimate=138 kB; lsn=0/1C1E720, redo lsn=0/1C1E6E8
+db-1       | 2026-08-26 19:50:04.002 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 19:50:06.517 UTC [55] LOG:  checkpoint complete: wrote 26 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.510 s, sync=0.002 s, total=2.515 s; sync files=19, longest=0.001 s, average=0.001 s; distance=128 kB, estimate=137 kB; lsn=0/1C3EA38, redo lsn=0/1C3EA00
+db-1       | 2026-08-26 20:50:05.586 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 20:50:06.300 UTC [55] LOG:  checkpoint complete: wrote 8 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.707 s, sync=0.003 s, total=0.715 s; sync files=8, longest=0.002 s, average=0.001 s; distance=25 kB, estimate=126 kB; lsn=0/1C451B0, redo lsn=0/1C45178
+db-1       | 2026-08-26 20:55:05.401 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 20:55:06.013 UTC [55] LOG:  checkpoint complete: wrote 7 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.605 s, sync=0.003 s, total=0.613 s; sync files=6, longest=0.002 s, average=0.001 s; distance=34 kB, estimate=116 kB; lsn=0/1C4D9E8, redo lsn=0/1C4D9B0
+db-1       | 2026-08-26 21:00:05.037 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 21:00:05.959 UTC [55] LOG:  checkpoint complete: wrote 10 buffers (0.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.915 s, sync=0.003 s, total=0.923 s; sync files=9, longest=0.002 s, average=0.001 s; distance=49 kB, estimate=110 kB; lsn=0/1C59FF0, redo lsn=0/1C59FB8
+db-1       | 2026-08-26 21:10:06.157 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 21:10:11.588 UTC [55] LOG:  checkpoint complete: wrote 55 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=5.421 s, sync=0.004 s, total=5.431 s; sync files=26, longest=0.001 s, average=0.001 s; distance=310 kB, estimate=310 kB; lsn=0/1CA7B08, redo lsn=0/1CA7A98
+db-1       | 2026-08-26 21:15:06.688 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 21:15:13.023 UTC [55] LOG:  checkpoint complete: wrote 64 buffers (0.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=6.327 s, sync=0.003 s, total=6.336 s; sync files=14, longest=0.001 s, average=0.001 s; distance=351 kB, estimate=351 kB; lsn=0/1CFF888, redo lsn=0/1CFF850
+db-1       | 2026-08-26 21:20:06.057 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 21:20:12.293 UTC [55] LOG:  checkpoint complete: wrote 63 buffers (0.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=6.226 s, sync=0.004 s, total=6.237 s; sync files=16, longest=0.001 s, average=0.001 s; distance=417 kB, estimate=417 kB; lsn=0/1D67ED8, redo lsn=0/1D67EA0
+db-1       | 2026-08-26 22:35:07.661 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 22:35:12.497 UTC [55] LOG:  checkpoint complete: wrote 49 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=4.825 s, sync=0.006 s, total=4.836 s; sync files=44, longest=0.002 s, average=0.001 s; distance=246 kB, estimate=400 kB; lsn=0/1DA5AC0, redo lsn=0/1DA5A88
+db-1       | 2026-08-26 22:40:07.561 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 22:40:15.505 UTC [55] LOG:  checkpoint complete: wrote 80 buffers (0.5%); 0 WAL file(s) added, 0 removed, 0 recycled; write=7.933 s, sync=0.005 s, total=7.945 s; sync files=29, longest=0.002 s, average=0.001 s; distance=526 kB, estimate=526 kB; lsn=0/1E29520, redo lsn=0/1E294E8
+db-1       | 2026-08-26 23:05:07.885 UTC [55] LOG:  checkpoint starting: time
+db-1       | 2026-08-26 23:05:15.125 UTC [55] LOG:  checkpoint complete: wrote 73 buffers (0.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=7.230 s, sync=0.004 s, total=7.240 s; sync files=17, longest=0.002 s, average=0.001 s; distance=425 kB, estimate=516 kB; lsn=0/1E939E8, redo lsn=0/1E939B0

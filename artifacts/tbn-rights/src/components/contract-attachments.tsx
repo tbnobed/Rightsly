@@ -21,7 +21,7 @@ function formatSize(bytes?: number | null) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const API_BASE = `${import.meta.env.BASE_URL}api`;
+const API_BASE = "/api";
 
 async function openAttachment(att: ContractAttachment) {
   const token = localStorage.getItem("auth_token");

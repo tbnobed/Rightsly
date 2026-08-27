@@ -61,7 +61,7 @@ export default function ContentDetail() {
   });
 
   if (isLoading) {
-    return <div className="p-8 max-w-6xl mx-auto"><Skeleton className="h-12 w-1/3 mb-6" /><Skeleton className="h-64 w-full" /></div>;
+    return <div className="p-4 sm:p-8 max-w-6xl mx-auto"><Skeleton className="h-12 w-1/3 mb-6" /><Skeleton className="h-64 w-full" /></div>;
   }
 
   if (!content) return null;
@@ -90,14 +90,14 @@ export default function ContentDetail() {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-6xl mx-auto space-y-4 sm:space-y-6">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
           <Button variant="ghost" size="sm" asChild className="mb-4 text-slate-500 -ml-3">
             <Link href="/content"><ChevronLeft className="w-4 h-4 mr-1" /> Catalog</Link>
           </Button>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-lg bg-slate-900 flex items-center justify-center text-white">
+            <div className="w-12 h-12 rounded-lg bg-slate-900 flex items-center justify-center text-white shrink-0">
               <Film className="w-6 h-6" />
             </div>
             <div>
@@ -124,7 +124,7 @@ export default function ContentDetail() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {canEdit && (
             <Button className="bg-white text-slate-900 border border-slate-200 hover:bg-slate-50 shadow-sm" onClick={() => setEditOpen(true)} data-testid="button-edit-content">
               <Edit className="w-4 h-4 mr-2" /> {content.type === "TVSeries" ? "Edit Title & Seasons" : "Edit Metadata"}

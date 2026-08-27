@@ -62,20 +62,20 @@ export default function Users() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Users</h1>
           <p className="text-slate-500 mt-1">Manage platform access and roles.</p>
         </div>
-        <Button className="bg-slate-900 hover:bg-slate-800 text-white" onClick={() => setAddOpen(true)} data-testid="button-add-user">
+        <Button className="bg-slate-900 hover:bg-slate-800 text-white w-full sm:w-auto" onClick={() => setAddOpen(true)} data-testid="button-add-user">
           <UserPlus className="w-4 h-4 mr-2" />
           Invite User
         </Button>
       </div>
 
       <Card className="border-slate-200 shadow-sm bg-white overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 bg-slate-50 uppercase border-b border-slate-100">
               <tr>

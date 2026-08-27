@@ -5,6 +5,7 @@ import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, S
 import { LayoutDashboard, FileText, Users, Film, CheckCircle, Calculator, BarChart3, Upload, History, UserCog, LogOut, Briefcase, Contact } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { InstallAppButton } from "@/components/pwa-install";
 
 export function Shell({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
@@ -14,7 +15,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full bg-background overflow-hidden">
+      <div className="flex h-dvh min-h-svh w-full bg-background overflow-hidden">
         <Sidebar className="border-r border-sidebar-border shadow-sm">
           <SidebarHeader className="p-4 flex flex-row items-center gap-3">
             <div className="w-[3px] h-7 rounded-sm bg-accent" aria-hidden="true" />
@@ -141,23 +142,30 @@ export function Shell({ children }: { children: ReactNode }) {
               )}
             </SidebarMenu>
           </SidebarContent>
-          <SidebarFooter className="p-4 border-t border-sidebar-border flex flex-row items-center gap-3">
-            <Avatar className="h-8 w-8 bg-sidebar-accent text-sidebar-accent-foreground">
-              <AvatarFallback className="text-xs">{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <span className="text-sm font-medium truncate">{user.name}</span>
-              <span className="text-xs text-sidebar-foreground/60 truncate capitalize">{user.role}</span>
+          <SidebarFooter className="safe-bottom border-t border-sidebar-border p-3">
+            <InstallAppButton />
+            <div className="flex flex-row items-center gap-3 px-1 pt-1">
+              <Avatar className="h-8 w-8 bg-sidebar-accent text-sidebar-accent-foreground">
+                <AvatarFallback className="text-xs">{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col flex-1 overflow-hidden">
+                <span className="text-sm font-medium truncate">{user.name}</span>
+                <span className="text-xs text-sidebar-foreground/60 truncate capitalize">{user.role}</span>
+              </div>
+              <button onClick={logout} className="p-2 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors" aria-label="Logout" data-testid="button-logout">
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
-            <button onClick={logout} className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors" aria-label="Logout" data-testid="button-logout">
-              <LogOut className="w-4 h-4" />
-            </button>
           </SidebarFooter>
         </Sidebar>
         <main className="flex-1 overflow-auto bg-slate-50 relative">
-          <div className="md:hidden sticky top-0 z-20 h-12 bg-white border-b border-slate-200 flex items-center px-3">
-            <SidebarTrigger data-testid="button-mobile-navigation" aria-label="Toggle navigation" />
+          <div className="safe-top md:hidden sticky top-0 z-20 min-h-12 bg-white border-b border-slate-200 flex items-center px-3">
+            <SidebarTrigger className="h-9 w-9" data-testid="button-mobile-navigation" aria-label="Toggle navigation" />
             <span className="ml-2 font-medium text-slate-900">Rightsly</span>
+            <div className="ml-auto flex items-center gap-1">
+              <InstallAppButton compact />
+              <NotificationsBell />
+            </div>
           </div>
           {children}
         </main>

@@ -10,8 +10,11 @@ createRoot(root).render(<App />);
 // Register the service worker so the app is installable (Chrome PWA install).
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-      // Non-fatal: the app still works without the service worker.
+    const serviceWorkerUrl = `${import.meta.env.BASE_URL}sw.js`;
+    navigator.serviceWorker.register(serviceWorkerUrl, {
+      scope: import.meta.env.BASE_URL,
+    }).catch((error) => {
+      console.error("Rightsly service worker registration failed", error);
     });
   });
 }

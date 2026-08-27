@@ -345,21 +345,21 @@ export default function NewContractWizard() {
   };
 
   if (isEditing && contractLoading) {
-    return <div className="p-8 max-w-4xl mx-auto text-slate-500">Loading contract…</div>;
+    return <div className="p-4 sm:p-8 max-w-4xl mx-auto text-slate-500">Loading contract…</div>;
   }
 
   if (isEditing && !contractLoading && !existingContract) {
-    return <div className="p-8 max-w-4xl mx-auto text-slate-500">Contract not found.</div>;
+    return <div className="p-4 sm:p-8 max-w-4xl mx-auto text-slate-500">Contract not found.</div>;
   }
 
   if (isEditing && !editHydrated) {
-    return <div className="p-8 max-w-4xl mx-auto text-slate-500">Loading contract…</div>;
+    return <div className="p-4 sm:p-8 max-w-4xl mx-auto text-slate-500">Loading contract…</div>;
   }
 
   if (step === 1) {
     return (
-      <div className="p-8 max-w-4xl mx-auto space-y-6">
-        <div className="mb-8">
+      <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-6">
+        <div className="mb-6 sm:mb-8">
           <Button variant="ghost" size="sm" asChild className="mb-4 text-slate-500 -ml-3">
             <Link href="/contracts"><ChevronLeft className="w-4 h-4 mr-1" /> Back to Contracts</Link>
           </Button>
@@ -417,8 +417,8 @@ export default function NewContractWizard() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-6">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Button
             variant="ghost"
@@ -431,7 +431,7 @@ export default function NewContractWizard() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">{isEditing ? "Edit Contract" : "Contract Details"}</h1>
           <p className="text-slate-500 mt-1">{isEditing ? "Update the agreement details below." : "Step 2: Fill in the core agreement details."}</p>
         </div>
-        <div className="px-4 py-2 bg-slate-100 rounded-md font-semibold text-slate-700 capitalize flex items-center gap-2">
+        <div className="px-4 py-2 bg-slate-100 rounded-md font-semibold text-slate-700 capitalize flex items-center gap-2 self-start sm:self-auto">
           {direction === 'rights_in' ? <FileDown className="w-4 h-4 text-blue-600" /> : <FileUp className="w-4 h-4 text-emerald-600" />}
           {direction?.replace('_', ' ')}
         </div>

@@ -24,6 +24,8 @@ import AuditLog from '@/pages/audit-log';
 import Users from '@/pages/users';
 import AcceptInvite from '@/pages/accept-invite';
 import ContactsList from '@/pages/contacts/index';
+import { PwaInstallProvider } from '@/hooks/use-pwa-install';
+import { PwaInstallBanner } from '@/components/pwa-install';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,10 +77,13 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
         <AuthProvider>
-          <TooltipProvider>
-            <MainRouter />
-            <Toaster />
-          </TooltipProvider>
+          <PwaInstallProvider>
+            <TooltipProvider>
+              <MainRouter />
+              <Toaster />
+              <PwaInstallBanner />
+            </TooltipProvider>
+          </PwaInstallProvider>
         </AuthProvider>
       </WouterRouter>
     </QueryClientProvider>

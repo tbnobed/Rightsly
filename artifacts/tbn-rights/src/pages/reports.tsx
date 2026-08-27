@@ -158,7 +158,7 @@ export default function Reports() {
         if (royaltyStatus !== "all") params.set("status", royaltyStatus);
       }
       const res = await fetch(
-        `${import.meta.env.BASE_URL}api/reports/${type}?${params.toString()}`,
+        `/api/reports/${type}?${params.toString()}`,
         { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
       );
       if (!res.ok) {
@@ -191,7 +191,7 @@ export default function Reports() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Reports Hub</h1>
         <p className="text-slate-500 mt-1">Generate and export system data.</p>
@@ -405,7 +405,7 @@ export default function Reports() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-slate-500 bg-slate-50 uppercase border-b border-slate-100">
                 <tr>
