@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format, parseISO } from "date-fns";
-import { Search, Plus, FileText, Filter, ChevronRight, ArrowUp, ArrowDown, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Search, Plus, FileText, Filter, ChevronRight, ArrowUp, ArrowDown, ChevronsLeft, ChevronsRight, Upload } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { getContractsPagination, getNextContractSort } from "./contracts-list-state";
 
@@ -88,8 +88,14 @@ export default function ContractsList() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Contracts</h1>
           <p className="text-slate-500 mt-1">Manage and track all licensing agreements.</p>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Button asChild className="bg-amber-600 hover:bg-amber-700 text-white border-none w-full sm:w-auto" data-testid="button-new-contract">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <Button asChild variant="outline" className="border-slate-300 bg-white text-slate-800 hover:bg-slate-50 flex-1 sm:flex-none" data-testid="button-import-contracts">
+            <Link href="/import">
+              <Upload className="w-4 h-4 mr-2" />
+              Import Contracts
+            </Link>
+          </Button>
+          <Button asChild className="bg-amber-600 hover:bg-amber-700 text-white border-none flex-1 sm:flex-none" data-testid="button-new-contract">
             <Link href="/contracts/new">
               <Plus className="w-4 h-4 mr-2" />
               New Contract

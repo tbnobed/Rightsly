@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useAuth } from "@/contexts/auth";
 import { Link, useLocation } from "wouter";
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarFooter, SidebarTrigger } from "@/components/ui/sidebar";
-import { LayoutDashboard, FileText, Users, Film, CheckCircle, Calculator, BarChart3, Upload, History, UserCog, LogOut, Briefcase, Contact } from "lucide-react";
+import { LayoutDashboard, FileText, Users, Film, CheckCircle, Calculator, BarChart3, History, UserCog, LogOut, Briefcase, Contact } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { InstallAppButton } from "@/components/pwa-install";
@@ -104,15 +104,6 @@ export function Shell({ children }: { children: ReactNode }) {
                   <Link href="/reports">
                     <BarChart3 className="w-4 h-4 mr-2" />
                     <span>Reports</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location === "/import"}>
-                  <Link href="/import">
-                    <Upload className="w-4 h-4 mr-2" />
-                      <span>Import Contracts</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
