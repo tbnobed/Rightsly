@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { useGetMe, User, setAuthTokenGetter, useLogin, useLogout, getGetMeQueryKey, LoginInput } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
+import { isUnauthorizedAuthError } from "./auth-session";
 
 interface AuthContextType {
   user: User | null;
@@ -21,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthTokenGetter(() => localStorage.getItem("auth_token"));
   }, []);
 
-  const { data: user, isLoading: isUserLoading } = useGetMe({
+  const { data: user, error: userError, isError: isUserError, isLoading: isUserLoading } = useGetMe({
     query: {
       enabled: !!token,
       queryKey: getGetMeQueryKey(),
@@ -31,6 +32,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useLogin();
   const logoutMutation = useLogout();
+
+  useEffect(() => {
+    if (!token || !isUserError || !isUnauthorizedAuthError(userError)) return;
+
+    localStorage.removeItem("auth_token");
+    setToken(null);
+    queryClient.clear();
+    setLocation("/login");
+  }, [isUserError, queryClient, setLocation, token, userError]);
 
   const login = async (data: LoginInput) => {
     const response = await loginMutation.mutateAsync({ data });

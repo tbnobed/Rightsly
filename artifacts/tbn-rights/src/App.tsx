@@ -26,6 +26,7 @@ import AcceptInvite from '@/pages/accept-invite';
 import ContactsList from '@/pages/contacts/index';
 import { PwaInstallProvider } from '@/hooks/use-pwa-install';
 import { PwaInstallBanner } from '@/components/pwa-install';
+import { useAuth } from '@/contexts/auth';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +38,20 @@ const queryClient = new QueryClient({
 });
 
 function AuthenticatedRouter() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-[#101e19] text-sm text-[#91a098]">
+        Checking your session…
+      </div>
+    );
+  }
+
+  // AuthProvider updates the URL and removes rejected tokens. Rendering Login
+  // here as well prevents a blank frame while that redirect effect completes.
+  if (!user) return <Login />;
+
   return (
     <Shell>
       <Switch>
