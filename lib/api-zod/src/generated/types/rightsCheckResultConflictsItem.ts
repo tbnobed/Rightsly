@@ -7,7 +7,7 @@
 
 export type RightsCheckResultConflictsItem = {
   contractId: string;
-  partnerName: string;
+  partnerName: string | null;
   reason: string;
   territory?: string | null;
   distributionType?: string | null;

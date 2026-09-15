@@ -11,9 +11,9 @@ import type { ContractListItemStatus } from './contractListItemStatus';
 export interface ContractListItem {
   id: string;
   direction: ContractListItemDirection;
-  partnerId?: string;
+  partnerId?: string | null;
   platform?: string | null;
-  partnerName?: string;
+  partnerName?: string | null;
   licensor?: string | null;
   licensee?: string | null;
   status: ContractListItemStatus;

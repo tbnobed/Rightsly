@@ -533,9 +533,9 @@ export const ListContractsResponse = zod.object({
   "data": zod.array(zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
-  "partnerId": zod.string().optional(),
+  "partnerId": zod.string().nullish(),
   "platform": zod.string().nullish(),
-  "partnerName": zod.string().optional(),
+  "partnerName": zod.string().nullish(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
   "status": zod.enum(['draft', 'active', 'expired', 'in_perpetuity', 'terminated']),
@@ -560,7 +560,7 @@ export const ListContractsResponse = zod.object({
  */
 export const CreateContractBody = zod.object({
   "direction": zod.enum(['rights_in', 'rights_out']),
-  "partnerId": zod.string(),
+  "partnerId": zod.string().nullish(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
   "status": zod.enum(['draft', 'active', 'expired', 'in_perpetuity', 'terminated']).optional(),
@@ -603,8 +603,8 @@ export const CreateContractBody = zod.object({
 export const CreateContractResponse = zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
-  "partnerId": zod.string(),
-  "partnerName": zod.string().optional(),
+  "partnerId": zod.string().nullish(),
+  "partnerName": zod.string().nullish(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
   "status": zod.enum(['draft', 'active', 'expired', 'in_perpetuity', 'terminated']),
@@ -694,8 +694,8 @@ export const GetContractParams = zod.object({
 export const GetContractResponse = zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
-  "partnerId": zod.string(),
-  "partnerName": zod.string().optional(),
+  "partnerId": zod.string().nullish(),
+  "partnerName": zod.string().nullish(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
   "status": zod.enum(['draft', 'active', 'expired', 'in_perpetuity', 'terminated']),
@@ -770,7 +770,7 @@ export const UpdateContractParams = zod.object({
 })
 
 export const UpdateContractBody = zod.object({
-  "partnerId": zod.string().optional(),
+  "partnerId": zod.string().nullish(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
   "status": zod.enum(['draft', 'active', 'expired', 'in_perpetuity', 'terminated']).optional(),
@@ -814,8 +814,8 @@ export const UpdateContractBody = zod.object({
 export const UpdateContractResponse = zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
-  "partnerId": zod.string(),
-  "partnerName": zod.string().optional(),
+  "partnerId": zod.string().nullish(),
+  "partnerName": zod.string().nullish(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
   "status": zod.enum(['draft', 'active', 'expired', 'in_perpetuity', 'terminated']),
@@ -1223,7 +1223,7 @@ export const GetRevenueReviewQueueParams = zod.object({
 
 export const GetRevenueReviewQueueResponse = zod.object({
   "contractId": zod.string(),
-  "partnerName": zod.string(),
+  "partnerName": zod.string().nullable(),
   "reports": zod.array(zod.object({
   "id": zod.string(),
   "contractId": zod.string(),
@@ -1806,9 +1806,9 @@ export const GetContentContractsParams = zod.object({
 export const GetContentContractsResponseItem = zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
-  "partnerId": zod.string().optional(),
+  "partnerId": zod.string().nullish(),
   "platform": zod.string().nullish(),
-  "partnerName": zod.string().optional(),
+  "partnerName": zod.string().nullish(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
   "status": zod.enum(['draft', 'active', 'expired', 'in_perpetuity', 'terminated']),
@@ -1840,14 +1840,14 @@ export const RightsCheckResponse = zod.object({
   "available": zod.boolean(),
   "conflicts": zod.array(zod.object({
   "contractId": zod.string(),
-  "partnerName": zod.string(),
+  "partnerName": zod.string().nullable(),
   "reason": zod.string(),
   "territory": zod.string().nullish(),
   "distributionType": zod.string().nullish()
 })),
   "grants": zod.array(zod.object({
   "contractId": zod.string(),
-  "partnerName": zod.string(),
+  "partnerName": zod.string().nullable(),
   "direction": zod.string(),
   "exclusivity": zod.string().nullish(),
   "territories": zod.array(zod.string()).optional(),
@@ -1898,9 +1898,9 @@ export const GetDashboardResponse = zod.object({
   "expiringSoonContracts": zod.array(zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
-  "partnerId": zod.string().optional(),
+  "partnerId": zod.string().nullish(),
   "platform": zod.string().nullish(),
-  "partnerName": zod.string().optional(),
+  "partnerName": zod.string().nullish(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
   "status": zod.enum(['draft', 'active', 'expired', 'in_perpetuity', 'terminated']),
@@ -2090,9 +2090,9 @@ export const GetContractReportResponse = zod.object({
   "data": zod.array(zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
-  "partnerId": zod.string().optional(),
+  "partnerId": zod.string().nullish(),
   "platform": zod.string().nullish(),
-  "partnerName": zod.string().optional(),
+  "partnerName": zod.string().nullish(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
   "status": zod.enum(['draft', 'active', 'expired', 'in_perpetuity', 'terminated']),
@@ -2132,9 +2132,9 @@ export const GetExpiringReportResponse = zod.object({
   "data": zod.array(zod.object({
   "id": zod.string(),
   "direction": zod.enum(['rights_in', 'rights_out']),
-  "partnerId": zod.string().optional(),
+  "partnerId": zod.string().nullish(),
   "platform": zod.string().nullish(),
-  "partnerName": zod.string().optional(),
+  "partnerName": zod.string().nullish(),
   "licensor": zod.string().nullish(),
   "licensee": zod.string().nullish(),
   "status": zod.enum(['draft', 'active', 'expired', 'in_perpetuity', 'terminated']),

@@ -8,6 +8,6 @@ import type { ReviewedRevenueReport } from './reviewedRevenueReport';
 
 export interface RevenueReviewQueue {
   contractId: string;
-  partnerName: string;
+  partnerName: string | null;
   reports: ReviewedRevenueReport[];
 }

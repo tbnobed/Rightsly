@@ -18,8 +18,8 @@ import type { Season } from './season';
 export interface Contract {
   id: string;
   direction: ContractDirection;
-  partnerId: string;
-  partnerName?: string;
+  partnerId?: string | null;
+  partnerName?: string | null;
   licensor?: string | null;
   licensee?: string | null;
   status: ContractStatus;

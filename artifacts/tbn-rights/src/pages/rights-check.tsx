@@ -219,7 +219,7 @@ export default function RightsCheck() {
                         {checkResult.conflicts.map((conflict, i) => (
                           <div key={i} className="bg-white p-4 rounded-lg border border-red-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
-                              <p className="font-semibold text-slate-900">{conflict.partnerName}</p>
+                              <p className="font-semibold text-slate-900">{conflict.partnerName ?? "Unassigned partner"}</p>
                               <p className="text-sm text-red-700 mt-1 font-medium">{conflict.reason}</p>
                             </div>
                             <Button size="sm" variant="outline" className="shrink-0" asChild>
@@ -273,7 +273,7 @@ export default function RightsCheck() {
                           <div key={i} className="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-slate-900">{grant.partnerName}</span>
+                                <span className="font-semibold text-slate-900">{grant.partnerName ?? "Unassigned partner"}</span>
                                 <Badge variant="outline" className="text-[10px] uppercase h-5">{grant.direction.replace('_', ' ')}</Badge>
                                 {grant.exclusivity && (
                                   <Badge variant={grant.exclusivity === 'exclusive' ? 'default' : 'secondary'} className="text-[10px] h-5">

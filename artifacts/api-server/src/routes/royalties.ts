@@ -52,7 +52,7 @@ router.get("/:contractId", async (req, res): Promise<void> => {
   const reviewerById = new Map(reviewers.map((reviewer) => [reviewer.id, reviewer.name]));
   res.json({
     contractId: contract.id,
-    partnerName: contract.partnerName ?? "",
+    partnerName: contract.partnerName,
     reports: reports.map((report) => {
       const approval = approvalByReport.get(report.id);
       return reportResponse(report, approval, approval?.reviewedBy ? reviewerById.get(approval.reviewedBy) : null);

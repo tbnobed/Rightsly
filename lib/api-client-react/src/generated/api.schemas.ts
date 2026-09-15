@@ -999,8 +999,8 @@ export interface Amendment {
 export interface Contract {
   id: string;
   direction: ContractDirection;
-  partnerId: string;
-  partnerName?: string;
+  partnerId?: string | null;
+  partnerName?: string | null;
   licensor?: string | null;
   licensee?: string | null;
   status: ContractStatus;
@@ -1077,7 +1077,7 @@ export const CreateContractRequestPaymentTerms = {
 
 export interface CreateContractRequest {
   direction: CreateContractRequestDirection;
-  partnerId: string;
+  partnerId?: string | null;
   licensor?: string | null;
   licensee?: string | null;
   status?: CreateContractRequestStatus;
@@ -1139,7 +1139,7 @@ export const UpdateContractRequestPaymentTerms = {
 } as const;
 
 export interface UpdateContractRequest {
-  partnerId?: string;
+  partnerId?: string | null;
   licensor?: string | null;
   licensee?: string | null;
   status?: UpdateContractRequestStatus;
@@ -1194,9 +1194,9 @@ export const ContractListItemEndType = {
 export interface ContractListItem {
   id: string;
   direction: ContractListItemDirection;
-  partnerId?: string;
+  partnerId?: string | null;
   platform?: string | null;
-  partnerName?: string;
+  partnerName?: string | null;
   licensor?: string | null;
   licensee?: string | null;
   status: ContractListItemStatus;
@@ -1326,7 +1326,7 @@ export interface ReviewedRevenueReport {
 
 export interface RevenueReviewQueue {
   contractId: string;
-  partnerName: string;
+  partnerName: string | null;
   reports: ReviewedRevenueReport[];
 }
 
@@ -1345,7 +1345,7 @@ export interface ReviewRevenueReportRequest {
 
 export type RightsCheckResultConflictsItem = {
   contractId: string;
-  partnerName: string;
+  partnerName: string | null;
   reason: string;
   territory?: string | null;
   distributionType?: string | null;
@@ -1353,7 +1353,7 @@ export type RightsCheckResultConflictsItem = {
 
 export type RightsCheckResultGrantsItem = {
   contractId: string;
-  partnerName: string;
+  partnerName: string | null;
   direction: string;
   exclusivity?: string | null;
   territories?: string[];

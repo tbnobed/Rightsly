@@ -12,7 +12,7 @@ import type { UpdateContractRequestRoyaltyType } from './updateContractRequestRo
 import type { UpdateContractRequestStatus } from './updateContractRequestStatus';
 
 export interface UpdateContractRequest {
-  partnerId?: string;
+  partnerId?: string | null;
   licensor?: string | null;
   licensee?: string | null;
   status?: UpdateContractRequestStatus;

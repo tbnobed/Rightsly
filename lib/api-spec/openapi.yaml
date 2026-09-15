@@ -647,7 +647,7 @@ components:
 
     Contract:
       type: object
-      required: [id, direction, partnerId, status, endType, createdAt]
+      required: [id, direction, status, endType, createdAt]
       properties:
         id:
           type: string
@@ -656,8 +656,10 @@ components:
           enum: [rights_in, rights_out]
         partnerId:
           type: string
+          nullable: true
         partnerName:
           type: string
+          nullable: true
         licensor:
           type: string
           nullable: true
@@ -805,13 +807,14 @@ components:
 
     CreateContractRequest:
       type: object
-      required: [direction, partnerId, endType]
+      required: [direction, endType]
       properties:
         direction:
           type: string
           enum: [rights_in, rights_out]
         partnerId:
           type: string
+          nullable: true
         licensor:
           type: string
           nullable: true
@@ -887,6 +890,7 @@ components:
       properties:
         partnerId:
           type: string
+          nullable: true
         licensor:
           type: string
           nullable: true
@@ -970,11 +974,13 @@ components:
           enum: [rights_in, rights_out]
         partnerId:
           type: string
+          nullable: true
         platform:
           type: string
           nullable: true
         partnerName:
           type: string
+          nullable: true
         licensor:
           type: string
           nullable: true
@@ -1223,6 +1229,7 @@ components:
           type: string
         partnerName:
           type: string
+          nullable: true
         reports:
           type: array
           items:
@@ -1254,6 +1261,7 @@ components:
                 type: string
               partnerName:
                 type: string
+                nullable: true
               reason:
                 type: string
               territory:
@@ -1272,6 +1280,7 @@ components:
                 type: string
               partnerName:
                 type: string
+                nullable: true
               direction:
                 type: string
               exclusivity:

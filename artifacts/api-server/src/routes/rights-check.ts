@@ -168,15 +168,15 @@ router.get("/", async (req, res) => {
     .filter((c) => c.rightsOutExclusivity === "exclusive")
     .map((c) => ({
       contractId: c.id,
-      partnerName: c.partnerName ?? "",
-      reason: `Exclusive Rights Out contract with ${c.partnerName} covers ${territory} / ${distributionType}`,
+      partnerName: c.partnerName,
+      reason: `Exclusive Rights Out contract with ${c.partnerName ?? "an unassigned partner"} covers ${territory} / ${distributionType}`,
       territory,
       distributionType,
     }));
 
   const grants = matchingContracts.map((c) => ({
     contractId: c.id,
-    partnerName: c.partnerName ?? "",
+    partnerName: c.partnerName,
     direction: c.direction,
     exclusivity: c.rightsOutExclusivity,
     territories: c.territories as string[],

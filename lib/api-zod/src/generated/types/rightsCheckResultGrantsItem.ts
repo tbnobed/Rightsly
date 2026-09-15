@@ -7,7 +7,7 @@
 
 export type RightsCheckResultGrantsItem = {
   contractId: string;
-  partnerName: string;
+  partnerName: string | null;
   direction: string;
   exclusivity?: string | null;
   territories?: string[];

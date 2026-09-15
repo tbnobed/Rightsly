@@ -32,7 +32,6 @@ export const contractsTable = pgTable("contracts", {
   id: text("id").primaryKey(),
   direction: contractDirectionEnum("direction").notNull(),
   partnerId: text("partner_id")
-    .notNull()
     .references(() => partnersTable.id),
   licensor: text("licensor"),
   licensee: text("licensee"),

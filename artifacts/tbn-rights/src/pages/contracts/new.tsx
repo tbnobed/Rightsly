@@ -36,9 +36,10 @@ import { uploadFile } from "@/lib/upload-file";
 const DEPARTMENT_OPTIONS = ["Acquisition", "Distribution"] as const;
 const RIGHTS_IN_PLATFORMS = ["TBN Broadcast", "TBN+", "YouTube", "Socials", "Yippee", "L&D"] as const;
 const SOCIAL_PLATFORMS = ["All Socials", "Facebook", "Instagram", "TikTok", "Other"] as const;
+const NO_PARTNER_VALUE = "__none__";
 
 const formSchema = z.object({
-  partnerId: z.string().min(1, "Partner is required"),
+  partnerId: z.string().optional(),
   licensor: z.string().optional(),
   licensee: z.string().optional(),
   startDate: z.string().optional(),
@@ -186,7 +187,7 @@ export default function NewContractWizard() {
     setSelectedContentIds(existingContract.contentItems?.map((item) => item.id) ?? []);
     setSelectedSeasonIds((existingContract as any).selectedSeasons?.map((season: { id: string }) => season.id) ?? []);
     form.reset({
-      partnerId: existingContract.partnerId,
+      partnerId: existingContract.partnerId ?? "",
       licensor: existingContract.licensor ?? "",
       licensee: existingContract.licensee ?? "",
       startDate: existingContract.startDate ?? "",
@@ -259,7 +260,7 @@ export default function NewContractWizard() {
     try {
       const requestData: CreateContractRequest & { seasonIds?: string[] } = {
         direction,
-        partnerId: values.partnerId,
+        partnerId: values.partnerId || null,
         licensor: values.licensor || null,
         licensee: values.licensee || null,
         status: values.status,
@@ -450,17 +451,18 @@ export default function NewContractWizard() {
                 name="partnerId"
                 render={({ field }) => (
                   <FormItem className="col-span-1 md:col-span-2">
-                    <FormLabel>Primary Partner</FormLabel>
+                    <FormLabel>Primary Partner (optional)</FormLabel>
                     <Select
                       onValueChange={(partnerId) => {
-                        field.onChange(partnerId);
-                        const partner = partners.find((item) => item.id === partnerId);
+                        const selectedPartnerId = partnerId === NO_PARTNER_VALUE ? "" : partnerId;
+                        field.onChange(selectedPartnerId);
+                        const partner = partners.find((item) => item.id === selectedPartnerId);
                         if (partner && !isEditing) {
                           form.setValue("licensor", direction === "rights_out" ? "TBN" : partner.name);
                           form.setValue("licensee", direction === "rights_out" ? partner.name : "TBN");
                         }
                       }}
-                      value={field.value || ""}
+                      value={field.value || NO_PARTNER_VALUE}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-white" data-testid="select-partner">
@@ -468,6 +470,7 @@ export default function NewContractWizard() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value={NO_PARTNER_VALUE} data-testid="select-item-no-partner">No partner assigned</SelectItem>
                         {partners.map((p) => (
                           <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                         ))}
@@ -482,7 +485,7 @@ export default function NewContractWizard() {
                 name="licensor"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Licensor Name</FormLabel>
+                    <FormLabel>Licensor Name (optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="TBN or Partner Name" {...field} value={field.value || ''} data-testid="input-licensor" />
                     </FormControl>
@@ -494,7 +497,7 @@ export default function NewContractWizard() {
                 name="licensee"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Licensee Name</FormLabel>
+                    <FormLabel>Licensee Name (optional)</FormLabel>
                     <FormControl>
                       <Input placeholder="TBN or Partner Name" {...field} value={field.value || ''} data-testid="input-licensee" />
                     </FormControl>

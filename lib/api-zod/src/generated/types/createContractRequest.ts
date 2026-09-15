@@ -14,7 +14,7 @@ import type { RightsOutDetails } from './rightsOutDetails';
 
 export interface CreateContractRequest {
   direction: CreateContractRequestDirection;
-  partnerId: string;
+  partnerId?: string | null;
   licensor?: string | null;
   licensee?: string | null;
   status?: CreateContractRequestStatus;

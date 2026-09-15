@@ -339,8 +339,8 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
     return;
   }
 
-  if (!direction || !partnerId || !endType) {
-    res.status(400).json({ message: "direction, partnerId, endType are required" });
+  if (!direction || !endType) {
+    res.status(400).json({ message: "direction and endType are required" });
     return;
   }
   const enumError = contractEnumError({
@@ -381,7 +381,7 @@ router.post("/", requireRole("admin", "legal"), async (req, res) => {
     [contract] = await tx.insert(contractsTable).values({
       id,
       direction,
-      partnerId,
+      partnerId: partnerId || null,
       licensor: licensor || null,
       licensee: licensee || null,
       status: status || "draft",
@@ -571,7 +571,7 @@ router.put("/:id", requireRole("admin", "legal"), async (req, res) => {
   const ro = rightsOutDetails || {};
 
   const updates: any = { updatedAt: new Date() };
-  if (partnerId !== undefined) updates.partnerId = partnerId;
+  if (partnerId !== undefined) updates.partnerId = partnerId || null;
   if (licensor !== undefined) updates.licensor = licensor;
   if (licensee !== undefined) updates.licensee = licensee;
   if (status !== undefined) updates.status = status;
