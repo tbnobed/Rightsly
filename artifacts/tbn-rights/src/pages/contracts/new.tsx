@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -16,8 +18,8 @@ import {
   useUpdateContract,
   useGetContract,
   getGetContractQueryKey,
-  useListPartners,
   getListPartnersQueryKey,
+  listPartners,
   useListContent,
   getListContentQueryKey,
   useRequestUploadUrl,
@@ -26,17 +28,24 @@ import {
   type CreateContractRequest,
   type UpdateContractRequest,
 } from "@workspace/api-client-react";
-import { ArrowRight, Briefcase, FileDown, FileUp, ChevronLeft, Upload, X, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Briefcase, Check, ChevronLeft, ChevronsUpDown, FileDown, FileUp, Upload, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useAuth } from "@/contexts/auth";
 import { DISTRIBUTION_OPTIONS, TERRITORY_OPTIONS } from "@/lib/rights-options";
 import { uploadFile } from "@/lib/upload-file";
+import { fetchAllPartners, PARTNERS_PAGE_SIZE } from "./partners-pagination";
 
 const DEPARTMENT_OPTIONS = ["Acquisition", "Distribution"] as const;
 const RIGHTS_IN_PLATFORMS = ["TBN Broadcast", "TBN+", "YouTube", "Socials", "Yippee", "L&D"] as const;
 const SOCIAL_PLATFORMS = ["All Socials", "Facebook", "Instagram", "TikTok", "Other"] as const;
 const NO_PARTNER_VALUE = "__none__";
+const ALL_PARTNERS_PARAMS = {
+  pageSize: PARTNERS_PAGE_SIZE,
+  sortBy: "name" as const,
+  sortDirection: "asc" as const,
+};
 
 const formSchema = z.object({
   partnerId: z.string().optional(),
@@ -113,6 +122,8 @@ export default function NewContractWizard() {
   const [editHydrated, setEditHydrated] = useState(!isEditing);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [partnerOpen, setPartnerOpen] = useState(false);
+  const [partnerSearch, setPartnerSearch] = useState("");
 
   const createContract = useCreateContract();
   const updateContract = useUpdateContract();
@@ -125,10 +136,14 @@ export default function NewContractWizard() {
     },
   });
 
-  const { data: partnersData } = useListPartners(undefined, {
-    query: { queryKey: getListPartnersQueryKey() },
+  const partnersQuery = useQuery({
+    queryKey: getListPartnersQueryKey(ALL_PARTNERS_PARAMS),
+    queryFn: ({ signal }) => fetchAllPartners(listPartners, signal),
   });
-  const partners = partnersData?.data || [];
+  const partners = partnersQuery.isError ? [] : (partnersQuery.data ?? []);
+  const filteredPartners = partnerSearch.trim()
+    ? partners.filter((partner) => partner.name.toLocaleLowerCase().includes(partnerSearch.trim().toLocaleLowerCase()))
+    : partners;
 
   // Linked content
   const [contentSearch, setContentSearch] = useState("");
@@ -452,30 +467,119 @@ export default function NewContractWizard() {
                 render={({ field }) => (
                   <FormItem className="col-span-1 md:col-span-2">
                     <FormLabel>Primary Partner (optional)</FormLabel>
-                    <Select
-                      onValueChange={(partnerId) => {
-                        const selectedPartnerId = partnerId === NO_PARTNER_VALUE ? "" : partnerId;
-                        field.onChange(selectedPartnerId);
-                        const partner = partners.find((item) => item.id === selectedPartnerId);
-                        if (partner && !isEditing) {
-                          form.setValue("licensor", direction === "rights_out" ? "TBN" : partner.name);
-                          form.setValue("licensee", direction === "rights_out" ? partner.name : "TBN");
-                        }
+                    <Popover
+                      open={partnerOpen}
+                      onOpenChange={(open) => {
+                        setPartnerOpen(open);
+                        if (!open) setPartnerSearch("");
                       }}
-                      value={field.value || NO_PARTNER_VALUE}
                     >
                       <FormControl>
-                        <SelectTrigger className="bg-white" data-testid="select-partner">
-                          <SelectValue placeholder="Select a partner..." />
-                        </SelectTrigger>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={partnerOpen}
+                            className="w-full justify-between bg-white font-normal"
+                            data-testid="select-partner"
+                          >
+                            <span className="truncate">
+                              {!field.value
+                                ? "No partner assigned"
+                                : partners.find((partner) => partner.id === field.value)?.name
+                                  ?? existingContract?.partnerName
+                                  ?? "Selected partner"}
+                            </span>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value={NO_PARTNER_VALUE} data-testid="select-item-no-partner">No partner assigned</SelectItem>
-                        {partners.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <PopoverContent
+                        align="start"
+                        className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0"
+                      >
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Search partners..."
+                            value={partnerSearch}
+                            onValueChange={setPartnerSearch}
+                          />
+                          <CommandList className="max-h-[60vh]">
+                            {partnersQuery.isLoading && (
+                              <div className="px-3 py-6 text-center text-sm text-slate-500" aria-live="polite">
+                                Loading partners…
+                              </div>
+                            )}
+                            {partnersQuery.isError && (
+                              <div className="space-y-2 px-3 py-4 text-center text-sm text-red-600" role="alert">
+                                <p>Unable to load partners.</p>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => void partnersQuery.refetch()}
+                                >
+                                  Try again
+                                </Button>
+                              </div>
+                            )}
+                            {!partnersQuery.isLoading && !partnersQuery.isError && filteredPartners.length === 0 && (
+                              <div className="px-3 py-6 text-center text-sm text-slate-500">
+                                No matching partners.
+                              </div>
+                            )}
+                            <CommandGroup>
+                              <CommandItem
+                                value={NO_PARTNER_VALUE}
+                                onSelect={() => {
+                                  field.onChange("");
+                                  setPartnerOpen(false);
+                                  setPartnerSearch("");
+                                }}
+                                data-testid="select-item-no-partner"
+                              >
+                                <Check className={`mr-2 h-4 w-4 ${field.value ? "opacity-0" : "opacity-100"}`} />
+                                No partner assigned
+                              </CommandItem>
+                              {field.value &&
+                                !partners.some((partner) => partner.id === field.value) &&
+                                existingContract?.partnerName && (
+                                  <CommandItem
+                                    value={existingContract.partnerName}
+                                    onSelect={() => {
+                                      field.onChange(field.value);
+                                      setPartnerOpen(false);
+                                      setPartnerSearch("");
+                                    }}
+                                  >
+                                    <Check className="mr-2 h-4 w-4" />
+                                    {existingContract.partnerName}
+                                  </CommandItem>
+                                )}
+                              {filteredPartners.map((partner) => (
+                                <CommandItem
+                                  key={partner.id}
+                                  value={partner.id}
+                                  onSelect={() => {
+                                    field.onChange(partner.id);
+                                    if (!isEditing) {
+                                      form.setValue("licensor", direction === "rights_out" ? "TBN" : partner.name);
+                                      form.setValue("licensee", direction === "rights_out" ? partner.name : "TBN");
+                                    }
+                                    setPartnerOpen(false);
+                                    setPartnerSearch("");
+                                  }}
+                                >
+                                  <Check className={`mr-2 h-4 w-4 ${field.value === partner.id ? "opacity-100" : "opacity-0"}`} />
+                                  {partner.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
